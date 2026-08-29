@@ -15,7 +15,7 @@ void main() {
     test('login succeeds and stores session with mock token and user', () async {
       final result = await repository.login(
         email: 'candidate@test.com',
-        password: 'password123',
+        password: 'Password123',
       );
 
       expect(result.token, isNotEmpty);
@@ -28,7 +28,7 @@ void main() {
     test('login with recruiter keyword email assigns Recruiter role', () async {
       final result = await repository.login(
         email: 'recruiter.hr@techcorp.vn',
-        password: 'password123',
+        password: 'Password123',
       );
 
       expect(result.user.role, UserRole.recruiter);
@@ -52,7 +52,7 @@ void main() {
     test('logout clears session', () async {
       await repository.login(
         email: 'test@user.com',
-        password: 'password123',
+        password: 'Password123',
       );
       expect(AuthSession.instance.isAuthenticated, isTrue);
 
