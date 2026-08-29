@@ -55,9 +55,9 @@ flutter run
 
 ## 🛠 Lưu ý cho nhà phát triển
 
-- **Branching Flow**:
-  - Quy trình phân nhánh: `feature/*` / `fix/*` $\rightarrow$ `develop` $\rightarrow$ `release/*` $\rightarrow$ `main`.
-  - Vui lòng tạo branch mới theo định dạng `feature/[tên-tính-năng]` hoặc `fix/[tên-lỗi]`.
+- **Branching Flow (Trunk-Based)**:
+  - Quy trình phân nhánh: `feature/*` / `fix/*` $\rightarrow$ `main` — mỗi repo chỉ có nhánh `main` duy nhất, CI chạy trên `main` (`.github/workflows/ci.yml`).
+  - Vui lòng tạo branch mới theo định dạng `feature/[tên-tính-năng]` hoặc `fix/[tên-lỗi]` và mở PR vào `main`.
 - **Quản lý công việc**: Theo dõi nhiệm vụ trên Jira tại [skid.atlassian.net](https://skid.atlassian.net).
 - **Cấu hình Debug / Release**:
   - Luôn đảm bảo các cấu hình debug (như `debugLogDiagnostics`, logging) được bao bọc bởi `kDebugMode` để tránh lộ thông tin nhạy cảm.

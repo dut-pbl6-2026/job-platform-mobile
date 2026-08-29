@@ -155,3 +155,6 @@ flutter test --coverage
    - `docs(agents): update architectural guidelines and SRS mapping`
 2. **Traceability:** Always reference the associated SRS Tag (`MOB-01-XX`, `AUTH-01-XX`, `JOB-01-XX`, etc.) in commit messages and PR descriptions.
 3. **Clean Code:** Remove temporary debug logs, unneeded comments, and ensure code compiles cleanly without warnings before finalizing tasks.
+4. **Branching Flow (Trunk-Based):**
+   - Each repo has **only `main`** — no `develop` / `release/*` branches.
+   - Create `feature/*` or `fix/*` from `main` and open PR `feature/* → main`. CI triggers on `push`/`pull_request` to `main` only (`.github/workflows/ci.yml`).
