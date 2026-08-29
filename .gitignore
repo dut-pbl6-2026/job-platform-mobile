@@ -1,6 +1,61 @@
+# Flutter / Dart
 .dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
 build/
+
+# Android
+android/app/debug/
+android/app/profile/
+android/app/release/
+android/app/src/debug/res/values/google-services.json
+android/app/src/profile/res/values/google-services.json
+android/app/src/release/res/values/google-services.json
+android/.gradle/
+android/local.properties
+android/*.log
+android/replay_*.log
+android/hs_err_*.log
+*.log
+replay_*.log
+hs_err_*.log
+
+# iOS
+ios/.generated/
+ios/Flutter/App.framework
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+ios/Flutter/Generated.xcconfig
+ios/Flutter/app.flx
+ios/Flutter/app.zip
+ios/Flutter/flutter_assets/
+ios/Flutter/flutter_export_environment.sh
+ios/Pods/
+ios/Podfile.lock
+ios/.symlinks/
+ios/profile/
+ios/release/
+
+# Environment / Secret tokens
 .env
-.env.bak.*
+.env.*
+!.env.example
 mise.toml.local
 INFISICAL_TOKEN
+
+# IDEs
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+# AI IDE Rules & Settings
+.cursorrules
+.antigravityrules
+.agents/
+
+# Local Documentation
+docs/
+# Docs submodule / local reference repo
+job-platform-docs/
