@@ -48,25 +48,27 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  /// Validate email format
+  /// Validate email format — accepts long TLDs and + tags.
   String? _validateEmail(String? value) {
     if (value == null || value.trim().isEmpty) {
       return 'Vui lòng nhập email';
     }
-    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+    final emailRegex = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
     if (!emailRegex.hasMatch(value.trim())) {
       return 'Email không đúng định dạng';
     }
     return null;
   }
 
-  /// Validate password
+  /// Validate password per SRS AUTH-01-01:
+  /// Minimum 8 characters, at least 1 uppercase letter and 1 digit.
   String? _validatePassword(String? value) {
     if (value == null || value.isEmpty) {
       return 'Vui lòng nhập mật khẩu';
     }
-    if (value.length < 6) {
-      return 'Mật khẩu phải có ít nhất 6 ký tự';
+    final passwordRegex = RegExp(r'^(?=.*[A-Z])(?=.*\d).{8,}$');
+    if (!passwordRegex.hasMatch(value)) {
+      return 'Mật khẩu tối thiểu 8 ký tự, gồm ít nhất 1 chữ hoa và 1 chữ số';
     }
     return null;
   }
@@ -296,6 +298,7 @@ class _LoginScreenState extends State<LoginScreen> {
         // Forgot password link
         TextButton(
           onPressed: () {
+            // TODO(W2-BACKEND): Deferred to Week 2/3 pending Database schema and API endpoints for Forgot & Reset Password flow with OTP/Token (AUTH-01-07 / AUTH-01-08).
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
                 content: Text('Tính năng Quên mật khẩu sẽ ra mắt sớm!'),

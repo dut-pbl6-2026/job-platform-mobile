@@ -40,15 +40,58 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _isPasswordVisible = false;
   bool _isConfirmPasswordVisible = false;
   bool _isLoading = false;
+  double _passwordStrength = 0.0;
+  String _passwordStrengthLabel = '';
+  Color _passwordStrengthColor = AppColors.textHint;
 
   @override
   void initState() {
     super.initState();
     _authRepository = widget.authRepository ?? MockAuthRepository();
+    _passwordController.addListener(_onPasswordChanged);
+  }
+
+  /// Recalculate password strength on every keystroke.
+  void _onPasswordChanged() {
+    final password = _passwordController.text;
+    final result = _calculatePasswordStrength(password);
+    setState(() {
+      _passwordStrength = result.strength;
+      _passwordStrengthLabel = result.label;
+      _passwordStrengthColor = result.color;
+    });
+  }
+
+  /// Evaluate password strength based on 5 criteria:
+  /// length ≥ 8, has uppercase, has lowercase, has digit, has special char.
+  /// Returns a normalized score (0.0–1.0) with label and color.
+  ({double strength, String label, Color color}) _calculatePasswordStrength(
+    String password,
+  ) {
+    if (password.isEmpty) {
+      return (strength: 0.0, label: '', color: AppColors.textHint);
+    }
+
+    int score = 0;
+    if (password.length >= 8) score++;
+    if (RegExp(r'[A-Z]').hasMatch(password)) score++;
+    if (RegExp(r'[a-z]').hasMatch(password)) score++;
+    if (RegExp(r'\d').hasMatch(password)) score++;
+    if (RegExp(r'[!@#\$%^&*(),.?":{}|<>]').hasMatch(password)) score++;
+
+    return switch (score) {
+      1 => (strength: 0.2, label: 'Rất yếu', color: AppColors.error),
+      2 => (strength: 0.4, label: 'Yếu', color: AppColors.error),
+      3 => (strength: 0.6, label: 'Trung bình', color: AppColors.warning),
+      4 => (strength: 0.8, label: 'Mạnh', color: AppColors.primary),
+      5 => (strength: 1.0, label: 'Rất mạnh', color: AppColors.success),
+      _ => (strength: 0.0, label: '', color: AppColors.textHint),
+    };
   }
 
   @override
   void dispose() {
+    _passwordController.removeListener(_onPasswordChanged);
     _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
@@ -67,25 +110,27 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return null;
   }
 
-  /// Validate email format
+  /// Validate email format — accepts long TLDs and + tags.
   String? _validateEmail(String? value) {
     if (value == null || value.trim().isEmpty) {
       return 'Vui lòng nhập email';
     }
-    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+    final emailRegex = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
     if (!emailRegex.hasMatch(value.trim())) {
       return 'Email không đúng định dạng';
     }
     return null;
   }
 
-  /// Validate password length and complexity
+  /// Validate password per SRS AUTH-01-01:
+  /// Minimum 8 characters, at least 1 uppercase letter and 1 digit.
   String? _validatePassword(String? value) {
     if (value == null || value.isEmpty) {
       return 'Vui lòng nhập mật khẩu';
     }
-    if (value.length < 8) {
-      return 'Mật khẩu phải có ít nhất 8 ký tự';
+    final passwordRegex = RegExp(r'^(?=.*[A-Z])(?=.*\d).{8,}$');
+    if (!passwordRegex.hasMatch(value)) {
+      return 'Mật khẩu tối thiểu 8 ký tự, gồm ít nhất 1 chữ hoa và 1 chữ số';
     }
     return null;
   }
@@ -332,6 +377,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ),
           ),
 
+          // Password strength indicator
+          if (_passwordController.text.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            _buildPasswordStrengthIndicator(),
+          ],
+
           const SizedBox(height: 16),
 
           // Confirm Password field
@@ -362,6 +413,96 @@ class _RegisterScreenState extends State<RegisterScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  /// Password strength indicator with animated bar and per-criteria checklist.
+  Widget _buildPasswordStrengthIndicator() {
+    final password = _passwordController.text;
+
+    // Individual criteria checks for the checklist
+    final hasMinLength = password.length >= 8;
+    final hasUppercase = RegExp(r'[A-Z]').hasMatch(password);
+    final hasDigit = RegExp(r'\d').hasMatch(password);
+    final hasSpecialChar =
+        RegExp(r'[!@#\$%^&*(),.?":{}|<>]').hasMatch(password);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Animated strength bar
+        Row(
+          children: [
+            Expanded(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: TweenAnimationBuilder<double>(
+                  tween: Tween<double>(begin: 0, end: _passwordStrength),
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeOutCubic,
+                  builder: (context, value, _) {
+                    return LinearProgressIndicator(
+                      value: value,
+                      minHeight: 6,
+                      backgroundColor: AppColors.border,
+                      valueColor:
+                          AlwaysStoppedAnimation<Color>(_passwordStrengthColor),
+                    );
+                  },
+                ),
+              ),
+            ),
+            if (_passwordStrengthLabel.isNotEmpty) ...[
+              const SizedBox(width: 12),
+              Text(
+                _passwordStrengthLabel,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: _passwordStrengthColor,
+                ),
+              ),
+            ],
+          ],
+        ),
+
+        const SizedBox(height: 8),
+
+        // Per-criteria checklist
+        Wrap(
+          spacing: 16,
+          runSpacing: 4,
+          children: [
+            _buildCriteriaChip('≥ 8 ký tự', hasMinLength),
+            _buildCriteriaChip('Chữ hoa (A-Z)', hasUppercase),
+            _buildCriteriaChip('Chữ số (0-9)', hasDigit),
+            _buildCriteriaChip('Ký tự đặc biệt', hasSpecialChar),
+          ],
+        ),
+      ],
+    );
+  }
+
+  /// Single criteria chip with check/cross icon.
+  Widget _buildCriteriaChip(String label, bool passed) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          passed ? Icons.check_circle_rounded : Icons.circle_outlined,
+          size: 14,
+          color: passed ? AppColors.success : AppColors.textHint,
+        ),
+        const SizedBox(width: 4),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 11,
+            color: passed ? AppColors.success : AppColors.textHint,
+            fontWeight: passed ? FontWeight.w500 : FontWeight.normal,
+          ),
+        ),
+      ],
     );
   }
 

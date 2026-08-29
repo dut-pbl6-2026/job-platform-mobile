@@ -278,6 +278,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       subtitle: isRecruiter ? 'Quản lý tin đăng' : 'Khám phá cơ hội',
                       color: AppColors.primary,
                       onTap: () {
+                        // TODO(W2-BACKEND): Deferred to Week 2/3 pending Database schema and API endpoints for Job Listings (MOB-01-07).
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
                             content: Text('Tính năng sẽ ra mắt ở Tuần 2!'),
@@ -295,6 +296,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       subtitle: 'Thông tin & CV',
                       color: AppColors.secondary,
                       onTap: () {
+                        // TODO(W2-BACKEND): Deferred to Week 2/3 pending Database schema and API endpoints for User Profile & CV Upload (MOB-01-07).
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
                             content: Text('Tính năng sẽ ra mắt ở Tuần 3!'),

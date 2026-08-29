@@ -3,6 +3,7 @@ import '../../features/auth/domain/models/auth_result.dart';
 import '../../features/auth/domain/models/user_model.dart';
 
 /// In-memory session manager for managing authenticated user state and mock tokens.
+// TODO(SEC-09): Persist session and refresh token (7/30d) via flutter_secure_storage and shared_preferences for cold start restoration.
 class AuthSession extends ChangeNotifier {
   AuthSession._();
   static final AuthSession instance = AuthSession._();

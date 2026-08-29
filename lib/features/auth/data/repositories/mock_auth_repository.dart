@@ -50,9 +50,19 @@ class MockAuthRepository implements IAuthRepository {
     // Simulate network delay of 2 seconds
     await Future.delayed(const Duration(seconds: 2));
 
-    // Basic simulation check
-    if (password.length < 6) {
-      throw Exception('Mật khẩu không chính xác hoặc tài khoản không tồn tại.');
+    // Validate password format per SRS AUTH-01-01
+    final passwordRegex = RegExp(r'^(?=.*[A-Z])(?=.*\d).{8,}$');
+    if (!passwordRegex.hasMatch(password)) {
+      throw Exception(
+        'Mật khẩu phải có tối thiểu 8 ký tự, gồm ít nhất 1 chữ hoa và 1 chữ số.',
+      );
+    }
+
+    // Mock 401 Unauthorized for testing (AUTH-01-02)
+    if (password == 'wrong_password' || email == 'invalid@test.com') {
+      throw Exception(
+        '401 Unauthorized: Email hoặc mật khẩu không chính xác.',
+      );
     }
 
     final userId = 'usr_${DateTime.now().millisecondsSinceEpoch}';
@@ -74,11 +84,16 @@ class MockAuthRepository implements IAuthRepository {
       role: role.value,
     );
 
+    // SRS AUTH-01-04: rememberMe → 30 days, otherwise → 7 days
+    final sessionDuration = rememberMe
+        ? const Duration(days: 30)
+        : const Duration(days: 7);
+
     final result = AuthResult(
       token: mockToken,
       refreshToken: 'mock_refresh_token_${DateTime.now().millisecondsSinceEpoch}',
       user: user,
-      expiresAt: DateTime.now().add(const Duration(hours: 1)),
+      expiresAt: DateTime.now().add(sessionDuration),
     );
 
     _session.setSession(result);
@@ -94,6 +109,8 @@ class MockAuthRepository implements IAuthRepository {
   }) async {
     // Simulate network delay of 2 seconds
     await Future.delayed(const Duration(seconds: 2));
+
+    // TODO(W2-BACKEND): Deferred to Week 2/3 pending Database schema and API endpoints for Recruiter companyId verification (AUTH-01-06).
 
     final userId = 'usr_${DateTime.now().millisecondsSinceEpoch}';
     final user = UserModel(

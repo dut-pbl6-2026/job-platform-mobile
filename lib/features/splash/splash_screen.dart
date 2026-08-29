@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/router/app_router.dart';
+import '../../core/session/auth_session.dart';
 import '../../core/theme/app_theme.dart';
 
 /// Splash Screen - Shows app logo with fade-in animation,
-/// then navigates to login screen after a delay.
+/// then navigates based on authentication state after init.
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -45,14 +46,18 @@ class _SplashScreenState extends State<SplashScreen>
     // Start animation
     _animationController.forward();
 
-    // Navigate to login after delay
-    _navigateToLogin();
+    // Navigate based on auth state after init
+    _navigateAfterInit();
   }
 
-  Future<void> _navigateToLogin() async {
+  /// Check authentication state and navigate accordingly (MOB-01).
+  Future<void> _navigateAfterInit() async {
     await Future.delayed(const Duration(milliseconds: 2500));
     if (mounted) {
-      context.go(AppRoutes.login);
+      final destination = AuthSession.instance.isAuthenticated
+          ? AppRoutes.home
+          : AppRoutes.login;
+      context.go(destination);
     }
   }
 
