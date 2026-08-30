@@ -5,6 +5,8 @@ import '../session/auth_session.dart';
 import '../../features/auth/login_screen.dart';
 import '../../features/auth/register_screen.dart';
 import '../../features/home/home_screen.dart';
+import '../../features/jobs/presentation/job_detail_screen.dart';
+import '../../features/jobs/presentation/job_list_screen.dart';
 import '../../features/splash/splash_screen.dart';
 
 /// Route names constants
@@ -15,9 +17,11 @@ class AppRoutes {
   static const String login = '/login';
   static const String register = '/register';
   static const String home = '/home';
+  static const String jobs = '/jobs';
+  static const String jobDetail = '/jobs/:id';
 
   /// Public routes that do not require authentication.
-  static const List<String> publicRoutes = [splash, login, register];
+  static const List<String> publicRoutes = [splash, login, register, jobs];
 }
 
 /// GoRouter configuration for Navigation Structure
@@ -32,7 +36,8 @@ class AppRouter {
     redirect: (context, state) {
       final isAuthenticated = AuthSession.instance.isAuthenticated;
       final currentPath = state.matchedLocation;
-      final isPublicRoute = AppRoutes.publicRoutes.contains(currentPath);
+      final isPublicRoute = AppRoutes.publicRoutes.contains(currentPath) ||
+          currentPath.startsWith('/jobs');
 
       // Unauthenticated users trying to access private routes → login
       if (!isAuthenticated && !isPublicRoute) {
@@ -68,6 +73,21 @@ class AppRouter {
         path: AppRoutes.home,
         name: 'home',
         builder: (context, state) => const HomeScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.jobs,
+        name: 'jobs',
+        builder: (context, state) => const JobListScreen(),
+        routes: [
+          GoRoute(
+            path: ':id',
+            name: 'job-detail',
+            builder: (context, state) {
+              final jobId = state.pathParameters['id'] ?? '';
+              return JobDetailScreen(jobId: jobId);
+            },
+          ),
+        ],
       ),
     ],
   );

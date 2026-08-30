@@ -59,3 +59,4 @@ INFISICAL_TOKEN
 docs/
 # Docs submodule / local reference repo
 job-platform-docs/
+template-prompt.md
