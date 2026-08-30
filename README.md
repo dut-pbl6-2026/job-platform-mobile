@@ -63,3 +63,6 @@ flutter run
   - Luôn đảm bảo các cấu hình debug (như `debugLogDiagnostics`, logging) được bao bọc bởi `kDebugMode` để tránh lộ thông tin nhạy cảm.
 - **Tuân thủ tiêu chuẩn & bảo mật**:
   - Tuân thủ các quy tắc bảo mật (SEC) và tiêu chuẩn SRS đề ra (ví dụ: quy định về độ mạnh mật khẩu, mã hóa token, thời hạn session, phân quyền 3 nhóm người dùng: Admin, Recruiter, User).
+
+## Deploy (Mobile — TM4 Khoa, excluded prod)
+- Build: `flutter pub get` `ApiAuthRepository FLUTTER_API_URL=https://jp-gateway.onrender.com --dart-define` `AuthSession.load() minSdk 23` `excluded prod` `backlog.md#2`
