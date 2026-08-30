@@ -5,7 +5,7 @@ import '../../core/router/app_router.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/error/error_mapper.dart';
 import '../../core/error/failures.dart';
-import 'data/repositories/mock_auth_repository.dart';
+import 'data/repositories/api_auth_repository.dart';
 import 'domain/models/user_model.dart';
 import 'domain/repositories/auth_repository.dart';
 
@@ -19,10 +19,7 @@ import 'domain/repositories/auth_repository.dart';
 /// - MockAuthRepository integration (with simulated 2s delay)
 /// - Navigation to Home on success
 class RegisterScreen extends StatefulWidget {
-  const RegisterScreen({
-    super.key,
-    this.authRepository,
-  });
+  const RegisterScreen({super.key, this.authRepository});
 
   final IAuthRepository? authRepository;
 
@@ -152,7 +149,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   /// Validate companyId for recruiter
   String? _validateCompanyId(String? value) {
-    if (_selectedRole == UserRole.recruiter && (value == null || value.trim().isEmpty)) {
+    if (_selectedRole == UserRole.recruiter &&
+        (value == null || value.trim().isEmpty)) {
       return 'Vui lòng nhập mã công ty';
     }
     return null;
@@ -170,7 +168,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
         email: _emailController.text.trim(),
         password: _passwordController.text,
         role: _selectedRole,
-        companyId: _companyIdController.text.trim().isEmpty ? null : _companyIdController.text.trim(),
+        companyId: _companyIdController.text.trim().isEmpty
+            ? null
+            : _companyIdController.text.trim(),
       );
 
       if (mounted) {
@@ -195,7 +195,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
-        final msg = e is AuthFailure ? authFailureToMessage(e) : e.toString().replaceAll('Exception: ', '');
+        final msg = e is AuthFailure
+            ? authFailureToMessage(e)
+            : e.toString().replaceAll('Exception: ', '');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Đăng ký thất bại: $msg'),
@@ -281,9 +283,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
       children: [
         Text(
           'Bạn là ai?',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 12),
         SegmentedButton<UserRole>(
@@ -306,26 +308,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
             });
           },
           style: ButtonStyle(
-            backgroundColor: WidgetStateProperty.resolveWith<Color>(
-              (states) {
-                if (states.contains(WidgetState.selected)) {
-                  return AppColors.primary;
-                }
-                return AppColors.surfaceVariant;
-              },
-            ),
-            foregroundColor: WidgetStateProperty.resolveWith<Color>(
-              (states) {
-                if (states.contains(WidgetState.selected)) {
-                  return Colors.white;
-                }
-                return AppColors.textPrimary;
-              },
-            ),
+            backgroundColor: WidgetStateProperty.resolveWith<Color>((states) {
+              if (states.contains(WidgetState.selected)) {
+                return AppColors.primary;
+              }
+              return AppColors.surfaceVariant;
+            }),
+            foregroundColor: WidgetStateProperty.resolveWith<Color>((states) {
+              if (states.contains(WidgetState.selected)) {
+                return Colors.white;
+              }
+              return AppColors.textPrimary;
+            }),
             shape: WidgetStateProperty.all(
-              RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
           ),
         ),
@@ -451,8 +447,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final hasMinLength = password.length >= 8;
     final hasUppercase = RegExp(r'[A-Z]').hasMatch(password);
     final hasDigit = RegExp(r'\d').hasMatch(password);
-    final hasSpecialChar =
-        RegExp(r'[!@#\$%^&*(),.?":{}|<>]').hasMatch(password);
+    final hasSpecialChar = RegExp(
+      r'[!@#\$%^&*(),.?":{}|<>]',
+    ).hasMatch(password);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -472,8 +469,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       value: value,
                       minHeight: 6,
                       backgroundColor: AppColors.border,
-                      valueColor:
-                          AlwaysStoppedAnimation<Color>(_passwordStrengthColor),
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        _passwordStrengthColor,
+                      ),
                     );
                   },
                 ),

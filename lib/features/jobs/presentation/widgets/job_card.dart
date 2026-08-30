@@ -101,7 +101,9 @@ class JobCard extends StatelessWidget {
                       job.isSaved
                           ? Icons.bookmark_rounded
                           : Icons.bookmark_border_rounded,
-                      color: job.isSaved ? AppColors.primary : AppColors.textHint,
+                      color: job.isSaved
+                          ? AppColors.primary
+                          : AppColors.textHint,
                       size: 22,
                     ),
                     padding: EdgeInsets.zero,
@@ -208,7 +210,9 @@ class JobCard extends StatelessWidget {
                     textColor: AppColors.textSecondary,
                   ),
                   // Skills chips (up to 2)
-                  ...job.skills.take(2).map(
+                  ...job.skills
+                      .take(2)
+                      .map(
                         (skill) => _buildTag(
                           skill,
                           backgroundColor: Colors.transparent,

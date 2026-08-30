@@ -7,7 +7,9 @@ import 'package:job_platform_mobile/features/jobs/presentation/widgets/job_card.
 import 'package:job_platform_mobile/features/jobs/presentation/widgets/job_search_bar.dart';
 
 void main() {
-  testWidgets('JobListScreen renders search bar, filters and jobs correctly', (tester) async {
+  testWidgets('JobListScreen renders search bar, filters and jobs correctly', (
+    tester,
+  ) async {
     final mockRepo = MockJobRepository();
 
     await tester.pumpWidget(

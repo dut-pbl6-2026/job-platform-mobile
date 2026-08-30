@@ -7,10 +7,7 @@ import '../../domain/models/job_model.dart';
 class JobDetailHeader extends StatelessWidget {
   final JobModel job;
 
-  const JobDetailHeader({
-    super.key,
-    required this.job,
-  });
+  const JobDetailHeader({super.key, required this.job});
 
   @override
   Widget build(BuildContext context) {

@@ -1,0 +1,26 @@
+[tools]
+flutter = "3.32.8"
+
+[tasks.pub-get]
+description = "Get Flutter dependencies"
+run = "flutter pub get"
+
+[tasks.analyze]
+description = "Static analysis (flutter analyze)"
+run = "flutter analyze"
+
+[tasks.test]
+description = "Run flutter tests"
+run = "flutter test"
+
+[tasks.format]
+description = "Check formatting"
+run = "dart format --set-exit-if-changed ."
+
+[tasks.format-fix]
+description = "Fix formatting"
+run = "dart format ."
+
+[tasks.verify]
+description = "pub get + analyze + test"
+run = "flutter pub get && flutter analyze && flutter test"

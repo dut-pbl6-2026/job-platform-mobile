@@ -25,7 +25,14 @@ class AppRoutes {
   static const String resetPassword = '/reset-password';
 
   /// Public routes that do not require authentication.
-  static const List<String> publicRoutes = [splash, login, register, jobs, forgotPassword, resetPassword];
+  static const List<String> publicRoutes = [
+    splash,
+    login,
+    register,
+    jobs,
+    forgotPassword,
+    resetPassword,
+  ];
 }
 
 /// GoRouter configuration for Navigation Structure
@@ -40,7 +47,8 @@ class AppRouter {
     redirect: (context, state) {
       final isAuthenticated = AuthSession.instance.isAuthenticated;
       final currentPath = state.matchedLocation;
-      final isPublicRoute = AppRoutes.publicRoutes.contains(currentPath) ||
+      final isPublicRoute =
+          AppRoutes.publicRoutes.contains(currentPath) ||
           currentPath.startsWith('/jobs');
 
       // Unauthenticated users trying to access private routes → login
@@ -81,7 +89,8 @@ class AppRouter {
       GoRoute(
         path: AppRoutes.resetPassword,
         name: 'reset-password',
-        builder: (context, state) => ResetPasswordScreen(token: state.uri.queryParameters['token']),
+        builder: (context, state) =>
+            ResetPasswordScreen(token: state.uri.queryParameters['token']),
       ),
       GoRoute(
         path: AppRoutes.home,

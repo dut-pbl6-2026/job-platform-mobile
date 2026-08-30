@@ -63,7 +63,9 @@ class JobDetailBottomBar extends StatelessWidget {
                 ),
               ),
               child: Icon(
-                isSaved ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
+                isSaved
+                    ? Icons.bookmark_rounded
+                    : Icons.bookmark_border_rounded,
                 color: isSaved ? AppColors.primary : AppColors.textSecondary,
                 size: 22,
               ),
@@ -102,8 +104,8 @@ class JobDetailBottomBar extends StatelessWidget {
                 backgroundColor: isRecruiter
                     ? AppColors.secondary
                     : isAdmin
-                        ? AppColors.warning
-                        : AppColors.primary,
+                    ? AppColors.warning
+                    : AppColors.primary,
                 minimumSize: const Size(double.infinity, 48),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14),
@@ -116,8 +118,8 @@ class JobDetailBottomBar extends StatelessWidget {
                     isRecruiter
                         ? Icons.people_outline_rounded
                         : isAdmin
-                            ? Icons.admin_panel_settings_outlined
-                            : Icons.send_rounded,
+                        ? Icons.admin_panel_settings_outlined
+                        : Icons.send_rounded,
                     size: 18,
                     color: Colors.white,
                   ),
@@ -126,8 +128,8 @@ class JobDetailBottomBar extends StatelessWidget {
                     isRecruiter
                         ? 'Xem ứng viên (${job.applicationCount})'
                         : isAdmin
-                            ? 'Kiểm duyệt tin'
-                            : 'Ứng tuyển ngay',
+                        ? 'Kiểm duyệt tin'
+                        : 'Ứng tuyển ngay',
                     style: const TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w700,

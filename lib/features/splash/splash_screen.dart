@@ -110,9 +110,7 @@ class _SplashScreenState extends State<SplashScreen>
                     // App name
                     Text(
                       'Job Platform',
-                      style: Theme.of(context)
-                          .textTheme
-                          .headlineLarge
+                      style: Theme.of(context).textTheme.headlineLarge
                           ?.copyWith(
                             color: AppColors.primary,
                             fontWeight: FontWeight.w800,
@@ -126,9 +124,9 @@ class _SplashScreenState extends State<SplashScreen>
                     Text(
                       'Nền tảng Việc làm Việt Nam',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: AppColors.textSecondary,
-                            letterSpacing: 0.5,
-                          ),
+                        color: AppColors.textSecondary,
+                        letterSpacing: 0.5,
+                      ),
                     ),
 
                     const SizedBox(height: 48),

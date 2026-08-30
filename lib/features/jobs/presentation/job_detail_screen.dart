@@ -18,11 +18,7 @@ class JobDetailScreen extends StatefulWidget {
   final String jobId;
   final IJobRepository? jobRepository;
 
-  const JobDetailScreen({
-    super.key,
-    required this.jobId,
-    this.jobRepository,
-  });
+  const JobDetailScreen({super.key, required this.jobId, this.jobRepository});
 
   @override
   State<JobDetailScreen> createState() => _JobDetailScreenState();
@@ -273,7 +269,9 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
           if (_job != null) ...[
             IconButton(
               icon: Icon(
-                _isSaved ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
+                _isSaved
+                    ? Icons.bookmark_rounded
+                    : Icons.bookmark_border_rounded,
                 color: _isSaved ? AppColors.primary : AppColors.textPrimary,
               ),
               tooltip: _isSaved ? 'Bỏ lưu' : 'Lưu tin',
@@ -348,18 +346,15 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
             const SizedBox(height: 20),
             Text(
               _errorMessage ?? 'Không tìm thấy việc làm',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
             const Text(
               'Tin tuyển dụng có thể đã hết hạn hoặc bị gỡ bởi nhà tuyển dụng.',
-              style: TextStyle(
-                fontSize: 14,
-                color: AppColors.textSecondary,
-              ),
+              style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),

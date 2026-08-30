@@ -26,7 +26,10 @@ abstract class IAuthRepository {
   Future<void> forgotPassword({required String email});
 
   /// Reset password (AUTH-01-08) single-use 15m revokes all tokens
-  Future<void> resetPassword({required String token, required String newPassword});
+  Future<void> resetPassword({
+    required String token,
+    required String newPassword,
+  });
 
   /// Log out current active user
   Future<void> logout();

@@ -79,8 +79,9 @@ class JobFilterParams {
       location: clearLocation ? null : (location ?? this.location),
       category: clearCategory ? null : (category ?? this.category),
       jobType: clearJobType ? null : (jobType ?? this.jobType),
-      experienceLevel:
-          clearExperienceLevel ? null : (experienceLevel ?? this.experienceLevel),
+      experienceLevel: clearExperienceLevel
+          ? null
+          : (experienceLevel ?? this.experienceLevel),
       salaryMin: clearSalaryMin ? null : (salaryMin ?? this.salaryMin),
       salaryMax: clearSalaryMax ? null : (salaryMax ?? this.salaryMax),
       onlySaved: onlySaved ?? this.onlySaved,
@@ -92,10 +93,6 @@ class JobFilterParams {
 
   /// Reset all filters back to default empty criteria while maintaining pageSize
   JobFilterParams clearAllFilters() {
-    return JobFilterParams(
-      pageSize: pageSize,
-      page: 0,
-      sortBy: 'newest',
-    );
+    return JobFilterParams(pageSize: pageSize, page: 0, sortBy: 'newest');
   }
 }

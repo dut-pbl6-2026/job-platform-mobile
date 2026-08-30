@@ -4,11 +4,7 @@ class AuthFailure implements Exception {
   final int? statusCode;
   final String? rawMessage;
 
-  const AuthFailure({
-    required this.code,
-    this.statusCode,
-    this.rawMessage,
-  });
+  const AuthFailure({required this.code, this.statusCode, this.rawMessage});
 
   @override
   String toString() => 'AuthFailure($code, $statusCode): $rawMessage';

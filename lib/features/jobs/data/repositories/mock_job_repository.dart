@@ -84,7 +84,13 @@ class MockJobRepository implements IJobRepository {
       category: 'Kinh doanh',
       jobType: JobType.fullTime,
       experienceLevel: ExperienceLevel.lead,
-      skills: ['Product Management', 'Data-Driven', 'Fintech', 'Agile/Scrum', 'UX Research'],
+      skills: [
+        'Product Management',
+        'Data-Driven',
+        'Fintech',
+        'Agile/Scrum',
+        'UX Research',
+      ],
       description:
           'Định hình chiến lược sản phẩm và dẫn dắt tính năng thanh toán & tiện ích trên ứng dụng MoMo với 30M+ người dùng.',
       requirements:
@@ -106,7 +112,14 @@ class MockJobRepository implements IJobRepository {
       category: 'Tài chính - Ngân hàng',
       jobType: JobType.fullTime,
       experienceLevel: ExperienceLevel.senior,
-      skills: ['.NET 8', 'C#', 'PostgreSQL', 'YARP Gateway', 'RabbitMQ', 'Clean Architecture'],
+      skills: [
+        '.NET 8',
+        'C#',
+        'PostgreSQL',
+        'YARP Gateway',
+        'RabbitMQ',
+        'Clean Architecture',
+      ],
       description:
           'Xây dựng các core microservices bảo mật cao cho Digital Banking thế hệ mới của Techcombank.',
       requirements:
@@ -148,7 +161,13 @@ class MockJobRepository implements IJobRepository {
       category: 'Marketing',
       jobType: JobType.hybrid,
       experienceLevel: ExperienceLevel.middle,
-      skills: ['Figma', 'Material Design 3', 'User Research', 'Prototyping', 'Design System'],
+      skills: [
+        'Figma',
+        'Material Design 3',
+        'User Research',
+        'Prototyping',
+        'Design System',
+      ],
       description:
           'Thiết kế trải nghiệm người dùng tinh tế, chuẩn Material 3 và iOS HIG cho hệ sinh thái VinID và OneHousing.',
       requirements:
@@ -190,7 +209,14 @@ class MockJobRepository implements IJobRepository {
       category: 'Công nghệ thông tin',
       jobType: JobType.fullTime,
       experienceLevel: ExperienceLevel.middle,
-      skills: ['AWS', 'Kubernetes', 'Docker', 'Terraform', 'GitLab CI', 'Prometheus'],
+      skills: [
+        'AWS',
+        'Kubernetes',
+        'Docker',
+        'Terraform',
+        'GitLab CI',
+        'Prometheus',
+      ],
       description:
           'Quản trị hạ tầng Cloud, triển khai tự động hóa CI/CD và giám sát hệ thống cho các giải pháp Chính phủ điện tử.',
       requirements:
@@ -232,7 +258,13 @@ class MockJobRepository implements IJobRepository {
       category: 'Marketing',
       jobType: JobType.fullTime,
       experienceLevel: ExperienceLevel.senior,
-      skills: ['SEO', 'Google Ads', 'Facebook Ads', 'Data Analytics', 'Content Strategy'],
+      skills: [
+        'SEO',
+        'Google Ads',
+        'Facebook Ads',
+        'Data Analytics',
+        'Content Strategy',
+      ],
       description:
           'Xây dựng chiến lược tăng trưởng người dùng và tối ưu hóa chuyển đổi cho các sản phẩm game và nội dung số.',
       requirements:
@@ -253,7 +285,14 @@ class MockJobRepository implements IJobRepository {
       category: 'Công nghệ thông tin',
       jobType: JobType.remote,
       experienceLevel: ExperienceLevel.middle,
-      skills: ['React', 'Node.js', 'TypeScript', 'PostgreSQL', 'Next.js', 'AWS'],
+      skills: [
+        'React',
+        'Node.js',
+        'TypeScript',
+        'PostgreSQL',
+        'Next.js',
+        'AWS',
+      ],
       description:
           'Làm việc hoàn toàn từ xa (100% Remote) phát triển các hệ thống SaaS và E-commerce cho khách hàng Nhật Bản và Bắc Mỹ.',
       requirements:
@@ -284,8 +323,7 @@ class MockJobRepository implements IJobRepository {
         final matchCompany = job.companyName.toLowerCase().contains(q);
         final matchCategory = job.category.toLowerCase().contains(q);
         final matchLocation = job.location.toLowerCase().contains(q);
-        final matchSkills =
-            job.skills.any((s) => s.toLowerCase().contains(q));
+        final matchSkills = job.skills.any((s) => s.toLowerCase().contains(q));
         final matchDesc = job.description.toLowerCase().contains(q);
         return matchTitle ||
             matchCompany ||
@@ -316,7 +354,8 @@ class MockJobRepository implements IJobRepository {
         params.category!.trim().isNotEmpty &&
         params.category != 'Tất cả') {
       filteredList = filteredList.where((job) {
-        return job.category.toLowerCase() == params.category!.trim().toLowerCase();
+        return job.category.toLowerCase() ==
+            params.category!.trim().toLowerCase();
       }).toList();
     }
 
@@ -357,8 +396,11 @@ class MockJobRepository implements IJobRepository {
 
     // 8. Sorting
     if (params.sortBy == 'salary_desc') {
-      filteredList.sort((a, b) =>
-          (b.salaryMax ?? b.salaryMin ?? 0).compareTo(a.salaryMax ?? a.salaryMin ?? 0));
+      filteredList.sort(
+        (a, b) => (b.salaryMax ?? b.salaryMin ?? 0).compareTo(
+          a.salaryMax ?? a.salaryMin ?? 0,
+        ),
+      );
     } else {
       // Default: newest first
       filteredList.sort((a, b) => b.postedAt.compareTo(a.postedAt));

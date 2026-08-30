@@ -4,7 +4,9 @@ import 'package:job_platform_mobile/app.dart';
 import 'package:job_platform_mobile/features/auth/register_screen.dart';
 
 void main() {
-  testWidgets('App renders splash and navigates to login screen', (WidgetTester tester) async {
+  testWidgets('App renders splash and navigates to login screen', (
+    WidgetTester tester,
+  ) async {
     await tester.pumpWidget(const App());
 
     // Verify initial splash screen
@@ -19,12 +21,10 @@ void main() {
     expect(find.text('Đăng nhập'), findsOneWidget);
   });
 
-  testWidgets('RegisterScreen validates inputs properly', (WidgetTester tester) async {
-    await tester.pumpWidget(
-      const MaterialApp(
-        home: RegisterScreen(),
-      ),
-    );
+  testWidgets('RegisterScreen validates inputs properly', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(const MaterialApp(home: RegisterScreen()));
 
     // Initial state check
     expect(find.text('Tạo tài khoản mới'), findsOneWidget);

@@ -6,10 +6,7 @@ import '../../domain/models/job_model.dart';
 class JobDetailContent extends StatelessWidget {
   final JobModel job;
 
-  const JobDetailContent({
-    super.key,
-    required this.job,
-  });
+  const JobDetailContent({super.key, required this.job});
 
   @override
   Widget build(BuildContext context) {
@@ -135,11 +132,7 @@ class JobDetailContent extends StatelessWidget {
         children: [
           const Row(
             children: [
-              Icon(
-                Icons.code_rounded,
-                size: 20,
-                color: AppColors.primary,
-              ),
+              Icon(Icons.code_rounded, size: 20, color: AppColors.primary),
               SizedBox(width: 10),
               Text(
                 'Kỹ năng chuyên môn',
@@ -198,11 +191,7 @@ class JobDetailContent extends StatelessWidget {
         children: [
           const Row(
             children: [
-              Icon(
-                Icons.business_rounded,
-                size: 20,
-                color: AppColors.primary,
-              ),
+              Icon(Icons.business_rounded, size: 20, color: AppColors.primary),
               SizedBox(width: 10),
               Text(
                 'Về công ty tuyển dụng',
@@ -269,10 +258,7 @@ class JobDetailContent extends StatelessWidget {
             children: [
               Text(
                 '${job.viewCount} lượt xem',
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: AppColors.textHint,
-                ),
+                style: const TextStyle(fontSize: 12, color: AppColors.textHint),
               ),
               Text(
                 '${job.applicationCount} hồ sơ đã nộp',

@@ -23,10 +23,8 @@ class JobFilterBottomSheet extends StatefulWidget {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => JobFilterBottomSheet(
-        currentParams: currentParams,
-        onApply: onApply,
-      ),
+      builder: (context) =>
+          JobFilterBottomSheet(currentParams: currentParams, onApply: onApply),
     );
   }
 
@@ -121,7 +119,8 @@ class _JobFilterBottomSheetState extends State<JobFilterBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final bottomPadding = MediaQuery.of(context).viewInsets.bottom +
+    final bottomPadding =
+        MediaQuery.of(context).viewInsets.bottom +
         MediaQuery.of(context).padding.bottom;
 
     return Container(
@@ -155,9 +154,9 @@ class _JobFilterBottomSheetState extends State<JobFilterBottomSheet> {
               children: [
                 Text(
                   'Bộ lọc tìm kiếm',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
                 ),
                 TextButton(
                   onPressed: _handleReset,
@@ -182,7 +181,8 @@ class _JobFilterBottomSheetState extends State<JobFilterBottomSheet> {
                     spacing: 8,
                     runSpacing: 8,
                     children: _locations.map((loc) {
-                      final isSelected = (_selectedLocation == null && loc == 'Tất cả') ||
+                      final isSelected =
+                          (_selectedLocation == null && loc == 'Tất cả') ||
                           _selectedLocation == loc;
                       return _buildFilterChip(
                         label: loc,
@@ -205,7 +205,8 @@ class _JobFilterBottomSheetState extends State<JobFilterBottomSheet> {
                     spacing: 8,
                     runSpacing: 8,
                     children: _categories.map((cat) {
-                      final isSelected = (_selectedCategory == null && cat == 'Tất cả') ||
+                      final isSelected =
+                          (_selectedCategory == null && cat == 'Tất cả') ||
                           _selectedCategory == cat;
                       return _buildFilterChip(
                         label: cat,
@@ -231,13 +232,15 @@ class _JobFilterBottomSheetState extends State<JobFilterBottomSheet> {
                       _buildFilterChip(
                         label: 'Tất cả',
                         isSelected: _selectedJobType == null,
-                        onSelected: (_) => setState(() => _selectedJobType = null),
+                        onSelected: (_) =>
+                            setState(() => _selectedJobType = null),
                       ),
                       ...JobType.values.map(
                         (jt) => _buildFilterChip(
                           label: jt.displayName,
                           isSelected: _selectedJobType == jt,
-                          onSelected: (_) => setState(() => _selectedJobType = jt),
+                          onSelected: (_) =>
+                              setState(() => _selectedJobType = jt),
                         ),
                       ),
                     ],
@@ -255,13 +258,15 @@ class _JobFilterBottomSheetState extends State<JobFilterBottomSheet> {
                       _buildFilterChip(
                         label: 'Tất cả',
                         isSelected: _selectedExperience == null,
-                        onSelected: (_) => setState(() => _selectedExperience = null),
+                        onSelected: (_) =>
+                            setState(() => _selectedExperience = null),
                       ),
                       ...ExperienceLevel.values.map(
                         (el) => _buildFilterChip(
                           label: el.displayName,
                           isSelected: _selectedExperience == el,
-                          onSelected: (_) => setState(() => _selectedExperience = el),
+                          onSelected: (_) =>
+                              setState(() => _selectedExperience = el),
                         ),
                       ),
                     ],
@@ -278,7 +283,8 @@ class _JobFilterBottomSheetState extends State<JobFilterBottomSheet> {
                     children: _salaryRanges.map((range) {
                       final (min, max, label) = range;
                       final isSelected =
-                          _selectedMinSalary == min && _selectedMaxSalary == max;
+                          _selectedMinSalary == min &&
+                          _selectedMaxSalary == max;
                       return _buildFilterChip(
                         label: label,
                         isSelected: isSelected,
@@ -385,9 +391,7 @@ class _JobFilterBottomSheetState extends State<JobFilterBottomSheet> {
         color: isSelected ? AppColors.primary : AppColors.border,
         width: 1,
       ),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(10),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       showCheckmark: false,
       onSelected: onSelected,
     );

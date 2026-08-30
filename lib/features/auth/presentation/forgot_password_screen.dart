@@ -27,23 +27,39 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
   String? _validate(String? v) {
     if (v == null || v.trim().isEmpty) return 'Vui lòng nhập email';
-    if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(v.trim())) return 'Email không đúng định dạng';
+    if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(v.trim()))
+      return 'Email không đúng định dạng';
     return null;
   }
 
   Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
     setState(() => _loading = true);
     try {
       await _repo.forgotPassword(email: _email.text.trim());
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Nếu email tồn tại, liên kết đặt lại đã được gửi'), backgroundColor: AppColors.success));
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Nếu email tồn tại, liên kết đặt lại đã được gửi'),
+          backgroundColor: AppColors.success,
+        ),
+      );
       context.pop();
     } catch (e) {
       final msg = e is AuthFailure ? authFailureToMessage(e) : e.toString();
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg), backgroundColor: AppColors.error));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(msg), backgroundColor: AppColors.error),
+        );
+      }
     } finally {
-      if (mounted) setState(() => _loading = false);
+      if (mounted) {
+        setState(() => _loading = false);
+      }
     }
   }
 
@@ -55,11 +71,29 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         padding: const EdgeInsets.all(24),
         child: Form(
           key: _formKey,
-          child: Column(children: [
-            TextFormField(controller: _email, validator: _validate, decoration: const InputDecoration(labelText: 'Email', prefixIcon: Icon(Icons.email_outlined))),
-            const SizedBox(height: 24),
-            SizedBox(width: double.infinity, height: 52, child: ElevatedButton(onPressed: _loading ? null : _submit, child: _loading ? const CircularProgressIndicator(color: Colors.white) : const Text('Gửi liên kết'))),
-          ]),
+          child: Column(
+            children: [
+              TextFormField(
+                controller: _email,
+                validator: _validate,
+                decoration: const InputDecoration(
+                  labelText: 'Email',
+                  prefixIcon: Icon(Icons.email_outlined),
+                ),
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: ElevatedButton(
+                  onPressed: _loading ? null : _submit,
+                  child: _loading
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : const Text('Gửi liên kết'),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

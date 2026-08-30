@@ -15,10 +15,7 @@ import 'widgets/job_shimmer_loading.dart';
 class JobListScreen extends StatefulWidget {
   final IJobRepository? jobRepository;
 
-  const JobListScreen({
-    super.key,
-    this.jobRepository,
-  });
+  const JobListScreen({super.key, this.jobRepository});
 
   @override
   State<JobListScreen> createState() => _JobListScreenState();
@@ -28,10 +25,7 @@ class _JobListScreenState extends State<JobListScreen> {
   late final IJobRepository _jobRepository;
   final ScrollController _scrollController = ScrollController();
 
-  JobFilterParams _filterParams = const JobFilterParams(
-    pageSize: 10,
-    page: 0,
-  );
+  JobFilterParams _filterParams = const JobFilterParams(pageSize: 10, page: 0);
 
   bool _isLoading = true;
   bool _isLoadingMore = false;
@@ -274,9 +268,7 @@ class _JobListScreenState extends State<JobListScreen> {
             const Divider(height: 1, color: AppColors.divider),
 
             // Main Content Area
-            Expanded(
-              child: _buildBody(),
-            ),
+            Expanded(child: _buildBody()),
           ],
         ),
       ),
@@ -443,9 +435,9 @@ class _JobListScreenState extends State<JobListScreen> {
             const SizedBox(height: 20),
             Text(
               'Không tìm thấy việc làm phù hợp',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),

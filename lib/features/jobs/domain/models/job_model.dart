@@ -109,7 +109,8 @@ class JobModel {
       experienceLevel: ExperienceLevel.fromString(
         json['experienceLevel'] as String? ?? 'Junior',
       ),
-      skills: (json['skills'] as List<dynamic>?)
+      skills:
+          (json['skills'] as List<dynamic>?)
               ?.map((e) => e.toString())
               .toList() ??
           const [],

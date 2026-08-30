@@ -24,7 +24,8 @@ void main() {
       );
       expect(result.items.isNotEmpty, isTrue);
       for (final job in result.items) {
-        final matches = job.title.toLowerCase().contains('flutter') ||
+        final matches =
+            job.title.toLowerCase().contains('flutter') ||
             job.skills.any((s) => s.toLowerCase().contains('flutter')) ||
             job.description.toLowerCase().contains('flutter');
         expect(matches, isTrue);

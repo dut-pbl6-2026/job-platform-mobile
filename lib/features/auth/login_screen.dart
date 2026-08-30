@@ -16,10 +16,7 @@ import 'domain/repositories/auth_repository.dart';
 /// - Login button with 2s mock latency
 /// - Navigation to Register and Home
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({
-    super.key,
-    this.authRepository,
-  });
+  const LoginScreen({super.key, this.authRepository});
 
   final IAuthRepository? authRepository;
 
@@ -108,7 +105,9 @@ class _LoginScreenState extends State<LoginScreen> {
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
-        final msg = e is AuthFailure ? authFailureToMessage(e) : e.toString().replaceAll('Exception: ', '');
+        final msg = e is AuthFailure
+            ? authFailureToMessage(e)
+            : e.toString().replaceAll('Exception: ', '');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Đăng nhập thất bại: $msg'),
@@ -191,10 +190,7 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(14),
-            child: Image.asset(
-              'assets/images/logo.jpg',
-              fit: BoxFit.cover,
-            ),
+            child: Image.asset('assets/images/logo.jpg', fit: BoxFit.cover),
           ),
         ),
 
@@ -291,9 +287,9 @@ class _LoginScreenState extends State<LoginScreen> {
             Text(
               'Ghi nhớ đăng nhập',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.textSecondary,
-                    fontSize: 13,
-                  ),
+                color: AppColors.textSecondary,
+                fontSize: 13,
+              ),
             ),
           ],
         ),
@@ -308,10 +304,7 @@ class _LoginScreenState extends State<LoginScreen> {
             minimumSize: Size.zero,
             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           ),
-          child: const Text(
-            'Quên mật khẩu?',
-            style: TextStyle(fontSize: 13),
-          ),
+          child: const Text('Quên mật khẩu?', style: TextStyle(fontSize: 13)),
         ),
       ],
     );
@@ -343,10 +336,7 @@ class _LoginScreenState extends State<LoginScreen> {
         const Expanded(child: Divider()),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Text(
-            'hoặc',
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
+          child: Text('hoặc', style: Theme.of(context).textTheme.bodySmall),
         ),
         const Expanded(child: Divider()),
       ],

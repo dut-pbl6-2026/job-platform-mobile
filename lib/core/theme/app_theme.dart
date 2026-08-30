@@ -199,18 +199,12 @@ class AppTheme {
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: AppColors.error, width: 2),
         ),
-        hintStyle: GoogleFonts.roboto(
-          fontSize: 14,
-          color: AppColors.textHint,
-        ),
+        hintStyle: GoogleFonts.roboto(fontSize: 14, color: AppColors.textHint),
         labelStyle: GoogleFonts.roboto(
           fontSize: 14,
           color: AppColors.textSecondary,
         ),
-        errorStyle: GoogleFonts.roboto(
-          fontSize: 12,
-          color: AppColors.error,
-        ),
+        errorStyle: GoogleFonts.roboto(fontSize: 12, color: AppColors.error),
       ),
 
       // Card

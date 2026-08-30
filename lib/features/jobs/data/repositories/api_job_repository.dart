@@ -14,9 +14,7 @@ class ApiJobRepository implements IJobRepository {
   final MockJobRepository _fallbackMockRepository = MockJobRepository();
   final HttpClient _httpClient = HttpClient();
 
-  ApiJobRepository({
-    this.gatewayBaseUrl = 'http://localhost:5000',
-  });
+  ApiJobRepository({this.gatewayBaseUrl = 'http://localhost:5000'});
 
   @override
   Future<PaginatedJobs> getJobs(JobFilterParams params) async {
@@ -42,20 +40,24 @@ class ApiJobRepository implements IJobRepository {
         queryParams['experienceLevel'] = params.experienceLevel!.value;
       }
 
-      final uri = Uri.parse('$gatewayBaseUrl/api/search/jobs')
-          .replace(queryParameters: queryParams);
+      final uri = Uri.parse(
+        '$gatewayBaseUrl/api/search/jobs',
+      ).replace(queryParameters: queryParams);
 
-      final request = await _httpClient.getUrl(uri)
+      final request = await _httpClient
+          .getUrl(uri)
           .timeout(const Duration(seconds: 5));
       request.headers.set('Accept', 'application/json');
 
-      final response = await request.close()
-          .timeout(const Duration(seconds: 5));
+      final response = await request.close().timeout(
+        const Duration(seconds: 5),
+      );
 
       if (response.statusCode == 200) {
         final body = await response.transform(utf8.decoder).join();
         final Map<String, dynamic> data = jsonDecode(body);
-        final items = (data['items'] as List<dynamic>?)
+        final items =
+            (data['items'] as List<dynamic>?)
                 ?.map((item) => JobModel.fromJson(item as Map<String, dynamic>))
                 .toList() ??
             [];
@@ -79,10 +81,12 @@ class ApiJobRepository implements IJobRepository {
   Future<JobModel?> getJobById(String id) async {
     try {
       final uri = Uri.parse('$gatewayBaseUrl/api/jobs/$id');
-      final request = await _httpClient.getUrl(uri)
+      final request = await _httpClient
+          .getUrl(uri)
           .timeout(const Duration(seconds: 5));
-      final response = await request.close()
-          .timeout(const Duration(seconds: 5));
+      final response = await request.close().timeout(
+        const Duration(seconds: 5),
+      );
 
       if (response.statusCode == 200) {
         final body = await response.transform(utf8.decoder).join();
