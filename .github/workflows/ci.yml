@@ -1,8 +1,64 @@
 name: ci
-on: { push: { branches: [main] }, pull_request: { branches: [main] } }
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: echo "ci"
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.32.8'
+          channel: stable
+          cache: true
+      - name: Install dependencies
+        run: flutter pub get
+      - name: Format check
+        run: dart format --set-exit-if-changed .
+      - name: Analyze
+        run: flutter analyze
+      - name: Test with coverage
+        run: flutter test --coverage
+      - name: Coverage gate (70% soft)
+        if: always()
+        run: |
+          if [ -f coverage/lcov.info ]; then
+            echo "coverage/lcov.info found"
+            # soft gate: report but don't hard fail until Phase 4 QA
+            genhtml --version 2>/dev/null || echo "genhtml not needed"
+            lcov --summary coverage/lcov.info 2>&1 | head -20 || cat coverage/lcov.info | head -20
+          else
+            echo "coverage/lcov.info not found"
+            ls -R coverage 2>&1 | head -20
+          fi
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage/lcov.info
+          if-no-files-found: warn
+      - name: Build APK (debug)
+        run: flutter build apk --debug
+      - name: Upload APK
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: apk-debug
+          path: build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: warn

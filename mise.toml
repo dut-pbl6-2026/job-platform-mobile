@@ -13,6 +13,10 @@ run = "flutter analyze"
 description = "Run flutter tests"
 run = "flutter test"
 
+[tasks.test-coverage]
+description = "Run tests with coverage"
+run = "flutter test --coverage"
+
 [tasks.format]
 description = "Check formatting"
 run = "dart format --set-exit-if-changed ."
@@ -24,3 +28,6 @@ run = "dart format ."
 [tasks.verify]
 description = "pub get + analyze + test"
 run = "flutter pub get && flutter analyze && flutter test"
+[tasks.verify-coverage]
+description = "pub get + analyze + test --coverage"
+run = "flutter pub get && flutter analyze && flutter test --coverage"
