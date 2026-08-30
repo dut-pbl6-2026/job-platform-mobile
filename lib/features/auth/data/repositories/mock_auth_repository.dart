@@ -96,7 +96,7 @@ class MockAuthRepository implements IAuthRepository {
       expiresAt: DateTime.now().add(sessionDuration),
     );
 
-    _session.setSession(result);
+    await _session.setSession(result);
     return result;
   }
 
@@ -106,11 +106,12 @@ class MockAuthRepository implements IAuthRepository {
     required String email,
     required String password,
     required UserRole role,
+    String? companyId,
   }) async {
-    // Simulate network delay of 2 seconds
     await Future.delayed(const Duration(seconds: 2));
-
-    // TODO(W2-BACKEND): Deferred to Week 2/3 pending Database schema and API endpoints for Recruiter companyId verification (AUTH-01-06).
+    if (role == UserRole.recruiter && (companyId == null || companyId.isEmpty)) {
+      throw Exception('companyId required for Recruiter');
+    }
 
     final userId = 'usr_${DateTime.now().millisecondsSinceEpoch}';
     final user = UserModel(
@@ -134,14 +135,24 @@ class MockAuthRepository implements IAuthRepository {
       expiresAt: DateTime.now().add(const Duration(hours: 1)),
     );
 
-    _session.setSession(result);
+    await _session.setSession(result);
     return result;
+  }
+
+  @override
+  Future<void> forgotPassword({required String email}) async {
+    await Future.delayed(const Duration(milliseconds: 300));
+  }
+
+  @override
+  Future<void> resetPassword({required String token, required String newPassword}) async {
+    await Future.delayed(const Duration(milliseconds: 300));
   }
 
   @override
   Future<void> logout() async {
     await Future.delayed(const Duration(milliseconds: 300));
-    _session.clearSession();
+    await _session.clearSession();
   }
 
   @override

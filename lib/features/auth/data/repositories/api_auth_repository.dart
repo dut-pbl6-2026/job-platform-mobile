@@ -1,29 +1,17 @@
 import 'package:dio/dio.dart';
+import '../../../core/error/error_mapper.dart';
+import '../../../core/error/failures.dart';
+import '../../../core/network/dio_provider.dart';
 import '../../../core/session/auth_session.dart';
+import '../../../core/utils/password_validator.dart';
 import '../../domain/models/auth_result.dart';
 import '../../domain/models/user_model.dart';
 import '../../domain/repositories/auth_repository.dart';
 
 class ApiAuthRepository implements IAuthRepository {
   final Dio _dio;
-  static const _baseUrl = String.fromEnvironment('FLUTTER_API_URL', defaultValue: 'http://localhost:5000');
 
-  ApiAuthRepository({Dio? dio})
-      : _dio = dio ??
-            Dio(BaseOptions(
-              baseUrl: _baseUrl,
-              connectTimeout: const Duration(seconds: 10),
-              receiveTimeout: const Duration(seconds: 10),
-              headers: {'Content-Type': 'application/json'},
-            )) {
-    _dio.interceptors.add(InterceptorsWrapper(
-      onRequest: (options, handler) {
-        final token = AuthSession.instance.token;
-        if (token != null) options.headers['Authorization'] = 'Bearer $token';
-        return handler.next(options);
-      },
-    ));
-  }
+  ApiAuthRepository({Dio? dio}) : _dio = dio ?? DioProvider.instance.dio;
 
   @override
   Future<AuthResult> login({required String email, required String password, bool rememberMe = false}) async {
@@ -33,18 +21,53 @@ class ApiAuthRepository implements IAuthRepository {
       await AuthSession.instance.setSession(auth);
       return auth;
     } on DioException catch (e) {
-      throw _mapError(e);
+      throw mapDioToFailure(e);
     }
   }
 
   @override
-  Future<AuthResult> register({required String name, required String email, required String password, required UserRole role}) async {
+  Future<AuthResult> register({required String name, required String email, required String password, required UserRole role, String? companyId}) async {
+    if (!isPasswordStrong(password)) {
+      throw const AuthFailure(code: AuthFailure.weakPassword, statusCode: 400, rawMessage: 'Weak password');
+    }
+    if (role == UserRole.recruiter && (companyId == null || companyId.isEmpty)) {
+      throw const AuthFailure(code: AuthFailure.invalidCompanyId, statusCode: 422, rawMessage: 'companyId required for Recruiter');
+    }
     try {
-      await _dio.post('/api/auth/register', data: {'email': email, 'password': password, 'fullName': name, 'role': role.value});
-      // Best practice: register returns 201 userId, then explicit login
+      final payload = <String, dynamic>{
+        'email': email,
+        'password': password,
+        'fullName': name,
+        'role': role.value,
+        if (companyId != null && companyId.isNotEmpty) 'companyId': companyId,
+      };
+      await _dio.post('/api/auth/register', data: payload);
       return await login(email: email, password: password);
     } on DioException catch (e) {
-      throw _mapError(e);
+      throw mapDioToFailure(e);
+    } on AuthFailure {
+      rethrow;
+    }
+  }
+
+  @override
+  Future<void> forgotPassword({required String email}) async {
+    try {
+      await _dio.post('/api/auth/forgot-password', data: {'email': email});
+    } on DioException catch (e) {
+      throw mapDioToFailure(e);
+    }
+  }
+
+  @override
+  Future<void> resetPassword({required String token, required String newPassword}) async {
+    if (!isPasswordStrong(newPassword)) {
+      throw const AuthFailure(code: AuthFailure.weakPassword, statusCode: 400, rawMessage: 'Weak password');
+    }
+    try {
+      await _dio.post('/api/auth/reset-password', data: {'token': token, 'newPassword': newPassword});
+    } on DioException catch (e) {
+      throw mapDioToFailure(e);
     }
   }
 
@@ -61,23 +84,13 @@ class ApiAuthRepository implements IAuthRepository {
   Future<UserModel?> getCurrentUser() async {
     try {
       final res = await _dio.get('/api/auth/me');
-      return UserModel.fromJson(res.data as Map<String, dynamic>);
+      // backend returns UserMeDto {id,email,fullName,role,isActive}
+      final data = res.data as Map<String, dynamic>;
+      // Normalize to UserModel shape
+      return UserModel.fromJson(data.containsKey('user') ? data['user'] as Map<String, dynamic> : data);
     } on DioException catch (e) {
       if (e.response?.statusCode == 401) return null;
-      throw _mapError(e);
+      throw mapDioToFailure(e);
     }
-  }
-
-  Exception _mapError(DioException e) {
-    final code = e.response?.statusCode;
-    final data = e.response?.data;
-    String msg = e.message ?? 'Unknown error';
-    if (data is Map && data['detail'] != null) msg = data['detail'].toString();
-    if (data is Map && data['title'] != null) msg = data['title'].toString();
-    if (code == 401) return Exception('Email hoặc mật khẩu không chính xác');
-    if (code == 409) return Exception('Email đã được đăng ký');
-    if (code == 403) return Exception('Tài khoản bị khóa');
-    if (code == 400 && msg.contains('Password')) return Exception('Mật khẩu phải có ít nhất 8 ký tự, 1 chữ hoa và 1 chữ số');
-    return Exception(msg);
   }
 }

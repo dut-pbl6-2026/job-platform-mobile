@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/error/error_mapper.dart';
+import '../../core/error/failures.dart';
 import '../../core/router/app_router.dart';
 import '../../core/theme/app_theme.dart';
-import 'data/repositories/mock_auth_repository.dart';
+import 'data/repositories/api_auth_repository.dart';
 import 'domain/repositories/auth_repository.dart';
 
 /// Login Screen - Email/password form per SRS AUTH-01-02
@@ -38,7 +40,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   void initState() {
     super.initState();
-    _authRepository = widget.authRepository ?? MockAuthRepository();
+    _authRepository = widget.authRepository ?? ApiAuthRepository();
   }
 
   @override
@@ -106,9 +108,10 @@ class _LoginScreenState extends State<LoginScreen> {
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
+        final msg = e is AuthFailure ? authFailureToMessage(e) : e.toString().replaceAll('Exception: ', '');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Đăng nhập thất bại: $e'),
+            content: Text('Đăng nhập thất bại: $msg'),
             backgroundColor: AppColors.error,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
@@ -298,12 +301,7 @@ class _LoginScreenState extends State<LoginScreen> {
         // Forgot password link
         TextButton(
           onPressed: () {
-            // TODO(W2-BACKEND): Deferred to Week 2/3 pending Database schema and API endpoints for Forgot & Reset Password flow with OTP/Token (AUTH-01-07 / AUTH-01-08).
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Tính năng Quên mật khẩu sẽ ra mắt sớm!'),
-              ),
-            );
+            context.push(AppRoutes.forgotPassword);
           },
           style: TextButton.styleFrom(
             padding: EdgeInsets.zero,

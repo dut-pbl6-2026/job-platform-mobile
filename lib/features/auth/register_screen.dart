@@ -3,6 +3,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/router/app_router.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/error/error_mapper.dart';
+import '../../core/error/failures.dart';
 import 'data/repositories/mock_auth_repository.dart';
 import 'domain/models/user_model.dart';
 import 'domain/repositories/auth_repository.dart';
@@ -34,6 +36,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  final _companyIdController = TextEditingController();
 
   late final IAuthRepository _authRepository;
   UserRole _selectedRole = UserRole.user;
@@ -47,7 +50,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   void initState() {
     super.initState();
-    _authRepository = widget.authRepository ?? MockAuthRepository();
+    _authRepository = widget.authRepository ?? ApiAuthRepository();
     _passwordController.addListener(_onPasswordChanged);
   }
 
@@ -96,6 +99,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
+    _companyIdController.dispose();
     super.dispose();
   }
 
@@ -146,6 +150,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return null;
   }
 
+  /// Validate companyId for recruiter
+  String? _validateCompanyId(String? value) {
+    if (_selectedRole == UserRole.recruiter && (value == null || value.trim().isEmpty)) {
+      return 'Vui lòng nhập mã công ty';
+    }
+    return null;
+  }
+
   /// Handle register submit
   Future<void> _handleRegister() async {
     if (!_formKey.currentState!.validate()) return;
@@ -158,6 +170,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         email: _emailController.text.trim(),
         password: _passwordController.text,
         role: _selectedRole,
+        companyId: _companyIdController.text.trim().isEmpty ? null : _companyIdController.text.trim(),
       );
 
       if (mounted) {
@@ -182,9 +195,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
+        final msg = e is AuthFailure ? authFailureToMessage(e) : e.toString().replaceAll('Exception: ', '');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Đăng ký thất bại: $e'),
+            content: Text('Đăng ký thất bại: $msg'),
             backgroundColor: AppColors.error,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
@@ -411,6 +425,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
               ),
             ),
           ),
+
+          if (_selectedRole == UserRole.recruiter) ...[
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _companyIdController,
+              validator: _validateCompanyId,
+              decoration: const InputDecoration(
+                labelText: 'Mã công ty',
+                hintText: 'UUID công ty (từ /api/companies)',
+                prefixIcon: Icon(Icons.business_center_outlined),
+              ),
+            ),
+          ],
         ],
       ),
     );

@@ -13,12 +13,20 @@ abstract class IAuthRepository {
   });
 
   /// Register a new user account with role selection (User / Recruiter)
+  /// companyId required for Recruiter per SRS AUTH-01-06
   Future<AuthResult> register({
     required String name,
     required String email,
     required String password,
     required UserRole role,
+    String? companyId,
   });
+
+  /// Forgot password (AUTH-01-07) anti-enumeration always success
+  Future<void> forgotPassword({required String email});
+
+  /// Reset password (AUTH-01-08) single-use 15m revokes all tokens
+  Future<void> resetPassword({required String token, required String newPassword});
 
   /// Log out current active user
   Future<void> logout();
