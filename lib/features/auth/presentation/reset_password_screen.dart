@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/error/error_mapper.dart';
 import '../../../core/error/failures.dart';
+import '../../../core/router/app_router.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/utils/password_validator.dart';
 import '../data/repositories/api_auth_repository.dart';
 import '../domain/repositories/auth_repository.dart';
-import '../../../core/router/app_router.dart';
 
 class ResetPasswordScreen extends StatefulWidget {
   const ResetPasswordScreen({super.key, this.authRepository, this.token});
@@ -30,17 +31,20 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
 
   String? _validatePwd(String? v) {
     if (v == null || v.isEmpty) return 'Vui lòng nhập mật khẩu';
-    if (!RegExp(r'^(?=.*[A-Z])(?=.*\d).{8,}$').hasMatch(v))
+    if (!isPasswordStrong(v)) {
       return 'Mật khẩu tối thiểu 8 ký tự, gồm 1 chữ hoa và 1 chữ số';
+    }
     return null;
   }
+
+  String? get _effectiveToken =>
+      widget.token ?? GoRouterState.of(context).uri.queryParameters['token'];
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
-    final t =
-        widget.token ?? GoRouterState.of(context).uri.queryParameters['token'];
+    final t = _effectiveToken;
     if (t == null || t.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -79,6 +83,41 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final token = _effectiveToken;
+    if (token == null || token.isEmpty) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Đặt lại mật khẩu')),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(
+                  Icons.error_outline,
+                  size: 48,
+                  color: AppColors.error,
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Liên kết không hợp lệ hoặc đã hết hạn',
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  height: 52,
+                  child: ElevatedButton(
+                    onPressed: () => context.go(AppRoutes.login),
+                    child: const Text('Quay về đăng nhập'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
     return Scaffold(
       appBar: AppBar(title: const Text('Đặt lại mật khẩu')),
       body: Padding(

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:job_platform_mobile/core/session/auth_session.dart';
@@ -8,7 +10,7 @@ const _baseUrl = String.fromEnvironment(
   defaultValue: 'https://jp-gateway.onrender.com',
 );
 
-/// Singleton Dio with AuthInterceptor (401 → refresh → retry).
+/// Singleton Dio with Queued AuthInterceptor (401 → refresh → retry, concurrency-safe).
 class DioProvider {
   DioProvider._();
   static final DioProvider _instance = DioProvider._();
@@ -27,7 +29,7 @@ class DioProvider {
     );
 
     d.interceptors.add(
-      InterceptorsWrapper(
+      QueuedInterceptorsWrapper(
         onRequest: (options, handler) {
           // Skip auth header for anonymous endpoints
           final path = options.path;
@@ -39,8 +41,9 @@ class DioProvider {
               path.contains('/api/auth/refresh');
           if (!isAnonymous) {
             final token = AuthSession.instance.token;
-            if (token != null)
+            if (token != null) {
               options.headers['Authorization'] = 'Bearer $token';
+            }
           }
           return handler.next(options);
         },
@@ -49,35 +52,53 @@ class DioProvider {
           final isRefreshCall = err.requestOptions.path.contains(
             '/api/auth/refresh',
           );
-          final refreshToken = AuthSession.instance.refreshToken;
 
-          // 401 → try refresh once (AUTH-01-04)
-          if (status == 401 &&
-              !isRefreshCall &&
-              refreshToken != null &&
-              !_isRefreshing) {
-            _isRefreshing = true;
-            try {
-              final res = await Dio(
-                BaseOptions(baseUrl: _baseUrl),
-              ).post('/api/auth/refresh', data: {'refreshToken': refreshToken});
-              final auth = AuthResult.fromJson(
-                res.data as Map<String, dynamic>,
-              );
-              await AuthSession.instance.setSession(auth);
-              // Retry original
-              final opts = err.requestOptions;
-              opts.headers['Authorization'] = 'Bearer ${auth.token}';
-              final retry = await d.fetch(opts);
-              _isRefreshing = false;
-              return handler.resolve(retry);
-            } catch (e) {
-              await AuthSession.instance.clearSession();
-              _isRefreshing = false;
-              return handler.next(err);
-            }
+          // Only handle 401 for non-refresh calls when we have a refresh token
+          if (status != 401 || isRefreshCall) {
+            return handler.next(err);
           }
-          return handler.next(err);
+          final refreshToken = AuthSession.instance.refreshToken;
+          if (refreshToken == null) {
+            return handler.next(err);
+          }
+
+          // If refresh already in progress, wait for it then retry with new token
+          if (_isRefreshing) {
+            try {
+              await _refreshCompleter?.future;
+              final newToken = AuthSession.instance.token;
+              if (newToken != null) {
+                err.requestOptions.headers['Authorization'] =
+                    'Bearer $newToken';
+                final retry = await d.fetch(err.requestOptions);
+                return handler.resolve(retry);
+              }
+            } catch (_) {}
+            return handler.next(err);
+          }
+
+          _isRefreshing = true;
+          _refreshCompleter = Completer<void>();
+          try {
+            final res = await Dio(
+              BaseOptions(baseUrl: _baseUrl),
+            ).post('/api/auth/refresh', data: {'refreshToken': refreshToken});
+            final auth = AuthResult.fromJson(res.data as Map<String, dynamic>);
+            await AuthSession.instance.setSession(auth);
+            _refreshCompleter?.complete();
+            // Retry original with new token
+            err.requestOptions.headers['Authorization'] =
+                'Bearer ${auth.token}';
+            final retry = await d.fetch(err.requestOptions);
+            return handler.resolve(retry);
+          } catch (e) {
+            _refreshCompleter?.completeError(e);
+            await AuthSession.instance.clearSession();
+            return handler.next(err);
+          } finally {
+            _isRefreshing = false;
+            _refreshCompleter = null;
+          }
         },
       ),
     );
@@ -86,6 +107,7 @@ class DioProvider {
   }
 
   bool _isRefreshing = false;
+  Completer<void>? _refreshCompleter;
 }
 
 /// Riverpod provider for DI/testing overrides (P1 Arch 4)
