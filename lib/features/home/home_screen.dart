@@ -235,8 +235,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         context,
                         week: 'Tuần 2',
                         title: 'Danh sách việc làm & Tìm kiếm',
-                        status: 'Sắp ra mắt',
-                        isDone: false,
+                        status: 'Đã hoàn thành',
+                        isDone: true,
                       ),
                       const Divider(height: 20),
                       _buildRoadmapItem(
@@ -278,12 +278,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       subtitle: isRecruiter ? 'Quản lý tin đăng' : 'Khám phá cơ hội',
                       color: AppColors.primary,
                       onTap: () {
-                        // TODO(W2-BACKEND): Deferred to Week 2/3 pending Database schema and API endpoints for Job Listings (MOB-01-07).
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Tính năng sẽ ra mắt ở Tuần 2!'),
-                          ),
-                        );
+                        context.push(AppRoutes.jobs);
                       },
                     ),
                   ),
