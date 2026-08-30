@@ -12,18 +12,21 @@ void main() {
       repository = MockAuthRepository();
     });
 
-    test('login succeeds and stores session with mock token and user', () async {
-      final result = await repository.login(
-        email: 'candidate@test.com',
-        password: 'Password123',
-      );
+    test(
+      'login succeeds and stores session with mock token and user',
+      () async {
+        final result = await repository.login(
+          email: 'candidate@test.com',
+          password: 'Password123',
+        );
 
-      expect(result.token, isNotEmpty);
-      expect(result.user.email, 'candidate@test.com');
-      expect(result.user.role, UserRole.user);
-      expect(AuthSession.instance.isAuthenticated, isTrue);
-      expect(AuthSession.instance.currentUser?.email, 'candidate@test.com');
-    });
+        expect(result.token, isNotEmpty);
+        expect(result.user.email, 'candidate@test.com');
+        expect(result.user.role, UserRole.user);
+        expect(AuthSession.instance.isAuthenticated, isTrue);
+        expect(AuthSession.instance.currentUser?.email, 'candidate@test.com');
+      },
+    );
 
     test('login with recruiter keyword email assigns Recruiter role', () async {
       final result = await repository.login(
@@ -50,10 +53,7 @@ void main() {
     });
 
     test('logout clears session', () async {
-      await repository.login(
-        email: 'test@user.com',
-        password: 'Password123',
-      );
+      await repository.login(email: 'test@user.com', password: 'Password123');
       expect(AuthSession.instance.isAuthenticated, isTrue);
 
       await repository.logout();

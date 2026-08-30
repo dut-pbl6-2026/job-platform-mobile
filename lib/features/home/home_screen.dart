@@ -10,10 +10,7 @@ import '../auth/domain/repositories/auth_repository.dart';
 
 /// Home Screen - Placeholder Dashboard after successful authentication
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({
-    super.key,
-    this.authRepository,
-  });
+  const HomeScreen({super.key, this.authRepository});
 
   final IAuthRepository? authRepository;
 
@@ -275,7 +272,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       context,
                       icon: Icons.work_outline_rounded,
                       title: isRecruiter ? 'Đăng tin tuyển' : 'Tìm việc làm',
-                      subtitle: isRecruiter ? 'Quản lý tin đăng' : 'Khám phá cơ hội',
+                      subtitle: isRecruiter
+                          ? 'Quản lý tin đăng'
+                          : 'Khám phá cơ hội',
                       color: AppColors.primary,
                       onTap: () {
                         context.push(AppRoutes.jobs);
@@ -333,7 +332,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: isDone ? FontWeight.w600 : FontWeight.w400,
-                  color: isDone ? AppColors.textPrimary : AppColors.textSecondary,
+                  color: isDone
+                      ? AppColors.textPrimary
+                      : AppColors.textSecondary,
                 ),
               ),
             ],

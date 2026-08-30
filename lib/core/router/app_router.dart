@@ -3,6 +3,8 @@ import 'package:go_router/go_router.dart';
 
 import '../session/auth_session.dart';
 import '../../features/auth/login_screen.dart';
+import '../../features/auth/presentation/forgot_password_screen.dart';
+import '../../features/auth/presentation/reset_password_screen.dart';
 import '../../features/auth/register_screen.dart';
 import '../../features/home/home_screen.dart';
 import '../../features/jobs/presentation/job_detail_screen.dart';
@@ -19,9 +21,18 @@ class AppRoutes {
   static const String home = '/home';
   static const String jobs = '/jobs';
   static const String jobDetail = '/jobs/:id';
+  static const String forgotPassword = '/forgot-password';
+  static const String resetPassword = '/reset-password';
 
   /// Public routes that do not require authentication.
-  static const List<String> publicRoutes = [splash, login, register, jobs];
+  static const List<String> publicRoutes = [
+    splash,
+    login,
+    register,
+    jobs,
+    forgotPassword,
+    resetPassword,
+  ];
 }
 
 /// GoRouter configuration for Navigation Structure
@@ -36,7 +47,8 @@ class AppRouter {
     redirect: (context, state) {
       final isAuthenticated = AuthSession.instance.isAuthenticated;
       final currentPath = state.matchedLocation;
-      final isPublicRoute = AppRoutes.publicRoutes.contains(currentPath) ||
+      final isPublicRoute =
+          AppRoutes.publicRoutes.contains(currentPath) ||
           currentPath.startsWith('/jobs');
 
       // Unauthenticated users trying to access private routes → login
@@ -68,6 +80,17 @@ class AppRouter {
         path: AppRoutes.register,
         name: 'register',
         builder: (context, state) => const RegisterScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.forgotPassword,
+        name: 'forgot-password',
+        builder: (context, state) => const ForgotPasswordScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.resetPassword,
+        name: 'reset-password',
+        builder: (context, state) =>
+            ResetPasswordScreen(token: state.uri.queryParameters['token']),
       ),
       GoRoute(
         path: AppRoutes.home,

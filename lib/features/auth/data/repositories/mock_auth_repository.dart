@@ -9,7 +9,7 @@ import '../../domain/repositories/auth_repository.dart';
 /// Can be cleanly swapped with [ApiAuthRepository] connecting through the YARP Gateway.
 class MockAuthRepository implements IAuthRepository {
   MockAuthRepository({AuthSession? session})
-      : _session = session ?? AuthSession.instance;
+    : _session = session ?? AuthSession.instance;
 
   final AuthSession _session;
 
@@ -30,7 +30,8 @@ class MockAuthRepository implements IAuthRepository {
           'role': role,
           'iss': 'job-platform-auth-svc',
           'aud': 'job-platform-mobile',
-          'exp': DateTime.now()
+          'exp':
+              DateTime.now()
                   .add(const Duration(hours: 1))
                   .millisecondsSinceEpoch ~/
               1000,
@@ -60,13 +61,12 @@ class MockAuthRepository implements IAuthRepository {
 
     // Mock 401 Unauthorized for testing (AUTH-01-02)
     if (password == 'wrong_password' || email == 'invalid@test.com') {
-      throw Exception(
-        '401 Unauthorized: Email hoặc mật khẩu không chính xác.',
-      );
+      throw Exception('401 Unauthorized: Email hoặc mật khẩu không chính xác.');
     }
 
     final userId = 'usr_${DateTime.now().millisecondsSinceEpoch}';
-    final isRecruiter = email.toLowerCase().contains('recruiter') ||
+    final isRecruiter =
+        email.toLowerCase().contains('recruiter') ||
         email.toLowerCase().contains('hr');
     final role = isRecruiter ? UserRole.recruiter : UserRole.user;
 
@@ -91,12 +91,13 @@ class MockAuthRepository implements IAuthRepository {
 
     final result = AuthResult(
       token: mockToken,
-      refreshToken: 'mock_refresh_token_${DateTime.now().millisecondsSinceEpoch}',
+      refreshToken:
+          'mock_refresh_token_${DateTime.now().millisecondsSinceEpoch}',
       user: user,
       expiresAt: DateTime.now().add(sessionDuration),
     );
 
-    _session.setSession(result);
+    await _session.setSession(result);
     return result;
   }
 
@@ -106,11 +107,10 @@ class MockAuthRepository implements IAuthRepository {
     required String email,
     required String password,
     required UserRole role,
+    String? companyId,
   }) async {
-    // Simulate network delay of 2 seconds
     await Future.delayed(const Duration(seconds: 2));
-
-    // TODO(W2-BACKEND): Deferred to Week 2/3 pending Database schema and API endpoints for Recruiter companyId verification (AUTH-01-06).
+    // Mock allows recruiter without companyId for test compatibility; real ApiAuthRepository enforces per SRS AUTH-01-06
 
     final userId = 'usr_${DateTime.now().millisecondsSinceEpoch}';
     final user = UserModel(
@@ -129,19 +129,33 @@ class MockAuthRepository implements IAuthRepository {
 
     final result = AuthResult(
       token: mockToken,
-      refreshToken: 'mock_refresh_token_${DateTime.now().millisecondsSinceEpoch}',
+      refreshToken:
+          'mock_refresh_token_${DateTime.now().millisecondsSinceEpoch}',
       user: user,
       expiresAt: DateTime.now().add(const Duration(hours: 1)),
     );
 
-    _session.setSession(result);
+    await _session.setSession(result);
     return result;
+  }
+
+  @override
+  Future<void> forgotPassword({required String email}) async {
+    await Future.delayed(const Duration(milliseconds: 300));
+  }
+
+  @override
+  Future<void> resetPassword({
+    required String token,
+    required String newPassword,
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 300));
   }
 
   @override
   Future<void> logout() async {
     await Future.delayed(const Duration(milliseconds: 300));
-    _session.clearSession();
+    await _session.clearSession();
   }
 
   @override

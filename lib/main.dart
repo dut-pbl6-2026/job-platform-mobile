@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app.dart';
+import 'core/session/auth_session.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await AuthSession.instance.load();
 
   // Lock orientation to portrait (per SRS 7.2.2 - Portrait primary)
   SystemChrome.setPreferredOrientations([
@@ -22,5 +25,5 @@ void main() {
     ),
   );
 
-  runApp(const App());
+  runApp(const ProviderScope(child: App()));
 }

@@ -23,9 +23,10 @@ class _JobDetailShimmerLoadingState extends State<JobDetailShimmerLoading>
       duration: const Duration(milliseconds: 1200),
     )..repeat(reverse: true);
 
-    _animation = Tween<double>(begin: 0.35, end: 0.85).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+    _animation = Tween<double>(
+      begin: 0.35,
+      end: 0.85,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
   @override
@@ -87,12 +88,7 @@ class _JobDetailShimmerLoadingState extends State<JobDetailShimmerLoading>
                 opacity: opacity,
               ),
               const SizedBox(height: 8),
-              _buildBox(
-                width: 200,
-                height: 24,
-                radius: 6,
-                opacity: opacity,
-              ),
+              _buildBox(width: 200, height: 24, radius: 6, opacity: opacity),
               const SizedBox(height: 20),
 
               // Key metrics card skeleton
@@ -154,12 +150,7 @@ class _JobDetailShimmerLoadingState extends State<JobDetailShimmerLoading>
               const SizedBox(height: 24),
 
               // Section 1: Description
-              _buildBox(
-                width: 160,
-                height: 18,
-                radius: 4,
-                opacity: opacity,
-              ),
+              _buildBox(width: 160, height: 18, radius: 4, opacity: opacity),
               const SizedBox(height: 12),
               _buildBox(
                 width: double.infinity,
@@ -175,21 +166,11 @@ class _JobDetailShimmerLoadingState extends State<JobDetailShimmerLoading>
                 opacity: opacity,
               ),
               const SizedBox(height: 6),
-              _buildBox(
-                width: 240,
-                height: 14,
-                radius: 4,
-                opacity: opacity,
-              ),
+              _buildBox(width: 240, height: 14, radius: 4, opacity: opacity),
               const SizedBox(height: 24),
 
               // Section 2: Requirements
-              _buildBox(
-                width: 160,
-                height: 18,
-                radius: 4,
-                opacity: opacity,
-              ),
+              _buildBox(width: 160, height: 18, radius: 4, opacity: opacity),
               const SizedBox(height: 12),
               _buildBox(
                 width: double.infinity,

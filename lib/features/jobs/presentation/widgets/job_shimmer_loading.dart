@@ -5,10 +5,7 @@ import '../../../../core/theme/app_theme.dart';
 class JobShimmerLoading extends StatefulWidget {
   final int itemCount;
 
-  const JobShimmerLoading({
-    super.key,
-    this.itemCount = 5,
-  });
+  const JobShimmerLoading({super.key, this.itemCount = 5});
 
   @override
   State<JobShimmerLoading> createState() => _JobShimmerLoadingState();
@@ -27,9 +24,10 @@ class _JobShimmerLoadingState extends State<JobShimmerLoading>
       duration: const Duration(milliseconds: 1200),
     )..repeat(reverse: true);
 
-    _animation = Tween<double>(begin: 0.35, end: 0.85).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+    _animation = Tween<double>(
+      begin: 0.35,
+      end: 0.85,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
   @override
@@ -84,7 +82,12 @@ class _JobShimmerLoadingState extends State<JobShimmerLoading>
                       opacity: opacity,
                     ),
                     const SizedBox(height: 8),
-                    _buildBox(width: 140, height: 13, radius: 4, opacity: opacity),
+                    _buildBox(
+                      width: 140,
+                      height: 13,
+                      radius: 4,
+                      opacity: opacity,
+                    ),
                   ],
                 ),
               ),
