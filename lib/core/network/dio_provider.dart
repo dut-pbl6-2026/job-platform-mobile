@@ -83,7 +83,7 @@ class DioProvider {
 
           _isRefreshing = true;
           _refreshCompleter = Completer<void>();
-          AuthResult? auth;
+          late final AuthResult auth;
           try {
             final res = await Dio(
               BaseOptions(
