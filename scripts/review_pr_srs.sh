@@ -74,5 +74,10 @@ PAYLOAD_TMP=$(mktemp)
     echo "$GIT_DIFF"
 } > "$PAYLOAD_TMP"
 
+if [[ "${ENABLE_GEMINI_REVIEW:-}" != "1" ]]; then
+    echo "ENABLE_GEMINI_REVIEW=1 is required to run this script (uploads SRS + diff to an external service)."
+    exit 2
+fi
+
 gemini -m "$MODEL_NAME" < "$PAYLOAD_TMP" > "$OUTPUT_REPORT"
 rm -f "$PROMPT_TMP" "$PAYLOAD_TMP"
