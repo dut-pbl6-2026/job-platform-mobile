@@ -21,7 +21,10 @@ void main() {
         '15.000.000 - 25.000.000 VNĐ',
       );
       expect(FormatUtils.formatSalaryRange(min: 20000000), 'Từ 20.000.000 VNĐ');
-      expect(FormatUtils.formatSalaryRange(max: 30000000), 'Tới 30.000.000 VNĐ');
+      expect(
+        FormatUtils.formatSalaryRange(max: 30000000),
+        'Tới 30.000.000 VNĐ',
+      );
     });
 
     test('timeAgo returns friendly Vietnamese text', () {
