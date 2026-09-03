@@ -60,3 +60,5 @@ docs/
 # Docs submodule / local reference repo
 job-platform-docs/
 template-prompt.md
+.github/workflows/gemini-pr-review.yml
+diff.txt

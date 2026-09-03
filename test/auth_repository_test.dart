@@ -2,12 +2,16 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:job_platform_mobile/core/session/auth_session.dart';
 import 'package:job_platform_mobile/features/auth/data/repositories/mock_auth_repository.dart';
 import 'package:job_platform_mobile/features/auth/domain/models/user_model.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   group('MockAuthRepository Tests', () {
     late MockAuthRepository repository;
 
     setUp(() {
+      SharedPreferences.setMockInitialValues({});
       AuthSession.instance.clearSession();
       repository = MockAuthRepository();
     });

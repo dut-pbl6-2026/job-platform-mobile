@@ -8,9 +8,9 @@ void main() {
     test(
       'formatVND correctly formats numbers with dots and currency symbol',
       () {
-        expect(FormatUtils.formatVND(15000000), '15.000.000 ₫');
-        expect(FormatUtils.formatVND(500000), '500.000 ₫');
-        expect(FormatUtils.formatVND(0), '0 ₫');
+        expect(FormatUtils.formatVND(15000000), '15.000.000 VNĐ');
+        expect(FormatUtils.formatVND(500000), '500.000 VNĐ');
+        expect(FormatUtils.formatVND(0), '0 VNĐ');
       },
     );
 
@@ -18,10 +18,13 @@ void main() {
       expect(FormatUtils.formatSalaryRange(isNegotiable: true), 'Thỏa thuận');
       expect(
         FormatUtils.formatSalaryRange(min: 15000000, max: 25000000),
-        '15.000.000 - 25.000.000 ₫',
+        '15.000.000 - 25.000.000 VNĐ',
       );
-      expect(FormatUtils.formatSalaryRange(min: 20000000), 'Từ 20.000.000 ₫');
-      expect(FormatUtils.formatSalaryRange(max: 30000000), 'Tới 30.000.000 ₫');
+      expect(FormatUtils.formatSalaryRange(min: 20000000), 'Từ 20.000.000 VNĐ');
+      expect(
+        FormatUtils.formatSalaryRange(max: 30000000),
+        'Tới 30.000.000 VNĐ',
+      );
     });
 
     test('timeAgo returns friendly Vietnamese text', () {

@@ -13,48 +13,64 @@ AuthFailure mapDioToFailure(DioException e) {
   final raw = detail ?? title ?? e.message ?? 'Unknown error';
 
   if (code == 401) {
-    if (raw.toLowerCase().contains('expired'))
+    if (raw.toLowerCase().contains('expired')) {
       return AuthFailure(
         code: AuthFailure.tokenExpired,
         statusCode: 401,
         rawMessage: raw,
       );
-    if (raw.toLowerCase().contains('revoked'))
+    }
+    if (raw.toLowerCase().contains('revoked')) {
       return AuthFailure(
         code: AuthFailure.tokenRevoked,
         statusCode: 401,
         rawMessage: raw,
       );
+    }
     return AuthFailure(
       code: AuthFailure.invalidCredentials,
       statusCode: 401,
       rawMessage: raw,
     );
   }
-  if (code == 409)
+  if (code == 409) {
     return AuthFailure(
       code: AuthFailure.emailExists,
       statusCode: 409,
       rawMessage: raw,
     );
-  if (code == 403)
+  }
+  if (code == 403) {
     return AuthFailure(
       code: AuthFailure.accountLocked,
       statusCode: 403,
       rawMessage: raw,
     );
-  if (code == 422)
+  }
+  if (code == 422) {
     return AuthFailure(
       code: AuthFailure.invalidCompanyId,
       statusCode: 422,
       rawMessage: raw,
     );
-  if (code == 400 && raw.toLowerCase().contains('password'))
-    return AuthFailure(
-      code: AuthFailure.weakPassword,
-      statusCode: 400,
-      rawMessage: raw,
-    );
+  }
+  if (code == 400) {
+    final lower = raw.toLowerCase();
+    if (lower.contains('password')) {
+      return AuthFailure(
+        code: AuthFailure.weakPassword,
+        statusCode: 400,
+        rawMessage: raw,
+      );
+    }
+    if (lower.contains('token')) {
+      return AuthFailure(
+        code: AuthFailure.invalidToken,
+        statusCode: 400,
+        rawMessage: raw,
+      );
+    }
+  }
   if (e.type == DioExceptionType.connectionTimeout ||
       e.type == DioExceptionType.receiveTimeout ||
       e.type == DioExceptionType.connectionError) {
@@ -87,6 +103,8 @@ String authFailureToMessage(AuthFailure f) {
       return 'Phiên đăng nhập đã hết hạn';
     case AuthFailure.tokenRevoked:
       return 'Phiên đăng nhập đã bị thu hồi, vui lòng đăng nhập lại';
+    case AuthFailure.invalidToken:
+      return 'Mã xác thực không hợp lệ hoặc đã hết hạn';
     case AuthFailure.networkError:
       return 'Lỗi kết nối mạng, vui lòng thử lại';
     default:

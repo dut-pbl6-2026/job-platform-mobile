@@ -24,7 +24,10 @@ class ApiAuthRepository implements IAuthRepository {
         '/api/auth/login',
         data: {'email': email, 'password': password, 'rememberMe': rememberMe},
       );
-      final auth = AuthResult.fromJson(res.data as Map<String, dynamic>);
+      final data = res.data is Map<String, dynamic>
+          ? res.data as Map<String, dynamic>
+          : Map<String, dynamic>.from(res.data as Map);
+      final auth = AuthResult.fromJson(data);
       await AuthSession.instance.setSession(auth);
       return auth;
     } on DioException catch (e) {
@@ -107,8 +110,9 @@ class ApiAuthRepository implements IAuthRepository {
   Future<void> logout() async {
     try {
       final rt = AuthSession.instance.refreshToken;
-      if (rt != null)
+      if (rt != null) {
         await _dio.post('/api/auth/logout', data: {'refreshToken': rt});
+      }
     } catch (_) {}
     await AuthSession.instance.clearSession();
   }
@@ -118,13 +122,20 @@ class ApiAuthRepository implements IAuthRepository {
     try {
       final res = await _dio.get('/api/auth/me');
       // backend returns UserMeDto {id,email,fullName,role,isActive}
-      final data = res.data as Map<String, dynamic>;
+      final data = res.data is Map<String, dynamic>
+          ? res.data as Map<String, dynamic>
+          : Map<String, dynamic>.from(res.data as Map);
       // Normalize to UserModel shape
-      return UserModel.fromJson(
-        data.containsKey('user') ? data['user'] as Map<String, dynamic> : data,
-      );
+      final userMap = data.containsKey('user') && data['user'] is Map
+          ? (data['user'] is Map<String, dynamic>
+                ? data['user'] as Map<String, dynamic>
+                : Map<String, dynamic>.from(data['user'] as Map))
+          : data;
+      return UserModel.fromJson(userMap);
     } on DioException catch (e) {
-      if (e.response?.statusCode == 401) return null;
+      if (e.response?.statusCode == 401) {
+        return null;
+      }
       throw mapDioToFailure(e);
     }
   }

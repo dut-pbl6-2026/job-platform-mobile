@@ -73,31 +73,53 @@ class DioProvider {
                 final retry = await d.fetch(err.requestOptions);
                 return handler.resolve(retry);
               }
-            } catch (_) {}
+            } on DioException catch (retryErr) {
+              return handler.next(retryErr);
+            } catch (_) {
+              return handler.next(err);
+            }
             return handler.next(err);
           }
 
           _isRefreshing = true;
           _refreshCompleter = Completer<void>();
+          late final AuthResult auth;
           try {
             final res = await Dio(
-              BaseOptions(baseUrl: _baseUrl),
+              BaseOptions(
+                baseUrl: _baseUrl,
+                connectTimeout: const Duration(seconds: 10),
+                receiveTimeout: const Duration(seconds: 10),
+                headers: {'Content-Type': 'application/json'},
+              ),
             ).post('/api/auth/refresh', data: {'refreshToken': refreshToken});
-            final auth = AuthResult.fromJson(res.data as Map<String, dynamic>);
+            final data = res.data is Map<String, dynamic>
+                ? res.data as Map<String, dynamic>
+                : Map<String, dynamic>.from(res.data as Map);
+            auth = AuthResult.fromJson(data);
             await AuthSession.instance.setSession(auth);
             _refreshCompleter?.complete();
-            // Retry original with new token
-            err.requestOptions.headers['Authorization'] =
-                'Bearer ${auth.token}';
-            final retry = await d.fetch(err.requestOptions);
-            return handler.resolve(retry);
           } catch (e) {
-            _refreshCompleter?.completeError(e);
+            if (!(_refreshCompleter?.isCompleted ?? true)) {
+              _refreshCompleter?.completeError(e);
+            }
             await AuthSession.instance.clearSession();
             return handler.next(err);
           } finally {
             _isRefreshing = false;
             _refreshCompleter = null;
+          }
+
+          // Retry original request with newly refreshed token
+          try {
+            err.requestOptions.headers['Authorization'] =
+                'Bearer ${auth.token}';
+            final retry = await d.fetch(err.requestOptions);
+            return handler.resolve(retry);
+          } on DioException catch (retryErr) {
+            return handler.next(retryErr);
+          } catch (_) {
+            return handler.next(err);
           }
         },
       ),
