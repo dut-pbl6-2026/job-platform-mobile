@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/app_theme.dart';
-import '../data/repositories/mock_job_repository.dart';
+import '../data/repositories/api_job_repository.dart';
 import '../domain/models/job_filter_params.dart';
 import '../domain/models/job_model.dart';
 import '../domain/repositories/job_repository.dart';
@@ -42,7 +42,7 @@ class _JobListScreenState extends State<JobListScreen> {
   @override
   void initState() {
     super.initState();
-    _jobRepository = widget.jobRepository ?? MockJobRepository();
+    _jobRepository = widget.jobRepository ?? ApiJobRepository();
     _scrollController.addListener(_onScroll);
     _fetchJobs();
   }

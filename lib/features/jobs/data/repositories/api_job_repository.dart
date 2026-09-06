@@ -14,7 +14,12 @@ class ApiJobRepository implements IJobRepository {
   final MockJobRepository _fallbackMockRepository = MockJobRepository();
   final HttpClient _httpClient = HttpClient();
 
-  ApiJobRepository({this.gatewayBaseUrl = 'http://localhost:5000'});
+  ApiJobRepository({
+    this.gatewayBaseUrl = const String.fromEnvironment(
+      'FLUTTER_API_URL',
+      defaultValue: 'http://localhost:5000',
+    ),
+  });
 
   @override
   Future<PaginatedJobs> getJobs(JobFilterParams params) async {
@@ -38,6 +43,15 @@ class ApiJobRepository implements IJobRepository {
       }
       if (params.experienceLevel != null) {
         queryParams['experienceLevel'] = params.experienceLevel!.value;
+      }
+      if (params.salaryMin != null) {
+        queryParams['minSalary'] = params.salaryMin.toString();
+      }
+      if (params.salaryMax != null) {
+        queryParams['maxSalary'] = params.salaryMax.toString();
+      }
+      if (params.sortBy.isNotEmpty) {
+        queryParams['sortBy'] = params.sortBy;
       }
 
       final uri = Uri.parse(
@@ -104,7 +118,34 @@ class ApiJobRepository implements IJobRepository {
   }
 
   @override
-  Future<List<String>> getSearchSuggestions(String query) {
+  Future<List<String>> getSearchSuggestions(String query) async {
+    final q = query.trim();
+    if (q.isEmpty) return _fallbackMockRepository.getSearchSuggestions(query);
+    try {
+      final uri = Uri.parse(
+        '$gatewayBaseUrl/api/search/suggest',
+      ).replace(queryParameters: {'q': q, 'limit': '8'});
+
+      final request = await _httpClient
+          .getUrl(uri)
+          .timeout(const Duration(seconds: 5));
+      request.headers.set('Accept', 'application/json');
+
+      final response = await request.close().timeout(
+        const Duration(seconds: 5),
+      );
+
+      if (response.statusCode == 200) {
+        final body = await response.transform(utf8.decoder).join();
+        final data = jsonDecode(body) as Map<String, dynamic>;
+        final items = data['items'] as List<dynamic>?;
+        if (items != null) {
+          return items.map((e) => e.toString()).toList();
+        }
+      }
+    } catch (e) {
+      debugPrint('[ApiJobRepository] Gateway suggest fallback: $e');
+    }
     return _fallbackMockRepository.getSearchSuggestions(query);
   }
 }
