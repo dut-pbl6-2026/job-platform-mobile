@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/router/app_router.dart';
 import '../../core/session/auth_session.dart';
 import '../../core/theme/app_theme.dart';
-import '../auth/data/repositories/mock_auth_repository.dart';
+import '../auth/data/repositories/api_auth_repository.dart';
 import '../auth/domain/models/user_model.dart';
 import '../auth/domain/repositories/auth_repository.dart';
 
@@ -25,7 +25,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _authRepository = widget.authRepository ?? MockAuthRepository();
+    _authRepository = widget.authRepository ?? ApiAuthRepository();
   }
 
   Future<void> _handleLogout() async {
@@ -190,7 +190,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         Expanded(
                           child: Text(
                             token != null
-                                ? 'Mock JWT: ${token.substring(0, 24)}...'
+                                ? 'JWT: ${token.substring(0, 24)}...'
                                 : 'Chưa có Token',
                             style: const TextStyle(
                               color: Colors.white70,
