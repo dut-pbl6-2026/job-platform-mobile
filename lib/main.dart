@@ -10,7 +10,7 @@ void main() async {
   await AuthSession.instance.load();
 
   // Lock orientation to portrait (per SRS 7.2.2 - Portrait primary)
-  SystemChrome.setPreferredOrientations([
+  await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
   ]);

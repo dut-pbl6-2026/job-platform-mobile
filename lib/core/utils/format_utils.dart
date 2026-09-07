@@ -4,7 +4,7 @@ class FormatUtils {
   FormatUtils._();
 
   /// Formats a single numeric amount to Vietnamese Dong string with thousand dot separators.
-  /// Example: `15000000` -> `15.000.000 ₫`
+  /// Example: `15000000` -> `15.000.000 VNĐ`
   static String formatVND(num amount) {
     final intAmount = amount.round();
     final buffer = StringBuffer();
@@ -19,14 +19,14 @@ class FormatUtils {
     }
 
     final prefix = intAmount < 0 ? '-' : '';
-    return '$prefix$buffer ₫';
+    return '$prefix$buffer VNĐ';
   }
 
   /// Formats salary range into user-friendly Vietnamese text.
   /// Examples:
-  /// - `min = 15_000_000, max = 25_000_000` -> `15.000.000 - 25.000.000 ₫`
-  /// - `min = 20_000_000, max = null` -> `Từ 20.000.000 ₫`
-  /// - `min = null, max = 30_000_000` -> `Tới 30.000.000 ₫`
+  /// - `min = 15_000_000, max = 25_000_000` -> `15.000.000 - 25.000.000 VNĐ`
+  /// - `min = 20_000_000, max = null` -> `Từ 20.000.000 VNĐ`
+  /// - `min = null, max = 30_000_000` -> `Tới 30.000.000 VNĐ`
   /// - `isNegotiable = true` or both null -> `Thỏa thuận`
   static String formatSalaryRange({
     num? min,

@@ -26,9 +26,12 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   }
 
   String? _validate(String? v) {
-    if (v == null || v.trim().isEmpty) return 'Vui lòng nhập email';
-    if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(v.trim()))
+    if (v == null || v.trim().isEmpty) {
+      return 'Vui lòng nhập email';
+    }
+    if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(v.trim())) {
       return 'Email không đúng định dạng';
+    }
     return null;
   }
 
