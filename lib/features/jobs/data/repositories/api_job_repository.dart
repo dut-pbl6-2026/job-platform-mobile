@@ -137,8 +137,11 @@ class ApiJobRepository implements IJobRepository {
 
       if (response.statusCode == 200) {
         final body = await response.transform(utf8.decoder).join();
-        final data = jsonDecode(body) as Map<String, dynamic>;
-        final items = data['items'] as List<dynamic>?;
+        final decoded = jsonDecode(body);
+        // API returns a bare array; tolerate { items: [...] } envelope too.
+        final List<dynamic>? items = decoded is List<dynamic>
+            ? decoded
+            : (decoded as Map<String, dynamic>)['items'] as List<dynamic>?;
         if (items != null) {
           return items.map((e) => e.toString()).toList();
         }
