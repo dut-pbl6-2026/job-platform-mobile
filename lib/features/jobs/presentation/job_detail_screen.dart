@@ -12,6 +12,7 @@ import 'widgets/job_detail_bottom_bar.dart';
 import 'widgets/job_detail_content.dart';
 import 'widgets/job_detail_header.dart';
 import 'widgets/job_detail_shimmer_loading.dart';
+import '../../applications/presentation/apply_job_screen.dart';
 
 /// Job Detail Screen (MOB-01-03, JOB-01-05)
 class JobDetailScreen extends StatefulWidget {
@@ -167,91 +168,13 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
   }
 
   void _showApplyBottomSheet() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(24),
-        decoration: const BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: AppColors.border,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Ứng tuyển: ${_job!.title}',
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              _job!.companyName,
-              style: const TextStyle(
-                fontSize: 14,
-                color: AppColors.textSecondary,
-              ),
-            ),
-            const SizedBox(height: 20),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.06),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                  color: AppColors.primary.withValues(alpha: 0.2),
-                ),
-              ),
-              child: const Row(
-                children: [
-                  Icon(Icons.info_outline_rounded, color: AppColors.primary),
-                  SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      'Hồ sơ của bạn sẽ được gửi trực tiếp đến bộ phận tuyển dụng.',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: AppColors.primary,
-                        height: 1.4,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    backgroundColor: AppColors.success,
-                    content: Text(
-                      'Đã nộp hồ sơ ứng tuyển vào ${_job!.companyName} thành công!',
-                    ),
-                  ),
-                );
-              },
-              child: const Text('Xác nhận nộp hồ sơ'),
-            ),
-            const SizedBox(height: 12),
-          ],
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => ApplyJobScreen(
+          jobId: _job!.id,
+          jobTitle: _job!.title,
+          companyName: _job!.companyName,
+          companyLogo: _job!.companyLogo,
         ),
       ),
     );

@@ -240,8 +240,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         context,
                         week: 'Tuần 3',
                         title: 'Nộp CV & Hồ sơ ứng viên',
-                        status: 'Kế hoạch',
-                        isDone: false,
+                        status: 'Đã hoàn thành',
+                        isDone: true,
                       ),
                       const Divider(height: 20),
                       _buildRoadmapItem(
@@ -290,12 +290,24 @@ class _HomeScreenState extends State<HomeScreen> {
                       subtitle: 'Thông tin & CV',
                       color: AppColors.secondary,
                       onTap: () {
-                        // TODO(W2-BACKEND): Deferred to Week 2/3 pending Database schema and API endpoints for User Profile & CV Upload (MOB-01-07).
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Tính năng sẽ ra mắt ở Tuần 3!'),
-                          ),
-                        );
+                        context.push(AppRoutes.profile);
+                      },
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildActionCard(
+                      context,
+                      icon: Icons.history_edu_rounded,
+                      title: 'Lịch sử ứng tuyển',
+                      subtitle: 'Theo dõi tiến độ',
+                      color: const Color(0xFF8B5CF6),
+                      onTap: () {
+                        context.push(AppRoutes.applications);
                       },
                     ),
                   ),
