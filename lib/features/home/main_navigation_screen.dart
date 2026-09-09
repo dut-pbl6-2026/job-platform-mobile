@@ -10,10 +10,7 @@ import 'home_screen.dart';
 class MainNavigationScreen extends StatefulWidget {
   final int initialIndex;
 
-  const MainNavigationScreen({
-    super.key,
-    this.initialIndex = 0,
-  });
+  const MainNavigationScreen({super.key, this.initialIndex = 0});
 
   @override
   State<MainNavigationScreen> createState() => _MainNavigationScreenState();
@@ -38,10 +35,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _screens,
-      ),
+      body: IndexedStack(index: _currentIndex, children: _screens),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
         onDestinationSelected: (index) {
@@ -63,7 +57,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           ),
           NavigationDestination(
             icon: Icon(Icons.history_edu_outlined),
-            selectedIcon: Icon(Icons.history_edu_rounded, color: AppColors.primary),
+            selectedIcon: Icon(
+              Icons.history_edu_rounded,
+              color: AppColors.primary,
+            ),
             label: 'Ứng tuyển',
           ),
           NavigationDestination(

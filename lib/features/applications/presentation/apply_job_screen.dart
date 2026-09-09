@@ -118,7 +118,9 @@ class _ApplyJobScreenState extends State<ApplyJobScreen> {
         context: context,
         barrierDismissible: false,
         builder: (dialogContext) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
           contentPadding: const EdgeInsets.all(24),
           content: Column(
             mainAxisSize: MainAxisSize.min,
@@ -336,10 +338,7 @@ class _ApplyJobScreenState extends State<ApplyJobScreen> {
               const SizedBox(height: 4),
               const Text(
                 'Hỗ trợ định dạng PDF, DOC, DOCX (Dung lượng tối đa 10MB)',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: AppColors.textHint,
-                ),
+                style: TextStyle(fontSize: 12, color: AppColors.textHint),
               ),
               const SizedBox(height: 10),
 
@@ -349,7 +348,10 @@ class _ApplyJobScreenState extends State<ApplyJobScreen> {
                   borderRadius: BorderRadius.circular(16),
                   child: Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 16),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 28,
+                      horizontal: 16,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(16),
@@ -401,7 +403,9 @@ class _ApplyJobScreenState extends State<ApplyJobScreen> {
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: AppColors.success.withValues(alpha: 0.5)),
+                    border: Border.all(
+                      color: AppColors.success.withValues(alpha: 0.5),
+                    ),
                   ),
                   child: Row(
                     children: [
@@ -444,12 +448,18 @@ class _ApplyJobScreenState extends State<ApplyJobScreen> {
                         ),
                       ),
                       IconButton(
-                        icon: const Icon(Icons.refresh_rounded, color: AppColors.primary),
+                        icon: const Icon(
+                          Icons.refresh_rounded,
+                          color: AppColors.primary,
+                        ),
                         tooltip: 'Đổi file khác',
                         onPressed: _handlePickCv,
                       ),
                       IconButton(
-                        icon: const Icon(Icons.delete_outline_rounded, color: AppColors.error),
+                        icon: const Icon(
+                          Icons.delete_outline_rounded,
+                          color: AppColors.error,
+                        ),
                         tooltip: 'Xóa file',
                         onPressed: () {
                           setState(() => _selectedFile = null);
@@ -505,14 +515,25 @@ class _ApplyJobScreenState extends State<ApplyJobScreen> {
                 runSpacing: 8,
                 children: _quickSuggestions.map((suggestion) {
                   return ActionChip(
-                    avatar: const Icon(Icons.add, size: 14, color: AppColors.primary),
+                    avatar: const Icon(
+                      Icons.add,
+                      size: 14,
+                      color: AppColors.primary,
+                    ),
                     label: Text(
                       suggestion,
-                      style: const TextStyle(fontSize: 11, color: AppColors.primary),
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: AppColors.primary,
+                      ),
                     ),
                     backgroundColor: AppColors.primary.withValues(alpha: 0.06),
-                    side: BorderSide(color: AppColors.primary.withValues(alpha: 0.2)),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                    side: BorderSide(
+                      color: AppColors.primary.withValues(alpha: 0.2),
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
                     onPressed: () => _addSuggestion(suggestion),
                   );
                 }).toList(),
@@ -527,11 +548,17 @@ class _ApplyJobScreenState extends State<ApplyJobScreen> {
                   decoration: BoxDecoration(
                     color: AppColors.error.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
+                    border: Border.all(
+                      color: AppColors.error.withValues(alpha: 0.3),
+                    ),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.error_outline_rounded, color: AppColors.error, size: 20),
+                      const Icon(
+                        Icons.error_outline_rounded,
+                        color: AppColors.error,
+                        size: 20,
+                      ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
@@ -570,7 +597,10 @@ class _ApplyJobScreenState extends State<ApplyJobScreen> {
                       )
                     : const Text(
                         'Nộp hồ sơ ứng tuyển',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
               ),
 
@@ -593,10 +623,7 @@ class _ApplyJobScreenState extends State<ApplyJobScreen> {
         const SizedBox(width: 10),
         Text(
           '$label:',
-          style: const TextStyle(
-            fontSize: 13,
-            color: AppColors.textSecondary,
-          ),
+          style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
         ),
         const SizedBox(width: 8),
         Expanded(

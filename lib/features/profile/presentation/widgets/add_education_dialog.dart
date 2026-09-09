@@ -6,10 +6,7 @@ import '../../domain/models/profile_model.dart';
 class AddEducationDialog extends StatefulWidget {
   final ValueChanged<EducationModel> onAdd;
 
-  const AddEducationDialog({
-    super.key,
-    required this.onAdd,
-  });
+  const AddEducationDialog({super.key, required this.onAdd});
 
   @override
   State<AddEducationDialog> createState() => _AddEducationDialogState();
@@ -100,30 +97,44 @@ class _AddEducationDialogState extends State<AddEducationDialog> {
                   const SizedBox(height: 14),
 
                   // Institution
-                  const Text('Trường đào tạo / Viện nghiên cứu *', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                  const Text(
+                    'Trường đào tạo / Viện nghiên cứu *',
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                  ),
                   const SizedBox(height: 6),
                   TextFormField(
                     controller: _institutionController,
                     decoration: InputDecoration(
                       hintText: 'VD: Đại học Bách Khoa - ĐH Đà Nẵng',
                       isDense: true,
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
-                    validator: (v) => v?.trim().isEmpty == true ? 'Vui lòng nhập trường đào tạo' : null,
+                    validator: (v) => v?.trim().isEmpty == true
+                        ? 'Vui lòng nhập trường đào tạo'
+                        : null,
                   ),
 
                   const SizedBox(height: 12),
 
                   // Degree dropdown / text
-                  const Text('Bằng cấp *', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                  const Text(
+                    'Bằng cấp *',
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                  ),
                   const SizedBox(height: 6),
                   DropdownButtonFormField<String>(
                     initialValue: _degreeController.text,
                     decoration: InputDecoration(
                       isDense: true,
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
-                    items: _commonDegrees.map((d) => DropdownMenuItem(value: d, child: Text(d))).toList(),
+                    items: _commonDegrees
+                        .map((d) => DropdownMenuItem(value: d, child: Text(d)))
+                        .toList(),
                     onChanged: (v) {
                       if (v != null) _degreeController.text = v;
                     },
@@ -132,16 +143,23 @@ class _AddEducationDialogState extends State<AddEducationDialog> {
                   const SizedBox(height: 12),
 
                   // Field of Study
-                  const Text('Chuyên ngành *', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                  const Text(
+                    'Chuyên ngành *',
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                  ),
                   const SizedBox(height: 6),
                   TextFormField(
                     controller: _fieldController,
                     decoration: InputDecoration(
                       hintText: 'VD: Kỹ thuật Phần mềm, Khoa học Máy tính',
                       isDense: true,
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
-                    validator: (v) => v?.trim().isEmpty == true ? 'Vui lòng nhập chuyên ngành' : null,
+                    validator: (v) => v?.trim().isEmpty == true
+                        ? 'Vui lòng nhập chuyên ngành'
+                        : null,
                   ),
 
                   const SizedBox(height: 12),
@@ -153,17 +171,28 @@ class _AddEducationDialogState extends State<AddEducationDialog> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text('Năm bắt đầu', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                            const Text(
+                              'Năm bắt đầu',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
                             const SizedBox(height: 4),
                             DropdownButtonFormField<int>(
                               initialValue: _startYear,
                               decoration: InputDecoration(
                                 isDense: true,
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
                               ),
                               items: List.generate(20, (index) {
                                 final year = DateTime.now().year - index;
-                                return DropdownMenuItem(value: year, child: Text(year.toString()));
+                                return DropdownMenuItem(
+                                  value: year,
+                                  child: Text(year.toString()),
+                                );
                               }),
                               onChanged: (y) {
                                 if (y != null) setState(() => _startYear = y);
@@ -177,17 +206,28 @@ class _AddEducationDialogState extends State<AddEducationDialog> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text('Năm tốt nghiệp', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                            const Text(
+                              'Năm tốt nghiệp',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
                             const SizedBox(height: 4),
                             DropdownButtonFormField<int>(
                               initialValue: _endYear,
                               decoration: InputDecoration(
                                 isDense: true,
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
                               ),
                               items: List.generate(20, (index) {
                                 final year = DateTime.now().year + 5 - index;
-                                return DropdownMenuItem(value: year, child: Text(year.toString()));
+                                return DropdownMenuItem(
+                                  value: year,
+                                  child: Text(year.toString()),
+                                );
                               }),
                               onChanged: (y) {
                                 if (y != null) setState(() => _endYear = y);
@@ -202,14 +242,19 @@ class _AddEducationDialogState extends State<AddEducationDialog> {
                   const SizedBox(height: 12),
 
                   // Grade
-                  const Text('Xếp loại tốt nghiệp / GPA', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                  const Text(
+                    'Xếp loại tốt nghiệp / GPA',
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                  ),
                   const SizedBox(height: 6),
                   TextFormField(
                     controller: _gradeController,
                     decoration: InputDecoration(
                       hintText: 'VD: Xuất sắc, Giỏi (GPA 3.5/4.0)',
                       isDense: true,
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
                   ),
 

@@ -6,10 +6,7 @@ import '../../domain/models/profile_model.dart';
 class AddSkillDialog extends StatefulWidget {
   final ValueChanged<SkillModel> onAdd;
 
-  const AddSkillDialog({
-    super.key,
-    required this.onAdd,
-  });
+  const AddSkillDialog({super.key, required this.onAdd});
 
   @override
   State<AddSkillDialog> createState() => _AddSkillDialogState();
@@ -127,14 +124,20 @@ class _AddSkillDialogState extends State<AddSkillDialog> {
                         },
                         borderRadius: BorderRadius.circular(16),
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
                           decoration: BoxDecoration(
                             color: AppColors.primary.withValues(alpha: 0.08),
                             borderRadius: BorderRadius.circular(16),
                           ),
                           child: Text(
                             '+ $skill',
-                            style: const TextStyle(fontSize: 11, color: AppColors.primary),
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: AppColors.primary,
+                            ),
                           ),
                         ),
                       );
@@ -154,7 +157,9 @@ class _AddSkillDialogState extends State<AddSkillDialog> {
                       final starValue = index + 1;
                       return IconButton(
                         icon: Icon(
-                          starValue <= _proficiency ? Icons.star_rounded : Icons.star_border_rounded,
+                          starValue <= _proficiency
+                              ? Icons.star_rounded
+                              : Icons.star_border_rounded,
                           color: const Color(0xFFF59E0B),
                           size: 32,
                         ),
@@ -174,13 +179,19 @@ class _AddSkillDialogState extends State<AddSkillDialog> {
                       const Expanded(
                         child: Text(
                           'Số năm kinh nghiệm:',
-                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
                       Row(
                         children: [
                           IconButton(
-                            icon: const Icon(Icons.remove_circle_outline, color: AppColors.primary),
+                            icon: const Icon(
+                              Icons.remove_circle_outline,
+                              color: AppColors.primary,
+                            ),
                             onPressed: _yearsOfExperience > 1
                                 ? () => setState(() => _yearsOfExperience--)
                                 : null,
@@ -194,8 +205,12 @@ class _AddSkillDialogState extends State<AddSkillDialog> {
                             ),
                           ),
                           IconButton(
-                            icon: const Icon(Icons.add_circle_outline, color: AppColors.primary),
-                            onPressed: () => setState(() => _yearsOfExperience++),
+                            icon: const Icon(
+                              Icons.add_circle_outline,
+                              color: AppColors.primary,
+                            ),
+                            onPressed: () =>
+                                setState(() => _yearsOfExperience++),
                           ),
                         ],
                       ),

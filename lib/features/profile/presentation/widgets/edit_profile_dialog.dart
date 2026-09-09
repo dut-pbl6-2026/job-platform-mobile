@@ -30,10 +30,16 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.profile.fullName);
-    _headlineController = TextEditingController(text: widget.profile.headline ?? '');
+    _headlineController = TextEditingController(
+      text: widget.profile.headline ?? '',
+    );
     _phoneController = TextEditingController(text: widget.profile.phone ?? '');
-    _addressController = TextEditingController(text: widget.profile.address ?? '');
-    _summaryController = TextEditingController(text: widget.profile.summary ?? '');
+    _addressController = TextEditingController(
+      text: widget.profile.address ?? '',
+    );
+    _summaryController = TextEditingController(
+      text: widget.profile.summary ?? '',
+    );
   }
 
   @override
@@ -141,7 +147,8 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
                         _buildTextField(
                           controller: _summaryController,
                           label: 'Tóm tắt bản thân (Bio / Summary)',
-                          hint: 'Mô tả ngắn gọn về kinh nghiệm, mục tiêu và định hướng nghề nghiệp...',
+                          hint:
+                              'Mô tả ngắn gọn về kinh nghiệm, mục tiêu và định hướng nghề nghiệp...',
                           maxLines: 4,
                         ),
                       ],

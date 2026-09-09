@@ -7,7 +7,8 @@ import '../../domain/repositories/application_repository.dart';
 /// Seeded with rich Vietnamese job applications across various stages (APP-01, MOB-01-06)
 class MockApplicationRepository implements IApplicationRepository {
   // Singleton instance to share application state across screens during a session
-  static final MockApplicationRepository _instance = MockApplicationRepository._internal();
+  static final MockApplicationRepository _instance =
+      MockApplicationRepository._internal();
   factory MockApplicationRepository() => _instance;
   MockApplicationRepository._internal() {
     _initSeedData();
@@ -37,7 +38,8 @@ class MockApplicationRepository implements IApplicationRepository {
         cvFileName: 'Nguyen_Van_An_CV_Flutter.pdf',
         cvFileSize: 450 * 1024,
         status: ApplicationStatus.reviewed,
-        recruiterNotes: 'Hồ sơ chuyên môn tốt. Đang sắp xếp lịch phỏng vấn kỹ thuật vòng 1.',
+        recruiterNotes:
+            'Hồ sơ chuyên môn tốt. Đang sắp xếp lịch phỏng vấn kỹ thuật vòng 1.',
         score: 8.8,
         createdAt: now.subtract(const Duration(days: 2, hours: 3)),
         updatedAt: now.subtract(const Duration(days: 1)),
@@ -71,7 +73,8 @@ class MockApplicationRepository implements IApplicationRepository {
         cvFileName: 'Nguyen_Van_An_Backend_Golang.pdf',
         cvFileSize: 380 * 1024,
         status: ApplicationStatus.shortlisted,
-        recruiterNotes: 'Kỹ năng Golang và Microservices phù hợp với team ZaloPay Core.',
+        recruiterNotes:
+            'Kỹ năng Golang và Microservices phù hợp với team ZaloPay Core.',
         score: 9.2,
         createdAt: now.subtract(const Duration(days: 5)),
         updatedAt: now.subtract(const Duration(days: 2)),
@@ -110,7 +113,8 @@ class MockApplicationRepository implements IApplicationRepository {
         cvFileName: 'Nguyen_Van_An_Lead_Resume.pdf',
         cvFileSize: 520 * 1024,
         status: ApplicationStatus.accepted,
-        recruiterNotes: 'Đã hoàn tất phỏng vấn văn hóa và chuyên môn. Đã gửi Offer Letter.',
+        recruiterNotes:
+            'Đã hoàn tất phỏng vấn văn hóa và chuyên môn. Đã gửi Offer Letter.',
         score: 9.5,
         createdAt: now.subtract(const Duration(days: 12)),
         updatedAt: now.subtract(const Duration(days: 1)),
@@ -132,7 +136,8 @@ class MockApplicationRepository implements IApplicationRepository {
           ),
           ApplicationStatusHistoryItem(
             status: ApplicationStatus.accepted,
-            note: 'Chúc mừng bạn đã trúng tuyển! Kiểm tra email để nhận Thư mời nhận việc.',
+            note:
+                'Chúc mừng bạn đã trúng tuyển! Kiểm tra email để nhận Thư mời nhận việc.',
             changedAt: now.subtract(const Duration(days: 1)),
             changedBy: 'Giám đốc Nhân sự',
           ),
@@ -154,7 +159,8 @@ class MockApplicationRepository implements IApplicationRepository {
         cvFileName: 'Nguyen_Van_An_AI_CV.pdf',
         cvFileSize: 610 * 1024,
         status: ApplicationStatus.rejected,
-        recruiterNotes: 'Vị trí hiện tại ưu tiên ứng viên có bằng Tiến sĩ chuyên ngành AI.',
+        recruiterNotes:
+            'Vị trí hiện tại ưu tiên ứng viên có bằng Tiến sĩ chuyên ngành AI.',
         score: 7.0,
         createdAt: now.subtract(const Duration(days: 20)),
         updatedAt: now.subtract(const Duration(days: 15)),
@@ -181,9 +187,13 @@ class MockApplicationRepository implements IApplicationRepository {
     await Future.delayed(const Duration(milliseconds: 600));
 
     // Duplicate prevention check (APP-01-02)
-    final alreadyApplied = _applications.any((app) => app.jobId == params.jobId);
+    final alreadyApplied = _applications.any(
+      (app) => app.jobId == params.jobId,
+    );
     if (alreadyApplied) {
-      throw Exception('Bạn đã nộp hồ sơ cho vị trí này rồi. Vui lòng kiểm tra lịch sử ứng tuyển.');
+      throw Exception(
+        'Bạn đã nộp hồ sơ cho vị trí này rồi. Vui lòng kiểm tra lịch sử ứng tuyển.',
+      );
     }
 
     final currentUser = AuthSession.instance.currentUser;
@@ -238,7 +248,9 @@ class MockApplicationRepository implements IApplicationRepository {
     if (start >= filtered.length) {
       return [];
     }
-    final end = (start + size < filtered.length) ? start + size : filtered.length;
+    final end = (start + size < filtered.length)
+        ? start + size
+        : filtered.length;
     return filtered.sublist(start, end);
   }
 

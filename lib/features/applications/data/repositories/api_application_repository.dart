@@ -10,7 +10,8 @@ import 'mock_application_repository.dart';
 /// Prohibits direct access to internal microservice ports.
 class ApiApplicationRepository implements IApplicationRepository {
   final Dio _dio;
-  final MockApplicationRepository _fallbackMockRepository = MockApplicationRepository();
+  final MockApplicationRepository _fallbackMockRepository =
+      MockApplicationRepository();
 
   ApiApplicationRepository({Dio? dio}) : _dio = dio ?? DioProvider.instance.dio;
 
@@ -36,9 +37,7 @@ class ApiApplicationRepository implements IApplicationRepository {
       final response = await _dio.post(
         '/api/applications',
         data: formData,
-        options: Options(
-          contentType: 'multipart/form-data',
-        ),
+        options: Options(contentType: 'multipart/form-data'),
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
@@ -49,11 +48,17 @@ class ApiApplicationRepository implements IApplicationRepository {
       }
     } on DioException catch (e) {
       if (e.response?.statusCode == 409) {
-        throw Exception('Bạn đã nộp hồ sơ cho vị trí này rồi. Vui lòng kiểm tra lịch sử ứng tuyển.');
+        throw Exception(
+          'Bạn đã nộp hồ sơ cho vị trí này rồi. Vui lòng kiểm tra lịch sử ứng tuyển.',
+        );
       }
-      debugPrint('[ApiApplicationRepository] Gateway application fallback: ${e.message}');
+      debugPrint(
+        '[ApiApplicationRepository] Gateway application fallback: ${e.message}',
+      );
     } catch (e) {
-      debugPrint('[ApiApplicationRepository] Unexpected error, falling back to mock: $e');
+      debugPrint(
+        '[ApiApplicationRepository] Unexpected error, falling back to mock: $e',
+      );
     }
 
     // Graceful fallback to Mock repository if Gateway is offline during development
@@ -87,11 +92,15 @@ class ApiApplicationRepository implements IApplicationRepository {
           items = data;
         }
         return items
-            .map((item) => ApplicationModel.fromJson(item as Map<String, dynamic>))
+            .map(
+              (item) => ApplicationModel.fromJson(item as Map<String, dynamic>),
+            )
             .toList();
       }
     } catch (e) {
-      debugPrint('[ApiApplicationRepository] Gateway applications/me fallback: $e');
+      debugPrint(
+        '[ApiApplicationRepository] Gateway applications/me fallback: $e',
+      );
     }
 
     return _fallbackMockRepository.getMyApplications(
@@ -112,7 +121,9 @@ class ApiApplicationRepository implements IApplicationRepository {
         return ApplicationModel.fromJson(data);
       }
     } catch (e) {
-      debugPrint('[ApiApplicationRepository] Gateway applications/$id fallback: $e');
+      debugPrint(
+        '[ApiApplicationRepository] Gateway applications/$id fallback: $e',
+      );
     }
 
     return _fallbackMockRepository.getApplicationById(id);

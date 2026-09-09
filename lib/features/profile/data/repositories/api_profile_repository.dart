@@ -91,7 +91,9 @@ class ApiProfileRepository implements IProfileRepository {
   }
 
   @override
-  Future<WorkExperienceModel> addExperience(WorkExperienceModel experience) async {
+  Future<WorkExperienceModel> addExperience(
+    WorkExperienceModel experience,
+  ) async {
     try {
       final response = await _dio.post(
         '/api/profile/experience',
@@ -120,10 +122,14 @@ class ApiProfileRepository implements IProfileRepository {
   @override
   Future<void> deleteExperience(String experienceId) async {
     try {
-      final response = await _dio.delete('/api/profile/experience/$experienceId');
+      final response = await _dio.delete(
+        '/api/profile/experience/$experienceId',
+      );
       if (response.statusCode == 200) return;
     } catch (e) {
-      debugPrint('[ApiProfileRepository] Gateway deleteExperience fallback: $e');
+      debugPrint(
+        '[ApiProfileRepository] Gateway deleteExperience fallback: $e',
+      );
     }
     await _fallbackMockRepository.deleteExperience(experienceId);
   }

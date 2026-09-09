@@ -7,7 +7,8 @@ import '../../domain/repositories/profile_repository.dart';
 /// Seeded with rich Vietnamese candidate profile data (PROFILE-01, MOB-01-05)
 class MockProfileRepository implements IProfileRepository {
   // Singleton instance to share profile changes across screens in current session
-  static final MockProfileRepository _instance = MockProfileRepository._internal();
+  static final MockProfileRepository _instance =
+      MockProfileRepository._internal();
   factory MockProfileRepository() => _instance;
   MockProfileRepository._internal() {
     _initSeedProfile();
@@ -133,7 +134,9 @@ class MockProfileRepository implements IProfileRepository {
   @override
   Future<void> deleteSkill(String skillId) async {
     await Future.delayed(const Duration(milliseconds: 200));
-    final updatedSkills = _profile.skills.where((s) => s.id != skillId).toList();
+    final updatedSkills = _profile.skills
+        .where((s) => s.id != skillId)
+        .toList();
     _profile = _profile.copyWith(
       skills: updatedSkills,
       updatedAt: DateTime.now(),
@@ -141,14 +144,19 @@ class MockProfileRepository implements IProfileRepository {
   }
 
   @override
-  Future<WorkExperienceModel> addExperience(WorkExperienceModel experience) async {
+  Future<WorkExperienceModel> addExperience(
+    WorkExperienceModel experience,
+  ) async {
     await Future.delayed(const Duration(milliseconds: 250));
     final newExp = experience.id.isEmpty
-        ? experience.copyWith(id: 'exp-${DateTime.now().millisecondsSinceEpoch}')
+        ? experience.copyWith(
+            id: 'exp-${DateTime.now().millisecondsSinceEpoch}',
+          )
         : experience;
 
-    final updatedExperiences = List<WorkExperienceModel>.from(_profile.experiences)
-      ..insert(0, newExp);
+    final updatedExperiences = List<WorkExperienceModel>.from(
+      _profile.experiences,
+    )..insert(0, newExp);
     _profile = _profile.copyWith(
       experiences: updatedExperiences,
       updatedAt: DateTime.now(),
@@ -159,8 +167,9 @@ class MockProfileRepository implements IProfileRepository {
   @override
   Future<void> deleteExperience(String experienceId) async {
     await Future.delayed(const Duration(milliseconds: 200));
-    final updatedExperiences =
-        _profile.experiences.where((e) => e.id != experienceId).toList();
+    final updatedExperiences = _profile.experiences
+        .where((e) => e.id != experienceId)
+        .toList();
     _profile = _profile.copyWith(
       experiences: updatedExperiences,
       updatedAt: DateTime.now(),
@@ -186,8 +195,9 @@ class MockProfileRepository implements IProfileRepository {
   @override
   Future<void> deleteEducation(String educationId) async {
     await Future.delayed(const Duration(milliseconds: 200));
-    final updatedEducations =
-        _profile.educations.where((e) => e.id != educationId).toList();
+    final updatedEducations = _profile.educations
+        .where((e) => e.id != educationId)
+        .toList();
     _profile = _profile.copyWith(
       educations: updatedEducations,
       updatedAt: DateTime.now(),

@@ -14,20 +14,19 @@ class ApiJobRepository implements IJobRepository {
   final Dio _dio;
   final MockJobRepository _fallbackMockRepository = MockJobRepository();
 
-  ApiJobRepository({
-    Dio? dio,
-    String? gatewayBaseUrl,
-  }) : _dio = dio ??
-            (gatewayBaseUrl != null && gatewayBaseUrl.isNotEmpty
-                ? Dio(
-                    BaseOptions(
-                      baseUrl: gatewayBaseUrl,
-                      connectTimeout: const Duration(seconds: 5),
-                      receiveTimeout: const Duration(seconds: 5),
-                      headers: {'Accept': 'application/json'},
-                    ),
-                  )
-                : DioProvider.instance.dio);
+  ApiJobRepository({Dio? dio, String? gatewayBaseUrl})
+    : _dio =
+          dio ??
+          (gatewayBaseUrl != null && gatewayBaseUrl.isNotEmpty
+              ? Dio(
+                  BaseOptions(
+                    baseUrl: gatewayBaseUrl,
+                    connectTimeout: const Duration(seconds: 5),
+                    receiveTimeout: const Duration(seconds: 5),
+                    headers: {'Accept': 'application/json'},
+                  ),
+                )
+              : DioProvider.instance.dio);
 
   @override
   Future<PaginatedJobs> getJobs(JobFilterParams params) async {
@@ -82,11 +81,15 @@ class ApiJobRepository implements IJobRepository {
           data = jsonDecode(response.data.toString()) as Map<String, dynamic>;
         }
 
-        final items = (data['items'] as List<dynamic>?)
-                ?.map((item) => JobModel.fromJson(
+        final items =
+            (data['items'] as List<dynamic>?)
+                ?.map(
+                  (item) => JobModel.fromJson(
                     item is Map<String, dynamic>
                         ? item
-                        : Map<String, dynamic>.from(item as Map)))
+                        : Map<String, dynamic>.from(item as Map),
+                  ),
+                )
                 .toList() ??
             [];
 

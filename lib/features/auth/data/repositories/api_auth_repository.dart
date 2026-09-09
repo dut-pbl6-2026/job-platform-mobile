@@ -38,14 +38,18 @@ class ApiAuthRepository implements IAuthRepository {
       if (e.response != null && e.response!.statusCode != null) {
         throw mapDioToFailure(e);
       }
-      debugPrint('[ApiAuthRepository] Gateway offline or CORS blocked, falling back to mock: ${e.message}');
+      debugPrint(
+        '[ApiAuthRepository] Gateway offline or CORS blocked, falling back to mock: ${e.message}',
+      );
       return _fallbackMockRepository.login(
         email: email,
         password: password,
         rememberMe: rememberMe,
       );
     } catch (e) {
-      debugPrint('[ApiAuthRepository] Unexpected error, falling back to mock: $e');
+      debugPrint(
+        '[ApiAuthRepository] Unexpected error, falling back to mock: $e',
+      );
       return _fallbackMockRepository.login(
         email: email,
         password: password,
@@ -91,7 +95,9 @@ class ApiAuthRepository implements IAuthRepository {
       if (e.response != null && e.response!.statusCode != null) {
         throw mapDioToFailure(e);
       }
-      debugPrint('[ApiAuthRepository] Gateway offline or CORS blocked during register, falling back to mock: ${e.message}');
+      debugPrint(
+        '[ApiAuthRepository] Gateway offline or CORS blocked during register, falling back to mock: ${e.message}',
+      );
       return _fallbackMockRepository.register(
         name: name,
         email: email,
@@ -102,7 +108,9 @@ class ApiAuthRepository implements IAuthRepository {
     } on AuthFailure {
       rethrow;
     } catch (e) {
-      debugPrint('[ApiAuthRepository] Unexpected error during register, falling back to mock: $e');
+      debugPrint(
+        '[ApiAuthRepository] Unexpected error during register, falling back to mock: $e',
+      );
       return _fallbackMockRepository.register(
         name: name,
         email: email,
@@ -121,10 +129,14 @@ class ApiAuthRepository implements IAuthRepository {
       if (e.response != null && e.response!.statusCode != null) {
         throw mapDioToFailure(e);
       }
-      debugPrint('[ApiAuthRepository] Gateway offline, falling back to mock forgotPassword: ${e.message}');
+      debugPrint(
+        '[ApiAuthRepository] Gateway offline, falling back to mock forgotPassword: ${e.message}',
+      );
       return _fallbackMockRepository.forgotPassword(email: email);
     } catch (e) {
-      debugPrint('[ApiAuthRepository] Unexpected error, falling back to mock forgotPassword: $e');
+      debugPrint(
+        '[ApiAuthRepository] Unexpected error, falling back to mock forgotPassword: $e',
+      );
       return _fallbackMockRepository.forgotPassword(email: email);
     }
   }
@@ -150,13 +162,17 @@ class ApiAuthRepository implements IAuthRepository {
       if (e.response != null && e.response!.statusCode != null) {
         throw mapDioToFailure(e);
       }
-      debugPrint('[ApiAuthRepository] Gateway offline, falling back to mock resetPassword: ${e.message}');
+      debugPrint(
+        '[ApiAuthRepository] Gateway offline, falling back to mock resetPassword: ${e.message}',
+      );
       return _fallbackMockRepository.resetPassword(
         token: token,
         newPassword: newPassword,
       );
     } catch (e) {
-      debugPrint('[ApiAuthRepository] Unexpected error, falling back to mock resetPassword: $e');
+      debugPrint(
+        '[ApiAuthRepository] Unexpected error, falling back to mock resetPassword: $e',
+      );
       return _fallbackMockRepository.resetPassword(
         token: token,
         newPassword: newPassword,

@@ -20,7 +20,8 @@ class ApplicationDetailScreen extends StatefulWidget {
   });
 
   @override
-  State<ApplicationDetailScreen> createState() => _ApplicationDetailScreenState();
+  State<ApplicationDetailScreen> createState() =>
+      _ApplicationDetailScreenState();
 }
 
 class _ApplicationDetailScreenState extends State<ApplicationDetailScreen> {
@@ -94,12 +95,19 @@ class _ApplicationDetailScreenState extends State<ApplicationDetailScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.info_outline_rounded, size: 56, color: AppColors.textHint),
+              const Icon(
+                Icons.info_outline_rounded,
+                size: 56,
+                color: AppColors.textHint,
+              ),
               const SizedBox(height: 16),
               Text(
                 _errorMessage ?? 'Không tìm thấy thông tin đơn ứng tuyển.',
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 14, color: AppColors.textSecondary),
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: AppColors.textSecondary,
+                ),
               ),
               const SizedBox(height: 20),
               ElevatedButton(
@@ -244,7 +252,9 @@ class _ApplicationDetailScreenState extends State<ApplicationDetailScreen> {
                 decoration: BoxDecoration(
                   color: AppColors.primary.withValues(alpha: 0.05),
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
+                  border: Border.all(
+                    color: AppColors.primary.withValues(alpha: 0.2),
+                  ),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -252,7 +262,11 @@ class _ApplicationDetailScreenState extends State<ApplicationDetailScreen> {
                     if (app.score != null) ...[
                       Row(
                         children: [
-                          const Icon(Icons.star_rounded, color: Color(0xFFF59E0B), size: 20),
+                          const Icon(
+                            Icons.star_rounded,
+                            color: Color(0xFFF59E0B),
+                            size: 20,
+                          ),
                           const SizedBox(width: 6),
                           Text(
                             'Điểm đánh giá hồ sơ: ${app.score!.toStringAsFixed(1)} / 10',
@@ -378,7 +392,9 @@ class _ApplicationDetailScreenState extends State<ApplicationDetailScreen> {
             OutlinedButton.icon(
               style: OutlinedButton.styleFrom(
                 minimumSize: const Size(double.infinity, 48),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
               ),
               icon: const Icon(Icons.launch_rounded, size: 18),
               label: const Text('Xem tin tuyển dụng gốc'),
@@ -403,7 +419,10 @@ class _ApplicationDetailScreenState extends State<ApplicationDetailScreen> {
           Expanded(
             child: Text(
               app.status.description,
-              style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+              style: const TextStyle(
+                fontSize: 13,
+                color: AppColors.textSecondary,
+              ),
             ),
           ),
         ],
@@ -430,11 +449,7 @@ class _ApplicationDetailScreenState extends State<ApplicationDetailScreen> {
                   child: Icon(item.status.icon, size: 14, color: Colors.white),
                 ),
                 if (!isLast)
-                  Container(
-                    width: 2,
-                    height: 42,
-                    color: AppColors.border,
-                  ),
+                  Container(width: 2, height: 42, color: AppColors.border),
               ],
             ),
             const SizedBox(width: 14),
@@ -457,7 +472,10 @@ class _ApplicationDetailScreenState extends State<ApplicationDetailScreen> {
                         ),
                         Text(
                           FormatUtils.formatDate(item.changedAt),
-                          style: const TextStyle(fontSize: 11, color: AppColors.textHint),
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: AppColors.textHint,
+                          ),
                         ),
                       ],
                     ),
@@ -465,14 +483,21 @@ class _ApplicationDetailScreenState extends State<ApplicationDetailScreen> {
                       const SizedBox(height: 4),
                       Text(
                         item.note!,
-                        style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
+                        ),
                       ),
                     ],
                     if (item.changedBy != null) ...[
                       const SizedBox(height: 2),
                       Text(
                         'Bởi: ${item.changedBy}',
-                        style: const TextStyle(fontSize: 11, color: AppColors.textHint, fontStyle: FontStyle.italic),
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: AppColors.textHint,
+                          fontStyle: FontStyle.italic,
+                        ),
                       ),
                     ],
                   ],

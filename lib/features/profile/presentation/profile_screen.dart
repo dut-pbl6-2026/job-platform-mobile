@@ -17,10 +17,7 @@ import 'widgets/skills_section.dart';
 class ProfileScreen extends StatefulWidget {
   final IProfileRepository? profileRepository;
 
-  const ProfileScreen({
-    super.key,
-    this.profileRepository,
-  });
+  const ProfileScreen({super.key, this.profileRepository});
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -111,7 +108,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   void _handleDeleteSkill(String skillId) async {
     if (_profile == null) return;
-    final updatedSkills = _profile!.skills.where((s) => s.id != skillId).toList();
+    final updatedSkills = _profile!.skills
+        .where((s) => s.id != skillId)
+        .toList();
     setState(() {
       _profile = _profile!.copyWith(skills: updatedSkills);
     });
@@ -220,11 +219,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.person_off_outlined, size: 56, color: AppColors.textHint),
+              const Icon(
+                Icons.person_off_outlined,
+                size: 56,
+                color: AppColors.textHint,
+              ),
               const SizedBox(height: 16),
               Text(
                 _errorMessage ?? 'Không thể tải hồ sơ.',
-                style: const TextStyle(fontSize: 14, color: AppColors.textSecondary),
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: AppColors.textSecondary,
+                ),
               ),
               const SizedBox(height: 16),
               ElevatedButton(
@@ -306,7 +312,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ],
                   ),
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+                  border: Border.all(
+                    color: AppColors.primary.withValues(alpha: 0.3),
+                  ),
                 ),
                 child: Row(
                   children: [
@@ -453,7 +461,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
         Expanded(
           child: Text(
             text,
-            style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+            style: const TextStyle(
+              fontSize: 12,
+              color: AppColors.textSecondary,
+            ),
             overflow: TextOverflow.ellipsis,
           ),
         ),

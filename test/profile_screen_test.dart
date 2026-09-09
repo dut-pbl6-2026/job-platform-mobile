@@ -12,46 +12,50 @@ void main() {
     mockRepo.reset();
   });
 
-  testWidgets('ProfileScreen renders header, completion score, skills, experience, and education (MOB-01-05)', (
-    tester,
-  ) async {
-    tester.view.physicalSize = const Size(800, 1600);
-    tester.view.devicePixelRatio = 1.0;
-    addTearDown(tester.view.resetPhysicalSize);
+  testWidgets(
+    'ProfileScreen renders header, completion score, skills, experience, and education (MOB-01-05)',
+    (tester) async {
+      tester.view.physicalSize = const Size(800, 1600);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
 
-    await tester.pumpWidget(
-      MaterialApp(
-        theme: AppTheme.lightTheme,
-        home: ProfileScreen(profileRepository: mockRepo),
-      ),
-    );
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.lightTheme,
+          home: ProfileScreen(profileRepository: mockRepo),
+        ),
+      );
 
-    // Initial loading
-    expect(find.text('Hồ sơ cá nhân'), findsOneWidget);
+      // Initial loading
+      expect(find.text('Hồ sơ cá nhân'), findsOneWidget);
 
-    // Settle async fetch
-    await tester.pumpAndSettle();
+      // Settle async fetch
+      await tester.pumpAndSettle();
 
-    // Verify Candidate Name & Headline
-    expect(find.text('Nguyễn Văn An'), findsOneWidget);
-    expect(find.text('Senior Flutter & Cross-Platform Mobile Engineer'), findsOneWidget);
+      // Verify Candidate Name & Headline
+      expect(find.text('Nguyễn Văn An'), findsOneWidget);
+      expect(
+        find.text('Senior Flutter & Cross-Platform Mobile Engineer'),
+        findsOneWidget,
+      );
 
-    // Verify Completion card
-    expect(find.text('Độ hoàn thiện hồ sơ'), findsOneWidget);
+      // Verify Completion card
+      expect(find.text('Độ hoàn thiện hồ sơ'), findsOneWidget);
 
-    // Verify Sections
-    expect(find.textContaining('Kỹ năng chuyên môn'), findsOneWidget);
-    expect(find.text('Flutter & Dart'), findsOneWidget);
+      // Verify Sections
+      expect(find.textContaining('Kỹ năng chuyên môn'), findsOneWidget);
+      expect(find.text('Flutter & Dart'), findsOneWidget);
 
-    expect(find.textContaining('Kinh nghiệm làm việc'), findsOneWidget);
-    expect(find.text('FPT Software'), findsOneWidget);
+      expect(find.textContaining('Kinh nghiệm làm việc'), findsOneWidget);
+      expect(find.text('FPT Software'), findsOneWidget);
 
-    expect(find.textContaining('Học vấn & Bằng cấp'), findsOneWidget);
-    expect(find.text('Đại học Bách Khoa - Đại học Đà Nẵng'), findsOneWidget);
+      expect(find.textContaining('Học vấn & Bằng cấp'), findsOneWidget);
+      expect(find.text('Đại học Bách Khoa - Đại học Đà Nẵng'), findsOneWidget);
 
-    // Verify Quick access to application history
-    expect(find.text('Lịch sử ứng tuyển'), findsOneWidget);
-  });
+      // Verify Quick access to application history
+      expect(find.text('Lịch sử ứng tuyển'), findsOneWidget);
+    },
+  );
 
   testWidgets('Tapping edit profile icon opens EditProfileDialog', (
     tester,
@@ -78,9 +82,7 @@ void main() {
     expect(find.text('Lưu thay đổi'), findsOneWidget);
   });
 
-  testWidgets('Tapping add skill opens AddSkillDialog', (
-    tester,
-  ) async {
+  testWidgets('Tapping add skill opens AddSkillDialog', (tester) async {
     tester.view.physicalSize = const Size(800, 1600);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);

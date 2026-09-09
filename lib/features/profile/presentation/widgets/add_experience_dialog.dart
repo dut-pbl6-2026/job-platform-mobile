@@ -6,10 +6,7 @@ import '../../domain/models/profile_model.dart';
 class AddExperienceDialog extends StatefulWidget {
   final ValueChanged<WorkExperienceModel> onAdd;
 
-  const AddExperienceDialog({
-    super.key,
-    required this.onAdd,
-  });
+  const AddExperienceDialog({super.key, required this.onAdd});
 
   @override
   State<AddExperienceDialog> createState() => _AddExperienceDialogState();
@@ -90,31 +87,45 @@ class _AddExperienceDialogState extends State<AddExperienceDialog> {
                   const SizedBox(height: 14),
 
                   // Company
-                  const Text('Tên công ty *', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                  const Text(
+                    'Tên công ty *',
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                  ),
                   const SizedBox(height: 6),
                   TextFormField(
                     controller: _companyController,
                     decoration: InputDecoration(
                       hintText: 'VD: FPT Software, VNG Corporation...',
                       isDense: true,
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
-                    validator: (v) => v?.trim().isEmpty == true ? 'Vui lòng nhập tên công ty' : null,
+                    validator: (v) => v?.trim().isEmpty == true
+                        ? 'Vui lòng nhập tên công ty'
+                        : null,
                   ),
 
                   const SizedBox(height: 12),
 
                   // Title / Position
-                  const Text('Chức danh / Vị trí *', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                  const Text(
+                    'Chức danh / Vị trí *',
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                  ),
                   const SizedBox(height: 6),
                   TextFormField(
                     controller: _titleController,
                     decoration: InputDecoration(
                       hintText: 'VD: Senior Flutter Developer',
                       isDense: true,
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
-                    validator: (v) => v?.trim().isEmpty == true ? 'Vui lòng nhập chức danh' : null,
+                    validator: (v) => v?.trim().isEmpty == true
+                        ? 'Vui lòng nhập chức danh'
+                        : null,
                   ),
 
                   const SizedBox(height: 12),
@@ -124,7 +135,10 @@ class _AddExperienceDialogState extends State<AddExperienceDialog> {
                     contentPadding: EdgeInsets.zero,
                     title: const Text(
                       'Tôi đang làm việc tại đây',
-                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                     value: _isCurrent,
                     activeThumbImage: null,
@@ -146,21 +160,37 @@ class _AddExperienceDialogState extends State<AddExperienceDialog> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text('Năm bắt đầu', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                            const Text(
+                              'Năm bắt đầu',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
                             const SizedBox(height: 4),
                             DropdownButtonFormField<int>(
                               initialValue: _startDate.year,
                               decoration: InputDecoration(
                                 isDense: true,
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
                               ),
                               items: List.generate(20, (index) {
                                 final year = DateTime.now().year - index;
-                                return DropdownMenuItem(value: year, child: Text(year.toString()));
+                                return DropdownMenuItem(
+                                  value: year,
+                                  child: Text(year.toString()),
+                                );
                               }),
                               onChanged: (y) {
                                 if (y != null) {
-                                  setState(() => _startDate = DateTime(y, _startDate.month));
+                                  setState(
+                                    () => _startDate = DateTime(
+                                      y,
+                                      _startDate.month,
+                                    ),
+                                  );
                                 }
                               },
                             ),
@@ -173,17 +203,29 @@ class _AddExperienceDialogState extends State<AddExperienceDialog> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text('Năm kết thúc', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                              const Text(
+                                'Năm kết thúc',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
                               const SizedBox(height: 4),
                               DropdownButtonFormField<int>(
-                                initialValue: _endDate?.year ?? DateTime.now().year,
+                                initialValue:
+                                    _endDate?.year ?? DateTime.now().year,
                                 decoration: InputDecoration(
                                   isDense: true,
-                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
                                 ),
                                 items: List.generate(20, (index) {
                                   final year = DateTime.now().year - index;
-                                  return DropdownMenuItem(value: year, child: Text(year.toString()));
+                                  return DropdownMenuItem(
+                                    value: year,
+                                    child: Text(year.toString()),
+                                  );
                                 }),
                                 onChanged: (y) {
                                   if (y != null) {
@@ -201,15 +243,21 @@ class _AddExperienceDialogState extends State<AddExperienceDialog> {
                   const SizedBox(height: 14),
 
                   // Description
-                  const Text('Mô tả công việc & Thành tựu nổi bật', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                  const Text(
+                    'Mô tả công việc & Thành tựu nổi bật',
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                  ),
                   const SizedBox(height: 6),
                   TextFormField(
                     controller: _descriptionController,
                     maxLines: 3,
                     decoration: InputDecoration(
-                      hintText: 'Nêu ngắn gọn trách nhiệm và kết quả đạt được...',
+                      hintText:
+                          'Nêu ngắn gọn trách nhiệm và kết quả đạt được...',
                       isDense: true,
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
                   ),
 

@@ -140,7 +140,9 @@ class ExperienceSection extends StatelessWidget {
                                     vertical: 2,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: AppColors.success.withValues(alpha: 0.1),
+                                    color: AppColors.success.withValues(
+                                      alpha: 0.1,
+                                    ),
                                     borderRadius: BorderRadius.circular(4),
                                   ),
                                   child: const Text(
@@ -155,7 +157,8 @@ class ExperienceSection extends StatelessWidget {
                               ],
                             ],
                           ),
-                          if (exp.description != null && exp.description!.isNotEmpty) ...[
+                          if (exp.description != null &&
+                              exp.description!.isNotEmpty) ...[
                             const SizedBox(height: 8),
                             Text(
                               exp.description!,

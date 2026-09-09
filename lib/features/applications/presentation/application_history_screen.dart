@@ -12,13 +12,11 @@ import 'widgets/application_card.dart';
 class ApplicationHistoryScreen extends StatefulWidget {
   final IApplicationRepository? applicationRepository;
 
-  const ApplicationHistoryScreen({
-    super.key,
-    this.applicationRepository,
-  });
+  const ApplicationHistoryScreen({super.key, this.applicationRepository});
 
   @override
-  State<ApplicationHistoryScreen> createState() => _ApplicationHistoryScreenState();
+  State<ApplicationHistoryScreen> createState() =>
+      _ApplicationHistoryScreenState();
 }
 
 class _ApplicationHistoryScreenState extends State<ApplicationHistoryScreen> {
@@ -98,9 +96,7 @@ class _ApplicationHistoryScreenState extends State<ApplicationHistoryScreen> {
           _buildFilterChips(),
 
           // List or Loading or Empty
-          Expanded(
-            child: _buildBody(),
-          ),
+          Expanded(child: _buildBody()),
         ],
       ),
     );
@@ -134,13 +130,17 @@ class _ApplicationHistoryScreenState extends State<ApplicationHistoryScreen> {
                 selected: isSelected,
                 showCheckmark: false,
                 backgroundColor: AppColors.background,
-                selectedColor: (status?.color ?? AppColors.primary).withValues(alpha: 0.15),
+                selectedColor: (status?.color ?? AppColors.primary).withValues(
+                  alpha: 0.15,
+                ),
                 side: BorderSide(
                   color: isSelected
                       ? (status?.color ?? AppColors.primary)
                       : AppColors.border,
                 ),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
                 onSelected: (_) => _onFilterSelected(status),
               ),
             );
@@ -164,12 +164,19 @@ class _ApplicationHistoryScreenState extends State<ApplicationHistoryScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.error_outline_rounded, size: 48, color: AppColors.error),
+              const Icon(
+                Icons.error_outline_rounded,
+                size: 48,
+                color: AppColors.error,
+              ),
               const SizedBox(height: 16),
               Text(
                 _errorMessage!,
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 14, color: AppColors.textSecondary),
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: AppColors.textSecondary,
+                ),
               ),
               const SizedBox(height: 16),
               ElevatedButton(

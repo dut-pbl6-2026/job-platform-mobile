@@ -3,11 +3,31 @@ import '../../../../core/theme/app_theme.dart';
 
 /// Application status enum matching SRS Section 3.5.2 (APP-01-06)
 enum ApplicationStatus {
-  pending('pending', 'Chờ duyệt', 'Hồ sơ đã được gửi và đang chờ nhà tuyển dụng xem xét'),
-  reviewed('reviewed', 'Đã xem', 'Nhà tuyển dụng đã mở xem chi tiết hồ sơ ứng tuyển'),
-  shortlisted('shortlisted', 'Phù hợp', 'Hồ sơ đã được đưa vào danh sách ứng viên tiềm năng'),
-  accepted('accepted', 'Trúng tuyển', 'Chúc mừng! Hồ sơ ứng tuyển của bạn đã được chấp thuận'),
-  rejected('rejected', 'Từ chối', 'Rất tiếc, hồ sơ chưa phù hợp với yêu cầu hiện tại');
+  pending(
+    'pending',
+    'Chờ duyệt',
+    'Hồ sơ đã được gửi và đang chờ nhà tuyển dụng xem xét',
+  ),
+  reviewed(
+    'reviewed',
+    'Đã xem',
+    'Nhà tuyển dụng đã mở xem chi tiết hồ sơ ứng tuyển',
+  ),
+  shortlisted(
+    'shortlisted',
+    'Phù hợp',
+    'Hồ sơ đã được đưa vào danh sách ứng viên tiềm năng',
+  ),
+  accepted(
+    'accepted',
+    'Trúng tuyển',
+    'Chúc mừng! Hồ sơ ứng tuyển của bạn đã được chấp thuận',
+  ),
+  rejected(
+    'rejected',
+    'Từ chối',
+    'Rất tiếc, hồ sơ chưa phù hợp với yêu cầu hiện tại',
+  );
 
   final String value;
   final String displayName;
@@ -79,13 +99,16 @@ class ApplicationStatusHistoryItem {
 
   factory ApplicationStatusHistoryItem.fromJson(Map<String, dynamic> json) {
     return ApplicationStatusHistoryItem(
-      status: ApplicationStatus.fromString(json['status']?.toString() ?? 'pending'),
+      status: ApplicationStatus.fromString(
+        json['status']?.toString() ?? 'pending',
+      ),
       note: json['note'] as String?,
       changedAt: json['changedAt'] != null
           ? DateTime.tryParse(json['changedAt'].toString()) ?? DateTime.now()
           : (json['changed_at'] != null
-              ? DateTime.tryParse(json['changed_at'].toString()) ?? DateTime.now()
-              : DateTime.now()),
+                ? DateTime.tryParse(json['changed_at'].toString()) ??
+                      DateTime.now()
+                : DateTime.now()),
       changedBy: json['changedBy'] as String? ?? json['changed_by'] as String?,
     );
   }
@@ -194,37 +217,69 @@ class ApplicationModel {
     List<ApplicationStatusHistoryItem> historyList = [];
     if (rawHistory is List) {
       historyList = rawHistory
-          .map((item) => ApplicationStatusHistoryItem.fromJson(item as Map<String, dynamic>))
+          .map(
+            (item) => ApplicationStatusHistoryItem.fromJson(
+              item as Map<String, dynamic>,
+            ),
+          )
           .toList();
     }
 
     return ApplicationModel(
       id: json['id']?.toString() ?? '',
       jobId: json['jobId']?.toString() ?? json['job_id']?.toString() ?? '',
-      jobTitle: json['jobTitle']?.toString() ?? json['job_title']?.toString() ?? 'Vị trí tuyển dụng',
-      companyName: json['companyName']?.toString() ?? json['company_name']?.toString() ?? 'Doanh nghiệp',
-      companyLogo: json['companyLogo'] as String? ?? json['company_logo'] as String?,
-      applicantId: json['applicantId']?.toString() ?? json['applicant_id']?.toString() ?? '',
-      applicantName: json['applicantName']?.toString() ?? json['applicant_name']?.toString() ?? '',
-      applicantEmail: json['applicantEmail']?.toString() ?? json['applicant_email']?.toString() ?? '',
-      applicantPhone: json['applicantPhone'] as String? ?? json['applicant_phone'] as String?,
-      coverLetter: json['coverLetter'] as String? ?? json['cover_letter'] as String?,
+      jobTitle:
+          json['jobTitle']?.toString() ??
+          json['job_title']?.toString() ??
+          'Vị trí tuyển dụng',
+      companyName:
+          json['companyName']?.toString() ??
+          json['company_name']?.toString() ??
+          'Doanh nghiệp',
+      companyLogo:
+          json['companyLogo'] as String? ?? json['company_logo'] as String?,
+      applicantId:
+          json['applicantId']?.toString() ??
+          json['applicant_id']?.toString() ??
+          '',
+      applicantName:
+          json['applicantName']?.toString() ??
+          json['applicant_name']?.toString() ??
+          '',
+      applicantEmail:
+          json['applicantEmail']?.toString() ??
+          json['applicant_email']?.toString() ??
+          '',
+      applicantPhone:
+          json['applicantPhone'] as String? ??
+          json['applicant_phone'] as String?,
+      coverLetter:
+          json['coverLetter'] as String? ?? json['cover_letter'] as String?,
       cvUrl: json['cvUrl']?.toString() ?? json['cv_url']?.toString() ?? '',
-      cvFileName: json['cvFileName']?.toString() ?? json['cv_file_name']?.toString() ?? 'CV_Ung_Tuyen.pdf',
+      cvFileName:
+          json['cvFileName']?.toString() ??
+          json['cv_file_name']?.toString() ??
+          'CV_Ung_Tuyen.pdf',
       cvFileSize: json['cvFileSize'] as int? ?? json['cv_file_size'] as int?,
-      status: ApplicationStatus.fromString(json['status']?.toString() ?? 'pending'),
-      recruiterNotes: json['recruiterNotes'] as String? ?? json['recruiter_notes'] as String?,
+      status: ApplicationStatus.fromString(
+        json['status']?.toString() ?? 'pending',
+      ),
+      recruiterNotes:
+          json['recruiterNotes'] as String? ??
+          json['recruiter_notes'] as String?,
       score: (json['score'] as num?)?.toDouble(),
       createdAt: json['createdAt'] != null
           ? DateTime.tryParse(json['createdAt'].toString()) ?? DateTime.now()
           : (json['created_at'] != null
-              ? DateTime.tryParse(json['created_at'].toString()) ?? DateTime.now()
-              : DateTime.now()),
+                ? DateTime.tryParse(json['created_at'].toString()) ??
+                      DateTime.now()
+                : DateTime.now()),
       updatedAt: json['updatedAt'] != null
           ? DateTime.tryParse(json['updatedAt'].toString()) ?? DateTime.now()
           : (json['updated_at'] != null
-              ? DateTime.tryParse(json['updated_at'].toString()) ?? DateTime.now()
-              : DateTime.now()),
+                ? DateTime.tryParse(json['updated_at'].toString()) ??
+                      DateTime.now()
+                : DateTime.now()),
       statusHistory: historyList,
     );
   }
