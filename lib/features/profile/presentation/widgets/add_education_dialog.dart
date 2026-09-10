@@ -125,7 +125,7 @@ class _AddEducationDialogState extends State<AddEducationDialog> {
                   ),
                   const SizedBox(height: 6),
                   DropdownButtonFormField<String>(
-                    initialValue: _degreeController.text,
+                    value: _degreeController.text,
                     decoration: InputDecoration(
                       isDense: true,
                       border: OutlineInputBorder(
@@ -180,7 +180,7 @@ class _AddEducationDialogState extends State<AddEducationDialog> {
                             ),
                             const SizedBox(height: 4),
                             DropdownButtonFormField<int>(
-                              initialValue: _startYear,
+                              value: _startYear,
                               decoration: InputDecoration(
                                 isDense: true,
                                 border: OutlineInputBorder(
@@ -215,7 +215,7 @@ class _AddEducationDialogState extends State<AddEducationDialog> {
                             ),
                             const SizedBox(height: 4),
                             DropdownButtonFormField<int>(
-                              initialValue: _endYear,
+                              value: _endYear,
                               decoration: InputDecoration(
                                 isDense: true,
                                 border: OutlineInputBorder(

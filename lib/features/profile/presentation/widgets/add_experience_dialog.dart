@@ -141,8 +141,7 @@ class _AddExperienceDialogState extends State<AddExperienceDialog> {
                       ),
                     ),
                     value: _isCurrent,
-                    activeThumbImage: null,
-                    activeThumbColor: AppColors.primary,
+                    activeColor: AppColors.primary,
                     onChanged: (val) {
                       setState(() {
                         _isCurrent = val;
@@ -169,7 +168,7 @@ class _AddExperienceDialogState extends State<AddExperienceDialog> {
                             ),
                             const SizedBox(height: 4),
                             DropdownButtonFormField<int>(
-                              initialValue: _startDate.year,
+                              value: _startDate.year,
                               decoration: InputDecoration(
                                 isDense: true,
                                 border: OutlineInputBorder(
@@ -212,8 +211,7 @@ class _AddExperienceDialogState extends State<AddExperienceDialog> {
                               ),
                               const SizedBox(height: 4),
                               DropdownButtonFormField<int>(
-                                initialValue:
-                                    _endDate?.year ?? DateTime.now().year,
+                                value: _endDate?.year ?? DateTime.now().year,
                                 decoration: InputDecoration(
                                   isDense: true,
                                   border: OutlineInputBorder(
