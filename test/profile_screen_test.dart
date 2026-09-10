@@ -150,9 +150,8 @@ void main() {
                 routes: [
                   GoRoute(
                     path: AppRoutes.applications,
-                    builder: (context, state) => const Scaffold(
-                      body: Text('Ứng tuyển Screen'),
-                    ),
+                    builder: (context, state) =>
+                        const Scaffold(body: Text('Ứng tuyển Screen')),
                   ),
                 ],
               ),
@@ -171,10 +170,7 @@ void main() {
       );
 
       await tester.pumpWidget(
-        MaterialApp.router(
-          theme: AppTheme.lightTheme,
-          routerConfig: router,
-        ),
+        MaterialApp.router(theme: AppTheme.lightTheme, routerConfig: router),
       );
 
       await tester.pumpAndSettle();
