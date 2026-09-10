@@ -5,6 +5,8 @@ import '../../../core/services/file_picker_service.dart';
 import '../../../core/session/auth_session.dart';
 import '../../../core/theme/app_theme.dart';
 import '../data/repositories/api_application_repository.dart';
+import '../../profile/data/repositories/api_profile_repository.dart';
+import '../../profile/domain/repositories/profile_repository.dart';
 import '../domain/models/application_model.dart';
 import '../domain/repositories/application_repository.dart';
 
@@ -16,6 +18,7 @@ class ApplyJobScreen extends StatefulWidget {
   final String? companyLogo;
   final IApplicationRepository? applicationRepository;
   final ICvPickerService? cvPickerService;
+  final IProfileRepository? profileRepository;
 
   const ApplyJobScreen({
     super.key,
@@ -25,6 +28,7 @@ class ApplyJobScreen extends StatefulWidget {
     this.companyLogo,
     this.applicationRepository,
     this.cvPickerService,
+    this.profileRepository,
   });
 
   @override
@@ -34,11 +38,16 @@ class ApplyJobScreen extends StatefulWidget {
 class _ApplyJobScreenState extends State<ApplyJobScreen> {
   late final IApplicationRepository _repository;
   late final ICvPickerService _cvPicker;
+  late final IProfileRepository? _profileRepository;
 
   final TextEditingController _coverLetterController = TextEditingController();
   SelectedCvFile? _selectedFile;
   bool _isSubmitting = false;
   String? _errorMessage;
+
+  String? _candidateName;
+  String? _candidateEmail;
+  String? _candidatePhone;
 
   final List<String> _quickSuggestions = [
     'Tôi có 4+ năm kinh nghiệm Flutter',
@@ -51,7 +60,37 @@ class _ApplyJobScreenState extends State<ApplyJobScreen> {
   void initState() {
     super.initState();
     _repository = widget.applicationRepository ?? ApiApplicationRepository();
-    _cvPicker = widget.cvPickerService ?? MockCvPickerService();
+    _cvPicker = widget.cvPickerService ?? const DeviceCvPickerService();
+    _profileRepository =
+        widget.profileRepository ??
+        (widget.applicationRepository != null
+            ? null
+            : (AuthSession.instance.isAuthenticated
+                  ? ApiProfileRepository()
+                  : null));
+
+    final user = AuthSession.instance.currentUser;
+    _candidateName = user?.name;
+    _candidateEmail = user?.email;
+    _loadProfileContact();
+  }
+
+  Future<void> _loadProfileContact() async {
+    final repo = _profileRepository;
+    if (repo == null) return;
+    try {
+      final profile = await repo.getMyProfile();
+      if (mounted) {
+        setState(() {
+          if (_candidateName == null || _candidateName!.isEmpty) {
+            _candidateName = profile.fullName;
+          }
+          if (profile.phone != null && profile.phone!.isNotEmpty) {
+            _candidatePhone = profile.phone;
+          }
+        });
+      }
+    } catch (_) {}
   }
 
   @override
@@ -306,19 +345,34 @@ class _ApplyJobScreenState extends State<ApplyJobScreen> {
                     _buildContactRow(
                       icon: Icons.person_outline_rounded,
                       label: 'Họ và tên',
-                      value: user?.name ?? 'Nguyễn Văn An',
+                      value:
+                          (_candidateName != null && _candidateName!.isNotEmpty)
+                          ? _candidateName!
+                          : (user?.name.isNotEmpty == true
+                                ? user!.name
+                                : 'Chưa cập nhật'),
                     ),
                     const Divider(height: 16, color: AppColors.divider),
                     _buildContactRow(
                       icon: Icons.email_outlined,
                       label: 'Email',
-                      value: user?.email ?? 'candidate@example.com',
+                      value:
+                          (_candidateEmail != null &&
+                              _candidateEmail!.isNotEmpty)
+                          ? _candidateEmail!
+                          : (user?.email.isNotEmpty == true
+                                ? user!.email
+                                : 'Chưa cập nhật'),
                     ),
                     const Divider(height: 16, color: AppColors.divider),
                     _buildContactRow(
                       icon: Icons.phone_outlined,
                       label: 'Số điện thoại',
-                      value: '0905 123 456',
+                      value:
+                          (_candidatePhone != null &&
+                              _candidatePhone!.isNotEmpty)
+                          ? _candidatePhone!
+                          : 'Chưa cập nhật',
                     ),
                   ],
                 ),
@@ -491,7 +545,7 @@ class _ApplyJobScreenState extends State<ApplyJobScreen> {
               TextField(
                 controller: _coverLetterController,
                 maxLines: 5,
-                maxLength: 1000,
+                maxLength: 4000,
                 decoration: InputDecoration(
                   hintText: 'Xin chào, tôi quan tâm đến vị trí này vì...',
                   fillColor: Colors.white,

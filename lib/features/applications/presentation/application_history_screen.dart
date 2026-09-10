@@ -254,14 +254,18 @@ class _ApplicationHistoryScreenState extends State<ApplicationHistoryScreen> {
           return ApplicationCard(
             application: app,
             onTap: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => ApplicationDetailScreen(
-                    applicationId: app.id,
-                    applicationRepository: _repository,
+              if (GoRouter.maybeOf(context) != null) {
+                context.push('/applications/${app.id}');
+              } else {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => ApplicationDetailScreen(
+                      applicationId: app.id,
+                      applicationRepository: _repository,
+                    ),
                   ),
-                ),
-              );
+                );
+              }
             },
           );
         },

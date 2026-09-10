@@ -277,7 +277,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           : 'Khám phá cơ hội',
                       color: AppColors.primary,
                       onTap: () {
-                        context.push(AppRoutes.jobs);
+                        context.go(AppRoutes.jobs);
                       },
                     ),
                   ),
@@ -290,7 +290,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       subtitle: 'Thông tin & CV',
                       color: AppColors.secondary,
                       onTap: () {
-                        context.push(AppRoutes.profile);
+                        context.go(AppRoutes.profile);
                       },
                     ),
                   ),
@@ -307,7 +307,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       subtitle: 'Theo dõi tiến độ',
                       color: const Color(0xFF8B5CF6),
                       onTap: () {
-                        context.push(AppRoutes.applications);
+                        context.go(AppRoutes.applications);
                       },
                     ),
                   ),

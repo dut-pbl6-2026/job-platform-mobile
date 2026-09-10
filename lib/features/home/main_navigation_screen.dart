@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../core/theme/app_theme.dart';
 import '../applications/presentation/application_history_screen.dart';
 import '../jobs/presentation/job_list_screen.dart';
@@ -8,9 +9,14 @@ import 'home_screen.dart';
 /// Main Bottom Navigation Scaffold per SRS MOB-01-07
 /// Provides unified navigation across: Home, Jobs, Applications, and Profile
 class MainNavigationScreen extends StatefulWidget {
+  final StatefulNavigationShell? navigationShell;
   final int initialIndex;
 
-  const MainNavigationScreen({super.key, this.initialIndex = 0});
+  const MainNavigationScreen({
+    super.key,
+    this.navigationShell,
+    this.initialIndex = 0,
+  });
 
   @override
   State<MainNavigationScreen> createState() => _MainNavigationScreenState();
@@ -22,7 +28,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   @override
   void initState() {
     super.initState();
-    _currentIndex = widget.initialIndex;
+    _currentIndex = widget.navigationShell?.currentIndex ?? widget.initialIndex;
   }
 
   final List<Widget> _screens = const [
@@ -32,15 +38,28 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     ProfileScreen(),
   ];
 
+  void _onDestinationSelected(int index) {
+    if (widget.navigationShell != null) {
+      widget.navigationShell!.goBranch(
+        index,
+        initialLocation: index == widget.navigationShell!.currentIndex,
+      );
+    } else {
+      setState(() => _currentIndex = index);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final selectedIndex = widget.navigationShell?.currentIndex ?? _currentIndex;
+
     return Scaffold(
-      body: IndexedStack(index: _currentIndex, children: _screens),
+      body:
+          widget.navigationShell ??
+          IndexedStack(index: selectedIndex, children: _screens),
       bottomNavigationBar: NavigationBar(
-        selectedIndex: _currentIndex,
-        onDestinationSelected: (index) {
-          setState(() => _currentIndex = index);
-        },
+        selectedIndex: selectedIndex,
+        onDestinationSelected: _onDestinationSelected,
         backgroundColor: Colors.white,
         indicatorColor: AppColors.primary.withValues(alpha: 0.12),
         elevation: 8,

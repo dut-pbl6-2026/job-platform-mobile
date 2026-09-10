@@ -5,7 +5,7 @@ import '../../../core/router/app_router.dart';
 import '../../../core/session/auth_session.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../auth/domain/models/user_model.dart';
-import '../data/repositories/mock_job_repository.dart';
+import '../data/repositories/api_job_repository.dart';
 import '../domain/models/job_model.dart';
 import '../domain/repositories/job_repository.dart';
 import 'widgets/job_detail_bottom_bar.dart';
@@ -35,7 +35,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
   @override
   void initState() {
     super.initState();
-    _jobRepository = widget.jobRepository ?? MockJobRepository();
+    _jobRepository = widget.jobRepository ?? ApiJobRepository();
     _fetchJobDetail();
   }
 
@@ -168,16 +168,27 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
   }
 
   void _showApplyBottomSheet() {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => ApplyJobScreen(
-          jobId: _job!.id,
-          jobTitle: _job!.title,
-          companyName: _job!.companyName,
-          companyLogo: _job!.companyLogo,
+    if (GoRouter.maybeOf(context) != null) {
+      context.push(
+        '/jobs/${_job!.id}/apply',
+        extra: {
+          'title': _job!.title,
+          'company': _job!.companyName,
+          'logo': _job!.companyLogo,
+        },
+      );
+    } else {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => ApplyJobScreen(
+            jobId: _job!.id,
+            jobTitle: _job!.title,
+            companyName: _job!.companyName,
+            companyLogo: _job!.companyLogo,
+          ),
         ),
-      ),
-    );
+      );
+    }
   }
 
   @override

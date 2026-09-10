@@ -1,3 +1,4 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 
 /// Representation of a selected CV file for job application
@@ -63,5 +64,34 @@ class MockCvPickerService implements ICvPickerService {
           path: '/mock/documents/Nguyen_Van_A_CV_Flutter_2026.pdf',
           size: 420 * 1024, // 420 KB
         );
+  }
+}
+
+/// Production device implementation using file_picker package (MOB-01-04)
+class DeviceCvPickerService implements ICvPickerService {
+  const DeviceCvPickerService();
+
+  @override
+  Future<SelectedCvFile?> pickCvFile() async {
+    try {
+      final result = await FilePicker.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf', 'doc', 'docx'],
+        withData: kIsWeb,
+      );
+
+      if (result != null && result.files.isNotEmpty) {
+        final file = result.files.first;
+        return SelectedCvFile(
+          name: file.name,
+          path: file.path,
+          size: file.size,
+          bytes: file.bytes,
+        );
+      }
+    } catch (e) {
+      debugPrint('[DeviceCvPickerService] Error picking CV file: $e');
+    }
+    return null;
   }
 }

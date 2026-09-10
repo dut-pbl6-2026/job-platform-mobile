@@ -140,6 +140,7 @@ class ApiJobRepository implements IJobRepository {
 
   @override
   Future<bool> toggleSaveJob(String id) {
+    // TODO(PBL6): Connect to bookmark/saved job API once backend service endpoint is implemented.
     return _fallbackMockRepository.toggleSaveJob(id);
   }
 

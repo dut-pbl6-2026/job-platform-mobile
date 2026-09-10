@@ -299,7 +299,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             // Quick Access Card to Application History
             InkWell(
               onTap: () {
-                context.push(AppRoutes.applications);
+                context.go(AppRoutes.applications);
               },
               borderRadius: BorderRadius.circular(16),
               child: Container(
