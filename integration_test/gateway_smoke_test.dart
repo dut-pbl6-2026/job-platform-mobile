@@ -88,6 +88,14 @@ void main() {
 
     final me = await auth.getCurrentUser();
     expect(me?.email, email);
+    final userId = me?.id;
+    expect(
+      userId != null && _uuid.hasMatch(userId),
+      isTrue,
+      reason:
+          'User id "${me?.id}" is not a backend UUID. ApiAuthRepository likely '
+          'fell back to MockAuthRepository (id usr_<timestamp>).',
+    );
 
     final jobRepository = ApiJobRepository();
     final jobs = await jobRepository.getJobs(const JobFilterParams());
@@ -122,6 +130,14 @@ void main() {
       ),
     );
     expect(application.jobId, job.id);
+    expect(
+      _uuid.hasMatch(application.id),
+      isTrue,
+      reason:
+          'Got application id "${application.id}", which is not a backend UUID. '
+          'ApiApplicationRepository fell back to MockApplicationRepository '
+          '(id app-<timestamp>).',
+    );
 
     await auth.logout();
     final userAfterLogout = await auth.getCurrentUser();
