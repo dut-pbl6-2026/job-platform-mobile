@@ -1,8 +1,56 @@
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../domain/models/app_notification.dart';
 import '../../domain/repositories/notification_repository.dart';
 
-/// Mock in-memory implementation of [INotificationRepository] (PUSH-01)
+/// Mock implementation of [INotificationRepository] with local persistent storage for read status (PUSH-01)
 class MockNotificationRepository implements INotificationRepository {
+  static const String _kReadIdsKey = 'read_notifications_ids';
+  static const String _kAllReadKey = 'read_notifications_all';
+
+  static final Set<String> _cachedReadIds = {};
+  static bool _cachedAllRead = false;
+  static bool _isLoaded = false;
+
+  /// Loads persistent read notification state from SharedPreferences
+  static Future<void> ensureLoaded() async {
+    if (_isLoaded) return;
+    try {
+      final prefs = await SharedPreferences.getInstance().timeout(
+        const Duration(milliseconds: 400),
+      );
+      final saved = prefs.getStringList(_kReadIdsKey);
+      if (saved != null) {
+        _cachedReadIds.addAll(saved);
+      }
+      _cachedAllRead = prefs.getBool(_kAllReadKey) ?? false;
+      _isLoaded = true;
+    } catch (_) {
+      _isLoaded = true;
+    }
+  }
+
+  /// Checks whether a notification ID has been marked as read locally
+  static bool isMarkedReadLocally(String id) {
+    return _cachedAllRead || _cachedReadIds.contains(id);
+  }
+
+  static Future<void> _savePersistentState() async {
+    try {
+      final prefs = await SharedPreferences.getInstance().timeout(
+        const Duration(milliseconds: 400),
+      );
+      await prefs.setStringList(_kReadIdsKey, _cachedReadIds.toList());
+      await prefs.setBool(_kAllReadKey, _cachedAllRead);
+    } catch (_) {}
+  }
+
+  /// Helper to reset static cache during tests
+  static void resetCache() {
+    _cachedReadIds.clear();
+    _cachedAllRead = false;
+    _isLoaded = false;
+  }
+
   final List<AppNotification> _notifications = [
     AppNotification(
       id: 'notif-001',
@@ -77,22 +125,34 @@ class MockNotificationRepository implements INotificationRepository {
     int size = 20,
     bool? unreadOnly,
   }) async {
-    var filtered = List<AppNotification>.from(_notifications);
+    await ensureLoaded();
+
+    var mapped = _notifications.map((n) {
+      if (isMarkedReadLocally(n.id)) {
+        return n.copyWith(isRead: true);
+      }
+      return n;
+    }).toList();
+
     if (unreadOnly == true) {
-      filtered = filtered.where((n) => !n.isRead).toList();
+      mapped = mapped.where((n) => !n.isRead).toList();
     }
-    filtered.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    mapped.sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
     final start = (page - 1) * size;
-    if (start >= filtered.length) {
+    if (start >= mapped.length) {
       return [];
     }
-    final end = (start + size) > filtered.length ? filtered.length : start + size;
-    return filtered.sublist(start, end);
+    final end = (start + size) > mapped.length ? mapped.length : start + size;
+    return mapped.sublist(start, end);
   }
 
   @override
   Future<void> markAsRead(String id) async {
+    await ensureLoaded();
+    _cachedReadIds.add(id);
+    await _savePersistentState();
+
     final index = _notifications.indexWhere((n) => n.id == id);
     if (index != -1) {
       _notifications[index] = _notifications[index].copyWith(isRead: true);
@@ -101,6 +161,13 @@ class MockNotificationRepository implements INotificationRepository {
 
   @override
   Future<void> markAllAsRead() async {
+    await ensureLoaded();
+    _cachedAllRead = true;
+    for (final n in _notifications) {
+      _cachedReadIds.add(n.id);
+    }
+    await _savePersistentState();
+
     for (int i = 0; i < _notifications.length; i++) {
       _notifications[i] = _notifications[i].copyWith(isRead: true);
     }
@@ -108,7 +175,10 @@ class MockNotificationRepository implements INotificationRepository {
 
   @override
   Future<int> getUnreadCount() async {
-    return _notifications.where((n) => !n.isRead).length;
+    await ensureLoaded();
+    return _notifications
+        .where((n) => !n.isRead && !isMarkedReadLocally(n.id))
+        .length;
   }
 
   /// Helper to push a test notification (used in tests or simulation)

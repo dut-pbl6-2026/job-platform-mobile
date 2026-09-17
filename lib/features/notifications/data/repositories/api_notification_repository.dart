@@ -85,9 +85,17 @@ class ApiNotificationRepository implements INotificationRepository {
           items = (raw['items'] ?? raw['data'] ?? []) as List<dynamic>;
         }
 
+        await MockNotificationRepository.ensureLoaded();
         return items
-            .map((item) =>
-                AppNotification.fromJson(Map<String, dynamic>.from(item as Map)))
+            .map((item) {
+              final notif = AppNotification.fromJson(
+                Map<String, dynamic>.from(item as Map),
+              );
+              if (MockNotificationRepository.isMarkedReadLocally(notif.id)) {
+                return notif.copyWith(isRead: true);
+              }
+              return notif;
+            })
             .toList();
       }
       return await _fallbackMockRepository.getNotifications(
@@ -116,27 +124,25 @@ class ApiNotificationRepository implements INotificationRepository {
 
   @override
   Future<void> markAsRead(String id) async {
+    await _fallbackMockRepository.markAsRead(id);
     try {
       await _dio.put('/api/notifications/$id/read');
     } on DioException catch (e) {
       debugPrint('Mark notification read via Gateway error: $e');
-      await _fallbackMockRepository.markAsRead(id);
     } catch (e) {
       debugPrint('Unexpected error marking notification read: $e');
-      await _fallbackMockRepository.markAsRead(id);
     }
   }
 
   @override
   Future<void> markAllAsRead() async {
+    await _fallbackMockRepository.markAllAsRead();
     try {
       await _dio.put('/api/notifications/read-all');
     } on DioException catch (e) {
       debugPrint('Mark all notifications read via Gateway error: $e');
-      await _fallbackMockRepository.markAllAsRead();
     } catch (e) {
       debugPrint('Unexpected error marking all notifications read: $e');
-      await _fallbackMockRepository.markAllAsRead();
     }
   }
 

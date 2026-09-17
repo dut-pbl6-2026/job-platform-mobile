@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:job_platform_mobile/features/notifications/data/repositories/mock_notification_repository.dart';
 import 'package:job_platform_mobile/features/notifications/domain/models/app_notification.dart';
 import 'package:job_platform_mobile/features/notifications/presentation/notification_screen.dart';
@@ -9,6 +10,8 @@ void main() {
     late MockNotificationRepository mockRepo;
 
     setUp(() {
+      SharedPreferences.setMockInitialValues({});
+      MockNotificationRepository.resetCache();
       mockRepo = MockNotificationRepository();
     });
 

@@ -7,6 +7,7 @@ void main() {
     late MockNotificationRepository repository;
 
     setUp(() {
+      MockNotificationRepository.resetCache();
       repository = MockNotificationRepository();
     });
 
@@ -82,6 +83,23 @@ void main() {
       final updatedList = await repository.getNotifications();
       expect(updatedList.length, initialCount + 1);
       expect(updatedList.first.id, 'new-alert-999');
+    });
+
+    test('markAsRead persists read status across repository instances', () async {
+      final unreadBefore = await repository.getNotifications(unreadOnly: true);
+      expect(unreadBefore.isNotEmpty, isTrue);
+      final targetId = unreadBefore.first.id;
+
+      await repository.markAsRead(targetId);
+
+      // Create a brand new repository instance
+      final newRepoInstance = MockNotificationRepository();
+      final unreadAfter = await newRepoInstance.getNotifications(unreadOnly: true);
+      expect(unreadAfter.any((n) => n.id == targetId), isFalse);
+
+      final allNotifs = await newRepoInstance.getNotifications();
+      final readItem = allNotifs.firstWhere((n) => n.id == targetId);
+      expect(readItem.isRead, isTrue);
     });
   });
 }
