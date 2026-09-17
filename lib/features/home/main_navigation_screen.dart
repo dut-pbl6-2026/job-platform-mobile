@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_theme.dart';
 import '../applications/presentation/application_history_screen.dart';
-import '../jobs/presentation/job_list_screen.dart';
+import '../cv/presentation/create_cv_screen.dart';
 import '../profile/presentation/profile_screen.dart';
 import 'home_screen.dart';
 
-/// Main Bottom Navigation Scaffold per SRS MOB-01-07
-/// Provides unified navigation across: Home, Jobs, Applications, and Profile
+/// Main Bottom Navigation Scaffold
+/// Provides unified navigation across: Home, Create CV, Applications, and Profile
 class MainNavigationScreen extends StatefulWidget {
   final StatefulNavigationShell? navigationShell;
   final int initialIndex;
@@ -33,7 +33,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   final List<Widget> _screens = const [
     HomeScreen(),
-    JobListScreen(),
+    CreateCvScreen(),
     ApplicationHistoryScreen(),
     ProfileScreen(),
   ];
@@ -70,9 +70,12 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             label: 'Trang chủ',
           ),
           NavigationDestination(
-            icon: Icon(Icons.work_outline_rounded),
-            selectedIcon: Icon(Icons.work_rounded, color: AppColors.primary),
-            label: 'Việc làm',
+            icon: Icon(Icons.description_outlined),
+            selectedIcon: Icon(
+              Icons.description_rounded,
+              color: AppColors.primary,
+            ),
+            label: 'Tạo CV',
           ),
           NavigationDestination(
             icon: Icon(Icons.history_edu_outlined),

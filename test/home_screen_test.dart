@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
+import 'package:job_platform_mobile/core/router/app_router.dart';
 import 'package:job_platform_mobile/core/session/auth_session.dart';
 import 'package:job_platform_mobile/core/theme/app_theme.dart';
 import 'package:job_platform_mobile/features/auth/data/repositories/mock_auth_repository.dart';
@@ -20,7 +22,7 @@ void main() {
   });
 
   testWidgets(
-    'HomeScreen renders Tạo CV button and shows coming soon SnackBar on tap for candidate',
+    'HomeScreen renders Tạo CV button and navigates on tap for candidate',
     (tester) async {
       AuthSession.instance.setSession(
         AuthResult(
@@ -40,11 +42,29 @@ void main() {
       final mockAuth = MockAuthRepository();
       final mockJob = MockJobRepository();
 
+      final router = GoRouter(
+        initialLocation: AppRoutes.home,
+        routes: [
+          GoRoute(
+            path: AppRoutes.home,
+            builder: (context, state) =>
+                HomeScreen(authRepository: mockAuth, jobRepository: mockJob),
+          ),
+          GoRoute(
+            path: AppRoutes.createCv,
+            builder: (context, state) =>
+                const Scaffold(body: Text('Create CV Destination')),
+          ),
+          GoRoute(
+            path: AppRoutes.notifications,
+            builder: (context, state) =>
+                const Scaffold(body: Text('Notification Center Destination')),
+          ),
+        ],
+      );
+
       await tester.pumpWidget(
-        MaterialApp(
-          theme: AppTheme.lightTheme,
-          home: HomeScreen(authRepository: mockAuth, jobRepository: mockJob),
-        ),
+        MaterialApp.router(theme: AppTheme.lightTheme, routerConfig: router),
       );
 
       await tester.pumpAndSettle();
@@ -61,15 +81,61 @@ void main() {
       expect(find.text('Hồ sơ'), findsOneWidget);
       expect(find.text('Ứng tuyển'), findsOneWidget);
 
-      // Tap 'Tạo CV'
+      // Tap 'Tạo CV' and verify navigation
       await tester.tap(find.text('Tạo CV'));
-      await tester.pump();
+      await tester.pumpAndSettle();
+      expect(find.text('Create CV Destination'), findsOneWidget);
+    },
+  );
 
-      // Verify SnackBar appears
-      expect(
-        find.text('Tính năng Tạo CV (Đang phát triển trong Sprint tiếp theo)'),
-        findsOneWidget,
+  testWidgets(
+    'HomeScreen notification bell navigates to notifications screen',
+    (tester) async {
+      AuthSession.instance.setSession(
+        AuthResult(
+          user: UserModel(
+            id: 'candidate-1',
+            name: 'Nguyễn Văn A',
+            email: 'candidate@example.com',
+            role: UserRole.user,
+            createdAt: DateTime.now(),
+          ),
+          token: 'test-token',
+          refreshToken: 'test-refresh-token',
+          expiresAt: DateTime.now().add(const Duration(hours: 1)),
+        ),
       );
+
+      final mockAuth = MockAuthRepository();
+      final mockJob = MockJobRepository();
+
+      final router = GoRouter(
+        initialLocation: AppRoutes.home,
+        routes: [
+          GoRoute(
+            path: AppRoutes.home,
+            builder: (context, state) =>
+                HomeScreen(authRepository: mockAuth, jobRepository: mockJob),
+          ),
+          GoRoute(
+            path: AppRoutes.notifications,
+            builder: (context, state) =>
+                const Scaffold(body: Text('Notification Center Destination')),
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        MaterialApp.router(theme: AppTheme.lightTheme, routerConfig: router),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Tap notification bell icon
+      await tester.tap(find.byIcon(Icons.notifications_none_rounded));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Notification Center Destination'), findsOneWidget);
     },
   );
 

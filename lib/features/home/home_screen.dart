@@ -293,14 +293,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             tooltip: 'Thông báo',
             onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text(
-                    'Trung tâm thông báo (Phase 2 đang phát triển)',
-                  ),
-                  duration: Duration(seconds: 2),
-                ),
-              );
+              context.push(AppRoutes.notifications);
             },
           ),
           IconButton(
@@ -552,14 +545,7 @@ class _HomeScreenState extends State<HomeScreen> {
               if (isRecruiter) {
                 context.go(AppRoutes.jobs);
               } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text(
-                      'Tính năng Tạo CV (Đang phát triển trong Sprint tiếp theo)',
-                    ),
-                    duration: Duration(seconds: 2),
-                  ),
-                );
+                context.go(AppRoutes.createCv);
               }
             },
           ),
