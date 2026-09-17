@@ -12,6 +12,7 @@ import '../../features/home/home_screen.dart';
 import '../../features/home/main_navigation_screen.dart';
 import '../../features/jobs/presentation/job_detail_screen.dart';
 import '../../features/jobs/presentation/job_list_screen.dart';
+import '../../features/jobs/presentation/search_screen.dart';
 import '../../features/applications/presentation/application_detail_screen.dart';
 import '../../features/applications/presentation/application_history_screen.dart';
 import '../../features/applications/presentation/apply_job_screen.dart';
@@ -28,6 +29,7 @@ class AppRoutes {
   static const String register = '/register';
   static const String home = '/home';
   static const String jobs = '/jobs';
+  static const String search = '/search';
   static const String jobDetail = '/jobs/:id';
   static const String applyJob = '/jobs/:id/apply';
   static const String applications = '/applications';
@@ -44,6 +46,7 @@ class AppRoutes {
     login,
     register,
     jobs,
+    search,
     createCv,
     forgotPassword,
     resetPassword,
@@ -119,6 +122,15 @@ class AppRouter {
         path: AppRoutes.notifications,
         name: 'notifications',
         builder: (context, state) => const NotificationScreen(),
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: AppRoutes.search,
+        name: 'search',
+        builder: (context, state) {
+          final query = state.uri.queryParameters['q'];
+          return SearchScreen(initialQuery: query);
+        },
       ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,

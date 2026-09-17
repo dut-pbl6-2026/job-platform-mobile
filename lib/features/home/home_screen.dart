@@ -108,7 +108,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _handlePillTap(String pill) {
     setState(() => _selectedPill = pill);
-    context.go(AppRoutes.jobs);
+    if (pill == 'Tất cả') {
+      context.push(AppRoutes.search);
+    } else {
+      context.push('${AppRoutes.search}?q=${Uri.encodeComponent(pill)}');
+    }
   }
 
   @override
@@ -333,7 +337,7 @@ class _HomeScreenState extends State<HomeScreen> {
   // --- 2. Search Bar with Filter Button ---
   Widget _buildSearchBar() {
     return InkWell(
-      onTap: () => context.go(AppRoutes.jobs),
+      onTap: () => context.push(AppRoutes.search),
       borderRadius: BorderRadius.circular(16),
       child: Container(
         height: 50,

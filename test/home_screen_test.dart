@@ -174,4 +174,40 @@ void main() {
       expect(find.text('Tuyển dụng mới'), findsOneWidget);
     },
   );
+
+  testWidgets(
+    'HomeScreen tapping search bar navigates to dedicated search screen',
+    (tester) async {
+      final mockAuth = MockAuthRepository();
+      final mockJob = MockJobRepository();
+
+      final router = GoRouter(
+        initialLocation: AppRoutes.home,
+        routes: [
+          GoRoute(
+            path: AppRoutes.home,
+            builder: (context, state) =>
+                HomeScreen(authRepository: mockAuth, jobRepository: mockJob),
+          ),
+          GoRoute(
+            path: AppRoutes.search,
+            builder: (context, state) =>
+                const Scaffold(body: Text('Dedicated Search Screen')),
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        MaterialApp.router(theme: AppTheme.lightTheme, routerConfig: router),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Tap search bar
+      await tester.tap(find.text('Tìm kiếm công việc, công ty, kỹ năng...'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Dedicated Search Screen'), findsOneWidget);
+    },
+  );
 }
