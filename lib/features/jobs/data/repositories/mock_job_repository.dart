@@ -389,7 +389,18 @@ class MockJobRepository implements IJobRepository {
       }).toList();
     }
 
-    // 7. Only saved bookmark filter
+    // 7. Skills filter (SEARCH-01)
+    if (params.skills.isNotEmpty) {
+      final filterSkillsLower = params.skills
+          .map((s) => s.toLowerCase())
+          .toSet();
+      filteredList = filteredList.where((job) {
+        final jobSkillsLower = job.skills.map((s) => s.toLowerCase()).toSet();
+        return filterSkillsLower.any((fs) => jobSkillsLower.contains(fs));
+      }).toList();
+    }
+
+    // 8. Only saved bookmark filter
     if (params.onlySaved) {
       filteredList = filteredList.where((job) => job.isSaved).toList();
     }

@@ -37,6 +37,7 @@ class _JobFilterBottomSheetState extends State<JobFilterBottomSheet> {
   late String? _selectedCategory;
   late JobType? _selectedJobType;
   late ExperienceLevel? _selectedExperience;
+  late List<String> _selectedSkills;
   late num? _selectedMinSalary;
   late num? _selectedMaxSalary;
   late bool _onlySaved;
@@ -62,6 +63,24 @@ class _JobFilterBottomSheetState extends State<JobFilterBottomSheet> {
     'Giáo dục',
   ];
 
+  // Preset skills options (SEARCH-01)
+  static const List<String> _popularSkills = [
+    'Flutter',
+    'Dart',
+    'React',
+    'React Native',
+    'Node.js',
+    'Python',
+    'Java',
+    'AWS',
+    'Docker',
+    'SQL',
+    'Figma',
+    'DevOps',
+    'Kubernetes',
+    'UI/UX',
+  ];
+
   // Preset salary brackets (min, max, label)
   static final List<(num?, num?, String)> _salaryRanges = [
     (null, null, 'Tất cả'),
@@ -78,6 +97,7 @@ class _JobFilterBottomSheetState extends State<JobFilterBottomSheet> {
     _selectedCategory = widget.currentParams.category;
     _selectedJobType = widget.currentParams.jobType;
     _selectedExperience = widget.currentParams.experienceLevel;
+    _selectedSkills = List<String>.from(widget.currentParams.skills);
     _selectedMinSalary = widget.currentParams.salaryMin;
     _selectedMaxSalary = widget.currentParams.salaryMax;
     _onlySaved = widget.currentParams.onlySaved;
@@ -89,6 +109,7 @@ class _JobFilterBottomSheetState extends State<JobFilterBottomSheet> {
       _selectedCategory = null;
       _selectedJobType = null;
       _selectedExperience = null;
+      _selectedSkills = [];
       _selectedMinSalary = null;
       _selectedMaxSalary = null;
       _onlySaved = false;
@@ -105,6 +126,8 @@ class _JobFilterBottomSheetState extends State<JobFilterBottomSheet> {
       clearJobType: _selectedJobType == null,
       experienceLevel: _selectedExperience,
       clearExperienceLevel: _selectedExperience == null,
+      skills: _selectedSkills,
+      clearSkills: _selectedSkills.isEmpty,
       salaryMin: _selectedMinSalary,
       clearSalaryMin: _selectedMinSalary == null,
       salaryMax: _selectedMaxSalary,
@@ -274,7 +297,33 @@ class _JobFilterBottomSheetState extends State<JobFilterBottomSheet> {
 
                   const SizedBox(height: 20),
 
-                  // 5. Salary Range filter
+                  // 5. Skills filter (SEARCH-01)
+                  _buildSectionTitle('Kỹ năng chuyên môn (Skills)'),
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: _popularSkills.map((skill) {
+                      final isSelected = _selectedSkills.contains(skill);
+                      return _buildFilterChip(
+                        label: skill,
+                        isSelected: isSelected,
+                        onSelected: (selected) {
+                          setState(() {
+                            if (selected) {
+                              _selectedSkills.add(skill);
+                            } else {
+                              _selectedSkills.remove(skill);
+                            }
+                          });
+                        },
+                      );
+                    }).toList(),
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  // 6. Salary Range filter
                   _buildSectionTitle('Mức lương hàng tháng'),
                   const SizedBox(height: 10),
                   Wrap(
