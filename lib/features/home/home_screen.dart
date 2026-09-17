@@ -32,7 +32,7 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isLoggingOut = false;
   bool _isLoadingJobs = true;
   List<JobModel> _featuredJobs = [];
-  String _selectedPill = 'Việc làm';
+  String _selectedPill = 'Tất cả';
 
   @override
   void initState() {
@@ -394,7 +394,7 @@ class _HomeScreenState extends State<HomeScreen> {
   // --- 3. Filter / Category Pills Bar (Figure 3) ---
   Widget _buildFilterPills() {
     final pills = [
-      'Việc làm',
+      'Tất cả',
       'Địa điểm',
       'Từ xa (Remote)',
       'Lương cao (30M+)',
@@ -542,11 +542,26 @@ class _HomeScreenState extends State<HomeScreen> {
       children: [
         Expanded(
           child: _buildCompactCard(
-            icon: Icons.work_outline_rounded,
-            title: isRecruiter ? 'Đăng tin' : 'Tìm việc',
-            subtitle: 'Tất cả vị trí',
+            icon: isRecruiter
+                ? Icons.add_business_rounded
+                : Icons.note_add_outlined,
+            title: isRecruiter ? 'Đăng tin' : 'Tạo CV',
+            subtitle: isRecruiter ? 'Tuyển dụng mới' : 'Mẫu chuẩn ATS',
             color: AppColors.primary,
-            onTap: () => context.go(AppRoutes.jobs),
+            onTap: () {
+              if (isRecruiter) {
+                context.go(AppRoutes.jobs);
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                      'Tính năng Tạo CV (Đang phát triển trong Sprint tiếp theo)',
+                    ),
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              }
+            },
           ),
         ),
         const SizedBox(width: 10),
