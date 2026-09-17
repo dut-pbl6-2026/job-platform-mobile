@@ -27,9 +27,9 @@ void main() {
           .where((l) => l.region == 'Miền Nam')
           .toList();
 
-      expect(north.length, 12);
+      expect(north.length, 15);
       expect(central.length, 11);
-      expect(south.length, 11);
+      expect(south.length, 8);
     });
 
     test('contains Japan international location with 10 key regions', () {

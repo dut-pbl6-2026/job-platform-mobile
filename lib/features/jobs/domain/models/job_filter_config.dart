@@ -87,26 +87,34 @@ class JobFilterData {
     FilterOption(id: 'freelance', label: 'Freelance / Hợp đồng dự án'),
   ];
 
-  // 2. Địa điểm (34 tỉnh thành trọng điểm VN + Nhật Bản)
+  // 2. Địa điểm (34 tỉnh thành: 11 giữ nguyên + 23 sau sáp nhập)
   static const List<LocationProvince> domesticLocations = [
-    // Miền Bắc
+    // Miền Bắc (15 tỉnh/thành phố)
     LocationProvince(code: 'HN', name: 'Hà Nội', region: 'Miền Bắc'),
     LocationProvince(code: 'HP', name: 'Hải Phòng', region: 'Miền Bắc'),
     LocationProvince(code: 'QN', name: 'Quảng Ninh', region: 'Miền Bắc'),
     LocationProvince(code: 'BN', name: 'Bắc Ninh', region: 'Miền Bắc'),
-    LocationProvince(code: 'BG', name: 'Bắc Giang', region: 'Miền Bắc'),
-    LocationProvince(code: 'VP', name: 'Vĩnh Phúc', region: 'Miền Bắc'),
     LocationProvince(code: 'HY', name: 'Hưng Yên', region: 'Miền Bắc'),
-    LocationProvince(code: 'HD', name: 'Hải Dương', region: 'Miền Bắc'),
     LocationProvince(code: 'TN', name: 'Thái Nguyên', region: 'Miền Bắc'),
     LocationProvince(code: 'PT', name: 'Phú Thọ', region: 'Miền Bắc'),
     LocationProvince(code: 'NB', name: 'Ninh Bình', region: 'Miền Bắc'),
-    LocationProvince(code: 'ND', name: 'Nam Định', region: 'Miền Bắc'),
+    LocationProvince(code: 'TQ', name: 'Tuyên Quang', region: 'Miền Bắc'),
+    LocationProvince(code: 'LC', name: 'Lào Cai', region: 'Miền Bắc'),
+    LocationProvince(code: 'LCH', name: 'Lai Châu', region: 'Miền Bắc'),
+    LocationProvince(code: 'DB', name: 'Điện Biên', region: 'Miền Bắc'),
+    LocationProvince(code: 'SL', name: 'Sơn La', region: 'Miền Bắc'),
+    LocationProvince(code: 'LS', name: 'Lạng Sơn', region: 'Miền Bắc'),
+    LocationProvince(code: 'CB', name: 'Cao Bằng', region: 'Miền Bắc'),
 
-    // Miền Trung - Tây Nguyên
+    // Miền Trung - Tây Nguyên (11 tỉnh/thành phố)
     LocationProvince(
       code: 'DN',
       name: 'Đà Nẵng',
+      region: 'Miền Trung - Tây Nguyên',
+    ),
+    LocationProvince(
+      code: 'HUE',
+      name: 'Huế',
       region: 'Miền Trung - Tây Nguyên',
     ),
     LocationProvince(
@@ -125,13 +133,8 @@ class JobFilterData {
       region: 'Miền Trung - Tây Nguyên',
     ),
     LocationProvince(
-      code: 'TTH',
-      name: 'Thừa Thiên Huế',
-      region: 'Miền Trung - Tây Nguyên',
-    ),
-    LocationProvince(
-      code: 'QNA',
-      name: 'Quảng Nam',
+      code: 'QT',
+      name: 'Quảng Trị',
       region: 'Miền Trung - Tây Nguyên',
     ),
     LocationProvince(
@@ -140,8 +143,8 @@ class JobFilterData {
       region: 'Miền Trung - Tây Nguyên',
     ),
     LocationProvince(
-      code: 'BDH',
-      name: 'Bình Định',
+      code: 'GL',
+      name: 'Gia Lai',
       region: 'Miền Trung - Tây Nguyên',
     ),
     LocationProvince(
@@ -160,22 +163,15 @@ class JobFilterData {
       region: 'Miền Trung - Tây Nguyên',
     ),
 
-    // Miền Nam
+    // Miền Nam (8 tỉnh/thành phố)
     LocationProvince(code: 'HCM', name: 'Hồ Chí Minh', region: 'Miền Nam'),
-    LocationProvince(code: 'BD', name: 'Bình Dương', region: 'Miền Nam'),
     LocationProvince(code: 'DNA', name: 'Đồng Nai', region: 'Miền Nam'),
-    LocationProvince(
-      code: 'BRVT',
-      name: 'Bà Rịa - Vũng Tàu',
-      region: 'Miền Nam',
-    ),
-    LocationProvince(code: 'LA', name: 'Long An', region: 'Miền Nam'),
-    LocationProvince(code: 'TG', name: 'Tiền Giang', region: 'Miền Nam'),
+    LocationProvince(code: 'TNI', name: 'Tây Ninh', region: 'Miền Nam'),
     LocationProvince(code: 'CT', name: 'Cần Thơ', region: 'Miền Nam'),
+    LocationProvince(code: 'VL', name: 'Vĩnh Long', region: 'Miền Nam'),
+    LocationProvince(code: 'DT', name: 'Đồng Tháp', region: 'Miền Nam'),
+    LocationProvince(code: 'CM', name: 'Cà Mau', region: 'Miền Nam'),
     LocationProvince(code: 'AG', name: 'An Giang', region: 'Miền Nam'),
-    LocationProvince(code: 'KG', name: 'Kiên Giang', region: 'Miền Nam'),
-    LocationProvince(code: 'BT', name: 'Bến Tre', region: 'Miền Nam'),
-    LocationProvince(code: 'TN_S', name: 'Tây Ninh', region: 'Miền Nam'),
   ];
 
   static const List<InternationalLocation> internationalLocations = [
