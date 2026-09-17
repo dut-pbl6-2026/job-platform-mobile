@@ -63,13 +63,11 @@ class AppNotification {
   });
 
   /// Helper to extract associated jobId from payload data
-  String? get jobId =>
-      data['job_id']?.toString() ?? data['jobId']?.toString();
+  String? get jobId => data['job_id']?.toString() ?? data['jobId']?.toString();
 
   /// Helper to extract associated applicationId from payload data
   String? get applicationId =>
-      data['application_id']?.toString() ??
-      data['applicationId']?.toString();
+      data['application_id']?.toString() ?? data['applicationId']?.toString();
 
   /// Target route if provided by notification payload
   String? get route => data['route']?.toString();
@@ -95,9 +93,9 @@ class AppNotification {
       createdAt: json['created_at'] != null
           ? DateTime.tryParse(json['created_at'].toString()) ?? DateTime.now()
           : (json['createdAt'] != null
-              ? DateTime.tryParse(json['createdAt'].toString()) ??
-                  DateTime.now()
-              : DateTime.now()),
+                ? DateTime.tryParse(json['createdAt'].toString()) ??
+                      DateTime.now()
+                : DateTime.now()),
     );
   }
 

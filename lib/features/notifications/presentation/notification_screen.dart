@@ -71,11 +71,13 @@ class _NotificationScreenState extends State<NotificationScreen>
 
     // Optimistic UI update
     setState(() {
-      final index =
-          _allNotifications.indexWhere((n) => n.id == notification.id);
+      final index = _allNotifications.indexWhere(
+        (n) => n.id == notification.id,
+      );
       if (index != -1) {
-        _allNotifications[index] =
-            _allNotifications[index].copyWith(isRead: true);
+        _allNotifications[index] = _allNotifications[index].copyWith(
+          isRead: true,
+        );
       }
     });
 
@@ -86,8 +88,9 @@ class _NotificationScreenState extends State<NotificationScreen>
 
   Future<void> _markAllAsRead() async {
     setState(() {
-      _allNotifications =
-          _allNotifications.map((n) => n.copyWith(isRead: true)).toList();
+      _allNotifications = _allNotifications
+          .map((n) => n.copyWith(isRead: true))
+          .toList();
     });
 
     try {
@@ -374,7 +377,9 @@ class _NotificationScreenState extends State<NotificationScreen>
       onTap: () => _onNotificationTap(item),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        color: item.isRead ? Colors.white : AppColors.primaryLight.withOpacity(0.08),
+        color: item.isRead
+            ? Colors.white
+            : AppColors.primaryLight.withOpacity(0.08),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

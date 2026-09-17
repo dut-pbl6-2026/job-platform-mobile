@@ -16,12 +16,12 @@ void main() {
     });
 
     Widget createWidgetUnderTest() {
-      return MaterialApp(
-        home: NotificationScreen(repository: mockRepo),
-      );
+      return MaterialApp(home: NotificationScreen(repository: mockRepo));
     }
 
-    testWidgets('Renders AppBar, tabs, and list of notifications', (tester) async {
+    testWidgets('Renders AppBar, tabs, and list of notifications', (
+      tester,
+    ) async {
       await tester.pumpWidget(createWidgetUnderTest());
       await tester.pumpAndSettle();
 
@@ -34,7 +34,9 @@ void main() {
       expect(find.text('Việc làm mới phù hợp với bạn'), findsOneWidget);
     });
 
-    testWidgets('Switches to Chưa đọc tab and shows unread items only', (tester) async {
+    testWidgets('Switches to Chưa đọc tab and shows unread items only', (
+      tester,
+    ) async {
       await tester.pumpWidget(createWidgetUnderTest());
       await tester.pumpAndSettle();
 
@@ -65,7 +67,9 @@ void main() {
       expect(unread.any((n) => n.id == 'notif-001'), isFalse);
     });
 
-    testWidgets('Mark all read button marks all notifications as read', (tester) async {
+    testWidgets('Mark all read button marks all notifications as read', (
+      tester,
+    ) async {
       await tester.pumpWidget(createWidgetUnderTest());
       await tester.pumpAndSettle();
 
@@ -76,14 +80,19 @@ void main() {
       await tester.pumpAndSettle();
 
       // SnackBar should be displayed
-      expect(find.text('Đã đánh dấu tất cả thông báo là đã đọc'), findsOneWidget);
+      expect(
+        find.text('Đã đánh dấu tất cả thông báo là đã đọc'),
+        findsOneWidget,
+      );
 
       // All items in repo should now be read
       final unreadCount = await mockRepo.getUnreadCount();
       expect(unreadCount, 0);
     });
 
-    testWidgets('Shows empty state when there are no notifications', (tester) async {
+    testWidgets('Shows empty state when there are no notifications', (
+      tester,
+    ) async {
       final emptyRepo = _EmptyNotificationRepository();
       await tester.pumpWidget(
         MaterialApp(home: NotificationScreen(repository: emptyRepo)),

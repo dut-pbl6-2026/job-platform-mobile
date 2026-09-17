@@ -13,23 +13,26 @@ void main() {
       expect(identical(instance1, instance2), isTrue);
     });
 
-    test('initializes and handles background handler safely without crashing', () async {
-      final service = PushNotificationService.instance;
+    test(
+      'initializes and handles background handler safely without crashing',
+      () async {
+        final service = PushNotificationService.instance;
 
-      // Simulate initialization with mock repository (in unit test environment, safely falls back)
-      final mockRepo = MockNotificationRepository();
-      await service.initialize(repository: mockRepo);
+        // Simulate initialization with mock repository (in unit test environment, safely falls back)
+        final mockRepo = MockNotificationRepository();
+        await service.initialize(repository: mockRepo);
 
-      // Background handler can process messages without throwing
-      await firebaseMessagingBackgroundHandler(
-        const RemoteMessage(
-          messageId: 'bg-test-msg-1',
-          data: {'job_id': 'job-001'},
-        ),
-      );
+        // Background handler can process messages without throwing
+        await firebaseMessagingBackgroundHandler(
+          const RemoteMessage(
+            messageId: 'bg-test-msg-1',
+            data: {'job_id': 'job-001'},
+          ),
+        );
 
-      // Verify unregisterTokenOnLogout executes safely
-      await service.unregisterTokenOnLogout();
-    });
+        // Verify unregisterTokenOnLogout executes safely
+        await service.unregisterTokenOnLogout();
+      },
+    );
   });
 }

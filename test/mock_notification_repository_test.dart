@@ -17,7 +17,10 @@ void main() {
         platform: 'android',
       );
 
-      expect(repository.registeredTokens.contains('fcm-device-token-123'), isTrue);
+      expect(
+        repository.registeredTokens.contains('fcm-device-token-123'),
+        isTrue,
+      );
     });
 
     test('unregisterDeviceToken removes token on logout', () async {
@@ -25,10 +28,16 @@ void main() {
         token: 'fcm-token-to-remove',
         platform: 'android',
       );
-      expect(repository.registeredTokens.contains('fcm-token-to-remove'), isTrue);
+      expect(
+        repository.registeredTokens.contains('fcm-token-to-remove'),
+        isTrue,
+      );
 
       await repository.unregisterDeviceToken('fcm-token-to-remove');
-      expect(repository.registeredTokens.contains('fcm-token-to-remove'), isFalse);
+      expect(
+        repository.registeredTokens.contains('fcm-token-to-remove'),
+        isFalse,
+      );
     });
 
     test('getNotifications returns initial sample notifications', () async {
@@ -57,15 +66,18 @@ void main() {
       expect(unreadAfter.any((n) => n.id == targetId), isFalse);
     });
 
-    test('markAllAsRead sets all items as read and unread count is zero', () async {
-      await repository.markAllAsRead();
+    test(
+      'markAllAsRead sets all items as read and unread count is zero',
+      () async {
+        await repository.markAllAsRead();
 
-      final count = await repository.getUnreadCount();
-      expect(count, 0);
+        final count = await repository.getUnreadCount();
+        expect(count, 0);
 
-      final unreadItems = await repository.getNotifications(unreadOnly: true);
-      expect(unreadItems.isEmpty, isTrue);
-    });
+        final unreadItems = await repository.getNotifications(unreadOnly: true);
+        expect(unreadItems.isEmpty, isTrue);
+      },
+    );
 
     test('addNotification prepends new notification to feed', () async {
       final initialCount = (await repository.getNotifications()).length;
@@ -85,21 +97,28 @@ void main() {
       expect(updatedList.first.id, 'new-alert-999');
     });
 
-    test('markAsRead persists read status across repository instances', () async {
-      final unreadBefore = await repository.getNotifications(unreadOnly: true);
-      expect(unreadBefore.isNotEmpty, isTrue);
-      final targetId = unreadBefore.first.id;
+    test(
+      'markAsRead persists read status across repository instances',
+      () async {
+        final unreadBefore = await repository.getNotifications(
+          unreadOnly: true,
+        );
+        expect(unreadBefore.isNotEmpty, isTrue);
+        final targetId = unreadBefore.first.id;
 
-      await repository.markAsRead(targetId);
+        await repository.markAsRead(targetId);
 
-      // Create a brand new repository instance
-      final newRepoInstance = MockNotificationRepository();
-      final unreadAfter = await newRepoInstance.getNotifications(unreadOnly: true);
-      expect(unreadAfter.any((n) => n.id == targetId), isFalse);
+        // Create a brand new repository instance
+        final newRepoInstance = MockNotificationRepository();
+        final unreadAfter = await newRepoInstance.getNotifications(
+          unreadOnly: true,
+        );
+        expect(unreadAfter.any((n) => n.id == targetId), isFalse);
 
-      final allNotifs = await newRepoInstance.getNotifications();
-      final readItem = allNotifs.firstWhere((n) => n.id == targetId);
-      expect(readItem.isRead, isTrue);
-    });
+        final allNotifs = await newRepoInstance.getNotifications();
+        final readItem = allNotifs.firstWhere((n) => n.id == targetId);
+        expect(readItem.isRead, isTrue);
+      },
+    );
   });
 }

@@ -51,7 +51,8 @@ class PushNotificationService {
   static const AndroidNotificationChannel _channel = AndroidNotificationChannel(
     'job_platform_high_importance',
     'Job Platform Notifications',
-    description: 'Notifications for job alerts, application updates and interviews',
+    description:
+        'Notifications for job alerts, application updates and interviews',
     importance: Importance.high,
   );
 
@@ -66,7 +67,8 @@ class PushNotificationService {
       _repository = repository;
     }
 
-    final isMobile = !kIsWeb &&
+    final isMobile =
+        !kIsWeb &&
         (defaultTargetPlatform == TargetPlatform.android ||
             defaultTargetPlatform == TargetPlatform.iOS);
 
@@ -118,7 +120,9 @@ class PushNotificationService {
       _isInitialized = true;
       debugPrint('PushNotificationService initialized successfully.');
     } catch (e) {
-      debugPrint('PushNotificationService initialization error (gracefully handled): $e');
+      debugPrint(
+        'PushNotificationService initialization error (gracefully handled): $e',
+      );
       _isInitialized = false;
     }
   }
@@ -126,8 +130,9 @@ class PushNotificationService {
   Future<void> _setupLocalNotifications() async {
     if (_localNotifications == null) return;
 
-    const androidSettings =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
+    const androidSettings = AndroidInitializationSettings(
+      '@mipmap/ic_launcher',
+    );
     const iosSettings = DarwinInitializationSettings(
       requestAlertPermission: false,
       requestBadgePermission: false,
@@ -151,7 +156,8 @@ class PushNotificationService {
     // Create default channel on Android
     await _localNotifications
         ?.resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
+          AndroidFlutterLocalNotificationsPlugin
+        >()
         ?.createNotificationChannel(_channel);
 
     // Foreground notification options for iOS
@@ -170,7 +176,9 @@ class PushNotificationService {
       final data = message.data;
 
       final appNotification = AppNotification(
-        id: message.messageId ?? DateTime.now().millisecondsSinceEpoch.toString(),
+        id:
+            message.messageId ??
+            DateTime.now().millisecondsSinceEpoch.toString(),
         title: notification?.title ?? data['title'] ?? 'Thông báo mới',
         body: notification?.body ?? data['body'] ?? '',
         type: NotificationType.fromString(data['type']),
@@ -195,7 +203,9 @@ class PushNotificationService {
     // C. App opened from terminated state via notification tap
     _messaging?.getInitialMessage().then((RemoteMessage? message) {
       if (message != null) {
-        debugPrint('App launched from terminated state via FCM: ${message.data}');
+        debugPrint(
+          'App launched from terminated state via FCM: ${message.data}',
+        );
         handleNotificationNavigation(message.data);
       }
     });
@@ -258,10 +268,10 @@ class PushNotificationService {
     final platform = kIsWeb
         ? 'web'
         : (defaultTargetPlatform == TargetPlatform.android
-            ? 'android'
-            : (defaultTargetPlatform == TargetPlatform.iOS
-                ? 'ios'
-                : defaultTargetPlatform.name));
+              ? 'android'
+              : (defaultTargetPlatform == TargetPlatform.iOS
+                    ? 'ios'
+                    : defaultTargetPlatform.name));
 
     try {
       await _repository.registerDeviceToken(

@@ -14,7 +14,7 @@ class ApiNotificationRepository implements INotificationRepository {
       MockNotificationRepository();
 
   ApiNotificationRepository({Dio? dio})
-      : _dio = dio ?? DioProvider.instance.dio;
+    : _dio = dio ?? DioProvider.instance.dio;
 
   @override
   Future<void> registerDeviceToken({
@@ -24,10 +24,7 @@ class ApiNotificationRepository implements INotificationRepository {
     try {
       final response = await _dio.post(
         '/api/notifications/devices',
-        data: {
-          'token': token,
-          'platform': platform,
-        },
+        data: {'token': token, 'platform': platform},
       );
       if (response.statusCode != 200 && response.statusCode != 201) {
         debugPrint(
@@ -49,9 +46,7 @@ class ApiNotificationRepository implements INotificationRepository {
   @override
   Future<void> unregisterDeviceToken(String token) async {
     try {
-      await _dio.delete(
-        '/api/notifications/devices/$token',
-      );
+      await _dio.delete('/api/notifications/devices/$token');
     } on DioException catch (e) {
       debugPrint('Device token unregistration failed: $e');
       await _fallbackMockRepository.unregisterDeviceToken(token);
@@ -86,17 +81,15 @@ class ApiNotificationRepository implements INotificationRepository {
         }
 
         await MockNotificationRepository.ensureLoaded();
-        return items
-            .map((item) {
-              final notif = AppNotification.fromJson(
-                Map<String, dynamic>.from(item as Map),
-              );
-              if (MockNotificationRepository.isMarkedReadLocally(notif.id)) {
-                return notif.copyWith(isRead: true);
-              }
-              return notif;
-            })
-            .toList();
+        return items.map((item) {
+          final notif = AppNotification.fromJson(
+            Map<String, dynamic>.from(item as Map),
+          );
+          if (MockNotificationRepository.isMarkedReadLocally(notif.id)) {
+            return notif.copyWith(isRead: true);
+          }
+          return notif;
+        }).toList();
       }
       return await _fallbackMockRepository.getNotifications(
         page: page,
@@ -152,9 +145,8 @@ class ApiNotificationRepository implements INotificationRepository {
       final response = await _dio.get('/api/notifications/unread-count');
       if (response.statusCode == 200 && response.data != null) {
         if (response.data is Map) {
-          return (response.data['count'] ??
-                  response.data['unread_count'] ??
-                  0) as int;
+          return (response.data['count'] ?? response.data['unread_count'] ?? 0)
+              as int;
         } else if (response.data is int) {
           return response.data as int;
         }

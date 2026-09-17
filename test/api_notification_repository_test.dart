@@ -9,38 +9,41 @@ void main() {
       expect(repo, isNotNull);
     });
 
-    test('Falls back gracefully to mock repository when Gateway is offline', () async {
-      final dio = Dio();
-      dio.interceptors.add(
-        InterceptorsWrapper(
-          onRequest: (options, handler) {
-            handler.reject(
-              DioException(
-                requestOptions: options,
-                error: 'Connection refused',
-                type: DioExceptionType.connectionError,
-              ),
-            );
-          },
-        ),
-      );
-      final repo = ApiNotificationRepository(dio: dio);
+    test(
+      'Falls back gracefully to mock repository when Gateway is offline',
+      () async {
+        final dio = Dio();
+        dio.interceptors.add(
+          InterceptorsWrapper(
+            onRequest: (options, handler) {
+              handler.reject(
+                DioException(
+                  requestOptions: options,
+                  error: 'Connection refused',
+                  type: DioExceptionType.connectionError,
+                ),
+              );
+            },
+          ),
+        );
+        final repo = ApiNotificationRepository(dio: dio);
 
-      final notifications = await repo.getNotifications();
-      expect(notifications.isNotEmpty, isTrue);
+        final notifications = await repo.getNotifications();
+        expect(notifications.isNotEmpty, isTrue);
 
-      final unreadCount = await repo.getUnreadCount();
-      expect(unreadCount, greaterThanOrEqualTo(0));
+        final unreadCount = await repo.getUnreadCount();
+        expect(unreadCount, greaterThanOrEqualTo(0));
 
-      // Should not throw
-      await repo.registerDeviceToken(
-        token: 'test-fcm-token',
-        platform: 'android',
-      );
-      await repo.unregisterDeviceToken('test-fcm-token');
-      await repo.markAsRead('notif-001');
-      await repo.markAllAsRead();
-    });
+        // Should not throw
+        await repo.registerDeviceToken(
+          token: 'test-fcm-token',
+          platform: 'android',
+        );
+        await repo.unregisterDeviceToken('test-fcm-token');
+        await repo.markAsRead('notif-001');
+        await repo.markAllAsRead();
+      },
+    );
 
     test('Parses successful API Gateway response correctly', () async {
       final dio = Dio();

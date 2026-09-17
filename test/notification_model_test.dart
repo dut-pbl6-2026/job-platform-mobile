@@ -103,10 +103,7 @@ void main() {
         NotificationType.fromString('interview_invite'),
         NotificationType.interviewInvite,
       );
-      expect(
-        NotificationType.fromString('system'),
-        NotificationType.system,
-      );
+      expect(NotificationType.fromString('system'), NotificationType.system);
       expect(
         NotificationType.fromString('unknown_type'),
         NotificationType.system,
