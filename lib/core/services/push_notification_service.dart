@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -15,6 +14,7 @@ import '../../features/notifications/domain/repositories/notification_repository
 /// Top-level background message handler required by FirebaseMessaging
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  if (kIsWeb) return;
   try {
     if (Firebase.apps.isEmpty) {
       await Firebase.initializeApp(
@@ -64,6 +64,17 @@ class PushNotificationService {
     if (_isInitialized) return;
     if (repository != null) {
       _repository = repository;
+    }
+
+    final isMobile = !kIsWeb &&
+        (defaultTargetPlatform == TargetPlatform.android ||
+            defaultTargetPlatform == TargetPlatform.iOS);
+
+    if (!isMobile && messagingOverride == null) {
+      debugPrint(
+        'Push notifications are supported on Mobile platforms (Android/iOS). Skipping on ${kIsWeb ? 'web' : defaultTargetPlatform.name}.',
+      );
+      return;
     }
 
     try {
@@ -246,9 +257,11 @@ class PushNotificationService {
     if (_fcmToken == null) return;
     final platform = kIsWeb
         ? 'web'
-        : (Platform.isAndroid
+        : (defaultTargetPlatform == TargetPlatform.android
             ? 'android'
-            : (Platform.isIOS ? 'ios' : 'desktop'));
+            : (defaultTargetPlatform == TargetPlatform.iOS
+                ? 'ios'
+                : defaultTargetPlatform.name));
 
     try {
       await _repository.registerDeviceToken(
