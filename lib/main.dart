@@ -3,11 +3,15 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app.dart';
+import 'core/services/hive_cache_service.dart';
 import 'core/session/auth_session.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await AuthSession.instance.load();
+
+  // Initialize Hive offline cache (OFFLINE-01)
+  await HiveCacheService.instance.init();
 
   // Lock orientation to portrait (per SRS 7.2.2 - Portrait primary)
   await SystemChrome.setPreferredOrientations([

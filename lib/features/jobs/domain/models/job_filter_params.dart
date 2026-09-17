@@ -9,6 +9,7 @@ class JobFilterParams {
   final String? category;
   final JobType? jobType;
   final ExperienceLevel? experienceLevel;
+  final List<String> skills;
   final num? salaryMin;
   final num? salaryMax;
   final bool onlySaved;
@@ -22,6 +23,7 @@ class JobFilterParams {
     this.category,
     this.jobType,
     this.experienceLevel,
+    this.skills = const [],
     this.salaryMin,
     this.salaryMax,
     this.onlySaved = false,
@@ -37,6 +39,7 @@ class JobFilterParams {
         (category != null && category!.trim().isNotEmpty) ||
         jobType != null ||
         experienceLevel != null ||
+        skills.isNotEmpty ||
         salaryMin != null ||
         salaryMax != null ||
         onlySaved;
@@ -49,6 +52,7 @@ class JobFilterParams {
     if (category != null && category!.trim().isNotEmpty) count++;
     if (jobType != null) count++;
     if (experienceLevel != null) count++;
+    if (skills.isNotEmpty) count++;
     if (salaryMin != null || salaryMax != null) count++;
     if (onlySaved) count++;
     return count;
@@ -65,6 +69,8 @@ class JobFilterParams {
     bool clearJobType = false,
     ExperienceLevel? experienceLevel,
     bool clearExperienceLevel = false,
+    List<String>? skills,
+    bool clearSkills = false,
     num? salaryMin,
     bool clearSalaryMin = false,
     num? salaryMax,
@@ -82,6 +88,7 @@ class JobFilterParams {
       experienceLevel: clearExperienceLevel
           ? null
           : (experienceLevel ?? this.experienceLevel),
+      skills: clearSkills ? const [] : (skills ?? this.skills),
       salaryMin: clearSalaryMin ? null : (salaryMin ?? this.salaryMin),
       salaryMax: clearSalaryMax ? null : (salaryMax ?? this.salaryMax),
       onlySaved: onlySaved ?? this.onlySaved,
@@ -93,6 +100,11 @@ class JobFilterParams {
 
   /// Reset all filters back to default empty criteria while maintaining pageSize
   JobFilterParams clearAllFilters() {
-    return JobFilterParams(pageSize: pageSize, page: 0, sortBy: 'newest');
+    return JobFilterParams(
+      pageSize: pageSize,
+      page: 0,
+      sortBy: 'newest',
+      skills: const [],
+    );
   }
 }
