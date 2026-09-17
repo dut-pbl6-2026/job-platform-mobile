@@ -14,6 +14,7 @@ import '../../features/jobs/presentation/job_list_screen.dart';
 import '../../features/applications/presentation/application_detail_screen.dart';
 import '../../features/applications/presentation/application_history_screen.dart';
 import '../../features/applications/presentation/apply_job_screen.dart';
+import '../../features/notifications/presentation/notification_screen.dart';
 import '../../features/profile/presentation/profile_screen.dart';
 import '../../features/splash/splash_screen.dart';
 
@@ -31,6 +32,7 @@ class AppRoutes {
   static const String applications = '/applications';
   static const String applicationDetail = '/applications/:id';
   static const String profile = '/profile';
+  static const String notifications = '/notifications';
   static const String forgotPassword = '/forgot-password';
   static const String resetPassword = '/reset-password';
 
@@ -108,6 +110,12 @@ class AppRouter {
         name: 'reset-password',
         builder: (context, state) =>
             ResetPasswordScreen(token: state.uri.queryParameters['token']),
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: AppRoutes.notifications,
+        name: 'notifications',
+        builder: (context, state) => const NotificationScreen(),
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
