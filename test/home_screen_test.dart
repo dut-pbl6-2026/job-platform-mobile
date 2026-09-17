@@ -192,7 +192,7 @@ void main() {
           GoRoute(
             path: AppRoutes.search,
             builder: (context, state) =>
-                const Scaffold(body: Text('Dedicated Search Screen')),
+                const Scaffold(body: Text('Dedicated Search Destination')),
           ),
         ],
       );
@@ -203,11 +203,17 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      // Tap search bar
+      // Verify search placeholder text is present
+      expect(
+        find.text('Tìm kiếm công việc, công ty, kỹ năng...'),
+        findsOneWidget,
+      );
+
+      // Tap search bar and verify navigation to search screen
       await tester.tap(find.text('Tìm kiếm công việc, công ty, kỹ năng...'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Dedicated Search Screen'), findsOneWidget);
+      expect(find.text('Dedicated Search Destination'), findsOneWidget);
     },
   );
 }

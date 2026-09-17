@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -13,8 +14,9 @@ import '../jobs/domain/models/job_model.dart';
 import '../jobs/domain/repositories/job_repository.dart';
 import '../jobs/presentation/widgets/job_card.dart';
 import '../jobs/presentation/widgets/job_filter_bottom_sheet.dart';
+import '../jobs/presentation/widgets/job_shimmer_loading.dart';
 
-/// Commercial-grade Home Dashboard matching production mobile design (Figure 3)
+/// Commercial-grade Home Dashboard with fully integrated real-time job search & filtering
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key, this.authRepository, this.jobRepository});
 
@@ -31,31 +33,88 @@ class _HomeScreenState extends State<HomeScreen> {
 
   bool _isLoggingOut = false;
   bool _isLoadingJobs = true;
-  List<JobModel> _featuredJobs = [];
+  bool _isLoadingMore = false;
+  String? _errorMessage;
+
+  List<JobModel> _jobs = [];
+  int _totalJobs = 0;
+  int _currentPage = 0;
+  bool _hasNextPage = false;
+
+  JobFilterParams _filterParams = const JobFilterParams(pageSize: 10, page: 0);
   String _selectedPill = 'Tất cả';
+
+  bool get _isFilterActive =>
+      _filterParams.activeFilterCount > 0 ||
+      (_selectedPill != 'Tất cả' && _selectedPill != 'Việc làm');
 
   @override
   void initState() {
     super.initState();
     _authRepository = widget.authRepository ?? ApiAuthRepository();
     _jobRepository = widget.jobRepository ?? MockJobRepository();
-    _loadFeaturedJobs();
+    _fetchJobs();
   }
 
-  Future<void> _loadFeaturedJobs() async {
-    try {
-      final result = await _jobRepository.getJobs(
-        const JobFilterParams(pageSize: 5),
-      );
+  @override
+  void dispose() {
+    super.dispose();
+  }
+
+  Future<void> _fetchJobs({bool isResetPage = true}) async {
+    if (isResetPage) {
       if (mounted) {
         setState(() {
-          _featuredJobs = result.items;
+          _isLoadingJobs = true;
+          _errorMessage = null;
+          _filterParams = _filterParams.copyWith(page: 0);
+        });
+      }
+    }
+
+    try {
+      final result = await _jobRepository.getJobs(_filterParams);
+      if (mounted) {
+        setState(() {
+          _jobs = result.items;
+          _totalJobs = result.total;
+          _currentPage = result.page;
+          _hasNextPage = result.hasNextPage;
           _isLoadingJobs = false;
+          _errorMessage = null;
         });
       }
     } catch (_) {
       if (mounted) {
-        setState(() => _isLoadingJobs = false);
+        setState(() {
+          _isLoadingJobs = false;
+          _errorMessage = 'Không thể tải danh sách việc làm. Vui lòng thử lại.';
+        });
+      }
+    }
+  }
+
+  Future<void> _loadMoreJobs() async {
+    if (_isLoadingMore || !_hasNextPage) return;
+
+    setState(() => _isLoadingMore = true);
+
+    try {
+      final nextPage = _currentPage + 1;
+      final nextParams = _filterParams.copyWith(page: nextPage);
+      final result = await _jobRepository.getJobs(nextParams);
+
+      if (mounted) {
+        setState(() {
+          _jobs.addAll(result.items);
+          _currentPage = result.page;
+          _hasNextPage = result.hasNextPage;
+          _isLoadingMore = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _isLoadingMore = false);
       }
     }
   }
@@ -99,20 +158,57 @@ class _HomeScreenState extends State<HomeScreen> {
   void _openFilter() {
     JobFilterBottomSheet.show(
       context,
-      currentParams: const JobFilterParams(),
+      currentParams: _filterParams,
       onApply: (params) {
-        context.go(AppRoutes.jobs);
+        setState(() {
+          _filterParams = params.copyWith(page: 0);
+          _selectedPill = 'Tùy chọn';
+        });
+        _fetchJobs(isResetPage: true);
       },
     );
   }
 
   void _handlePillTap(String pill) {
     setState(() => _selectedPill = pill);
-    if (pill == 'Tất cả') {
-      context.push(AppRoutes.search);
-    } else {
-      context.push('${AppRoutes.search}?q=${Uri.encodeComponent(pill)}');
+    switch (pill) {
+      case 'Tất cả':
+        _filterParams = const JobFilterParams(pageSize: 10, page: 0);
+        break;
+      case 'IT / Phần mềm':
+        _filterParams = _filterParams.copyWith(
+          category: 'Công nghệ thông tin',
+          clearCategory: false,
+          page: 0,
+        );
+        break;
+      case 'Lương cao (30M+)':
+        _filterParams = _filterParams.copyWith(
+          salaryMin: 30000000,
+          clearSalaryMin: false,
+          page: 0,
+        );
+        break;
+      case 'Từ xa (Remote)':
+        _filterParams = _filterParams.copyWith(
+          workplaceType: 'remote',
+          clearWorkplaceType: false,
+          page: 0,
+        );
+        break;
+      case 'Địa điểm':
+        _openFilter();
+        return;
     }
+    _fetchJobs(isResetPage: true);
+  }
+
+  void _resetFilters() {
+    setState(() {
+      _selectedPill = 'Tất cả';
+      _filterParams = const JobFilterParams(pageSize: 10, page: 0);
+    });
+    _fetchJobs(isResetPage: true);
   }
 
   @override
@@ -124,28 +220,28 @@ class _HomeScreenState extends State<HomeScreen> {
       backgroundColor: AppColors.background,
       body: SafeArea(
         child: RefreshIndicator(
-          onRefresh: _loadFeaturedJobs,
+          onRefresh: () => _fetchJobs(isResetPage: true),
           color: AppColors.primary,
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // 1. Top App Header Bar (Avatar + Name + Notification & Message icons)
+                // 1. Top App Header Bar
                 _buildTopHeader(user),
 
-                // 2. Search Bar + Integrated Filter Trigger
+                // 2. Interactive Search Bar with Filter Button (integrated on Home)
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: _buildSearchBar(),
                 ),
                 const SizedBox(height: 14),
 
-                // 3. Category & Filter Pills Bar (Figure 3)
+                // 3. Category & Filter Pills Bar (directly filters Home jobs)
                 _buildFilterPills(),
                 const SizedBox(height: 18),
 
-                // 4. AI Skill Match Banner (90% Match Banner from Figure 3)
+                // 4. AI Skill Match Banner
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: _buildAiMatchBanner(),
@@ -159,40 +255,52 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 const SizedBox(height: 22),
 
-                // 6. Featured & Recommended Jobs Section
+                // 6. Real-time Search & Recommended Jobs Section
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        'Việc làm đề xuất',
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
-                        ),
-                      ),
-                      InkWell(
-                        onTap: () => context.go(AppRoutes.jobs),
-                        child: const Row(
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Xem tất cả',
-                              style: TextStyle(
-                                color: AppColors.primary,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
+                              _isFilterActive
+                                  ? 'Kết quả tìm kiếm'
+                                  : 'Việc làm đề xuất',
+                              style: Theme.of(context).textTheme.titleLarge
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 18,
+                                  ),
+                            ),
+                            if (_totalJobs > 0) ...[
+                              const SizedBox(height: 2),
+                              Text(
+                                'Tìm thấy $_totalJobs cơ hội việc làm',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: AppColors.textSecondary,
+                                  fontWeight: FontWeight.w500,
+                                ),
                               ),
-                            ),
-                            SizedBox(width: 2),
-                            Icon(
-                              Icons.arrow_forward_ios_rounded,
-                              size: 12,
-                              color: AppColors.primary,
-                            ),
+                            ],
                           ],
                         ),
                       ),
+                      if (_isFilterActive)
+                        TextButton.icon(
+                          onPressed: _resetFilters,
+                          icon: const Icon(Icons.refresh_rounded, size: 14),
+                          label: const Text(
+                            'Đặt lại',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
                     ],
                   ),
                 ),
@@ -212,7 +320,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // --- 1. Modern Top Header (Figure 3) ---
+  // --- 1. Modern Top Header ---
   Widget _buildTopHeader(UserModel? user) {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
@@ -334,7 +442,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // --- 2. Search Bar with Filter Button ---
+  // --- 2. Tappable Search Bar on Home ---
   Widget _buildSearchBar() {
     return InkWell(
       onTap: () => context.push(AppRoutes.search),
@@ -358,7 +466,7 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             const Icon(
               Icons.search_rounded,
-              color: AppColors.textSecondary,
+              color: AppColors.primary,
               size: 22,
             ),
             const SizedBox(width: 10),
@@ -374,13 +482,13 @@ class _HomeScreenState extends State<HomeScreen> {
             IconButton(
               icon: const Icon(
                 Icons.tune_rounded,
-                color: AppColors.primary,
+                color: AppColors.textSecondary,
                 size: 20,
               ),
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints(),
               tooltip: 'Bộ lọc',
-              onPressed: _openFilter,
+              onPressed: () => context.push(AppRoutes.search),
             ),
           ],
         ),
@@ -388,7 +496,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // --- 3. Filter / Category Pills Bar (Figure 3) ---
+  // --- 3. Filter / Category Pills Bar (directly filters Home list) ---
   Widget _buildFilterPills() {
     final pills = [
       'Tất cả',
@@ -435,7 +543,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // --- 4. 90% Skill Match AI Banner (Inspired by Figure 3) ---
+  // --- 4. 90% Skill Match AI Banner ---
   Widget _buildAiMatchBanner() {
     return Container(
       width: double.infinity,
@@ -526,7 +634,10 @@ class _HomeScreenState extends State<HomeScreen> {
           // Navigation CTA icon
           IconButton(
             icon: const Icon(Icons.arrow_forward_rounded, color: Colors.white),
-            onPressed: () => context.go(AppRoutes.jobs),
+            onPressed: () {
+              // Filters jobs matching profile on Home
+              _handlePillTap('IT / Phần mềm');
+            },
           ),
         ],
       ),
@@ -639,45 +750,133 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // --- 6. Jobs List ---
+  // --- 6. Jobs List with Live Search Results & Load More ---
   Widget _buildJobsList() {
     if (_isLoadingJobs) {
-      return const Center(
-        child: Padding(
-          padding: EdgeInsets.symmetric(vertical: 30),
-          child: CircularProgressIndicator(strokeWidth: 2.5),
-        ),
-      );
+      return const JobShimmerLoading();
     }
 
-    if (_featuredJobs.isEmpty) {
-      return const Padding(
-        padding: EdgeInsets.symmetric(vertical: 20),
+    if (_errorMessage != null) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 24),
         child: Center(
-          child: Text(
-            'Chưa có việc làm đề xuất',
-            style: TextStyle(color: AppColors.textSecondary),
+          child: Column(
+            children: [
+              const Icon(
+                Icons.error_outline_rounded,
+                color: AppColors.error,
+                size: 40,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                _errorMessage!,
+                style: const TextStyle(color: AppColors.textSecondary),
+              ),
+              const SizedBox(height: 12),
+              ElevatedButton(
+                onPressed: () => _fetchJobs(isResetPage: true),
+                child: const Text('Thử lại'),
+              ),
+            ],
           ),
         ),
       );
     }
 
-    return ListView.separated(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: _featuredJobs.length,
-      separatorBuilder: (context, index) => const SizedBox(height: 12),
-      itemBuilder: (context, index) {
-        final job = _featuredJobs[index];
-        return JobCard(
-          job: job,
-          onTap: () => context.push('${AppRoutes.jobs}/${job.id}'),
-          onBookmarkToggle: () async {
-            await _jobRepository.toggleSaveJob(job.id);
-            _loadFeaturedJobs();
+    if (_jobs.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+          child: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: AppColors.textHint.withValues(alpha: 0.08),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.search_off_rounded,
+                  size: 36,
+                  color: AppColors.textHint,
+                ),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Không tìm thấy việc làm phù hợp',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                'Thử tìm kiếm với từ khóa khác hoặc điều chỉnh bộ lọc để có kết quả tốt hơn.',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+              ),
+              const SizedBox(height: 14),
+              OutlinedButton.icon(
+                onPressed: _resetFilters,
+                icon: const Icon(Icons.refresh_rounded, size: 16),
+                label: const Text('Xóa bộ lọc & Đặt lại'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      children: [
+        ListView.separated(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: _jobs.length,
+          separatorBuilder: (context, index) => const SizedBox(height: 12),
+          itemBuilder: (context, index) {
+            final job = _jobs[index];
+            return JobCard(
+              job: job,
+              onTap: () => context.push('${AppRoutes.jobs}/${job.id}'),
+              onBookmarkToggle: () async {
+                await _jobRepository.toggleSaveJob(job.id);
+                if (mounted) {
+                  setState(() {
+                    _jobs[index] = job.copyWith(isSaved: !job.isSaved);
+                  });
+                }
+              },
+            );
           },
-        );
-      },
+        ),
+        if (_hasNextPage) ...[
+          const SizedBox(height: 16),
+          Center(
+            child: _isLoadingMore
+                ? const SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(strokeWidth: 2.5),
+                  )
+                : OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 10,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    onPressed: _loadMoreJobs,
+                    icon: const Icon(Icons.expand_more_rounded, size: 18),
+                    label: const Text('Xem thêm việc làm'),
+                  ),
+          ),
+        ],
+      ],
     );
   }
 }
