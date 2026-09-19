@@ -17,6 +17,7 @@ import '../../features/applications/presentation/application_detail_screen.dart'
 import '../../features/applications/presentation/application_history_screen.dart';
 import '../../features/applications/presentation/apply_job_screen.dart';
 import '../../features/notifications/presentation/notification_screen.dart';
+import '../../features/profile/presentation/profile_detail_screen.dart';
 import '../../features/profile/presentation/profile_screen.dart';
 import '../../features/splash/splash_screen.dart';
 
@@ -35,6 +36,7 @@ class AppRoutes {
   static const String applications = '/applications';
   static const String applicationDetail = '/applications/:id';
   static const String profile = '/profile';
+  static const String profileDetail = '/profile/detail';
   static const String notifications = '/notifications';
   static const String createCv = '/create-cv';
   static const String forgotPassword = '/forgot-password';
@@ -215,6 +217,14 @@ class AppRouter {
                 path: AppRoutes.profile,
                 name: 'profile',
                 builder: (context, state) => const ProfileScreen(),
+                routes: [
+                  GoRoute(
+                    parentNavigatorKey: _rootNavigatorKey,
+                    path: 'detail',
+                    name: 'profile-detail',
+                    builder: (context, state) => const ProfileDetailScreen(),
+                  ),
+                ],
               ),
             ],
           ),
