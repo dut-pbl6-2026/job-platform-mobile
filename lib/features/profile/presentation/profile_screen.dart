@@ -57,7 +57,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   String get _candidateCode {
-    final rawId = _profile?.userId ?? AuthSession.instance.currentUser?.id ?? '7613650';
+    final rawId =
+        _profile?.userId ?? AuthSession.instance.currentUser?.id ?? '7613650';
     final numeric = rawId.replaceAll(RegExp(r'[^0-9]'), '');
     if (numeric.length >= 6) {
       return numeric.substring(0, 7.clamp(0, numeric.length));
@@ -74,7 +75,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Row(
           children: const [
-            Icon(Icons.auto_awesome_rounded, color: AppColors.primary, size: 24),
+            Icon(
+              Icons.auto_awesome_rounded,
+              color: AppColors.primary,
+              size: 24,
+            ),
             SizedBox(width: 10),
             Expanded(
               child: Text(
@@ -88,7 +93,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
           'Tôi đồng ý để hệ thống gợi ý việc làm dựa trên CV và hoạt động tìm việc, quá trình phân tích có thể sử dụng công nghệ AI',
           style: TextStyle(fontSize: 14, color: Color(0xFF334155), height: 1.5),
         ),
-        actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        actionsPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 12,
+        ),
         actions: [
           TextButton(
             onPressed: () {
@@ -97,7 +105,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
             },
             child: const Text(
               'Để sau',
-              style: TextStyle(color: AppColors.textSecondary, fontWeight: FontWeight.w600),
+              style: TextStyle(
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
           ElevatedButton(
@@ -117,9 +128,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
               foregroundColor: Colors.white,
               elevation: 0,
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
-            child: const Text('Xác nhận', style: TextStyle(fontWeight: FontWeight.bold)),
+            child: const Text(
+              'Xác nhận',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
           ),
         ],
       ),
@@ -153,17 +169,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               const SizedBox(height: 16),
               ListTile(
-                leading: const Icon(Icons.photo_camera_outlined, color: AppColors.primary),
+                leading: const Icon(
+                  Icons.photo_camera_outlined,
+                  color: AppColors.primary,
+                ),
                 title: const Text('Chụp ảnh mới'),
                 onTap: () {
                   Navigator.of(ctx).pop();
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Tính năng chụp ảnh đại diện đang sẵn sàng')),
+                    const SnackBar(
+                      content: Text(
+                        'Tính năng chụp ảnh đại diện đang sẵn sàng',
+                      ),
+                    ),
                   );
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.photo_library_outlined, color: AppColors.primary),
+                leading: const Icon(
+                  Icons.photo_library_outlined,
+                  color: AppColors.primary,
+                ),
                 title: const Text('Chọn ảnh từ thư viện'),
                 onTap: () {
                   Navigator.of(ctx).pop();
@@ -186,9 +212,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Row(
           children: const [
-            Icon(Icons.workspace_premium_rounded, color: Colors.amber, size: 28),
+            Icon(
+              Icons.workspace_premium_rounded,
+              color: Colors.amber,
+              size: 28,
+            ),
             SizedBox(width: 10),
-            Text('Nâng cấp tài khoản VIP', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Text(
+              'Nâng cấp tài khoản VIP',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
           ],
         ),
         content: Column(
@@ -216,7 +249,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
             child: const Text('Tìm hiểu thêm'),
           ),
@@ -230,18 +265,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Đăng xuất tài khoản', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text(
+          'Đăng xuất tài khoản',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         content: const Text(
           'Bạn có chắc chắn muốn đăng xuất khỏi tài khoản không?',
           style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
         ),
-        actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        actionsPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 12,
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
             child: const Text(
               'Hủy',
-              style: TextStyle(color: AppColors.textSecondary, fontWeight: FontWeight.w600),
+              style: TextStyle(
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
           ElevatedButton(
@@ -256,9 +300,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
               backgroundColor: AppColors.error,
               foregroundColor: Colors.white,
               elevation: 0,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
-            child: const Text('Đăng xuất', style: TextStyle(fontWeight: FontWeight.bold)),
+            child: const Text(
+              'Đăng xuất',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
           ),
         ],
       ),
@@ -270,10 +319,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        title: Text(
+          title,
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        ),
         content: Text(
           message,
-          style: const TextStyle(fontSize: 14, color: AppColors.textSecondary, height: 1.4),
+          style: const TextStyle(
+            fontSize: 14,
+            color: AppColors.textSecondary,
+            height: 1.4,
+          ),
         ),
         actions: [
           TextButton(
@@ -294,7 +350,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Đổi mật khẩu', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text(
+          'Đổi mật khẩu',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -344,7 +403,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
             child: const Text('Cập nhật'),
           ),
@@ -401,7 +462,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             if (val) {
                               _showJobRecommendationDialog();
                             } else {
-                              setState(() => _isJobRecommendationEnabled = false);
+                              setState(
+                                () => _isJobRecommendationEnabled = false,
+                              );
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
                                   content: Text('Đã tắt gợi ý việc làm'),
@@ -700,7 +763,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         onTap: () => ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
                             backgroundColor: AppColors.primary,
-                            content: Text('Bạn đang sử dụng phiên bản mới nhất!'),
+                            content: Text(
+                              'Bạn đang sử dụng phiên bản mới nhất!',
+                            ),
                           ),
                         ),
                       ),
@@ -789,16 +854,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [
-                Color(0xFF0D47A1),
-                Color(0xFF1565C0),
-                Color(0xFF1976D2),
-              ],
+              colors: [Color(0xFF0D47A1), Color(0xFF1565C0), Color(0xFF1976D2)],
             ),
           ),
-          child: CustomPaint(
-            painter: _HeaderPatternPainter(),
-          ),
+          child: CustomPaint(painter: _HeaderPatternPainter()),
         ),
 
         // Floating Profile Card overlapping the blue header
@@ -837,15 +896,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             ),
                           ),
                           child: ClipOval(
-                            child: _profile?.avatarUrl != null && _profile!.avatarUrl!.isNotEmpty
+                            child:
+                                _profile?.avatarUrl != null &&
+                                    _profile!.avatarUrl!.isNotEmpty
                                 ? Image.network(
                                     _profile!.avatarUrl!,
                                     fit: BoxFit.cover,
-                                    errorBuilder: (context, error, stackTrace) => const Icon(
-                                      Icons.person_rounded,
-                                      size: 44,
-                                      color: Color(0xFFCBD5E1),
-                                    ),
+                                    errorBuilder:
+                                        (context, error, stackTrace) =>
+                                            const Icon(
+                                              Icons.person_rounded,
+                                              size: 44,
+                                              color: Color(0xFFCBD5E1),
+                                            ),
                                   )
                                 : const Icon(
                                     Icons.person_rounded,
@@ -864,7 +927,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               decoration: BoxDecoration(
                                 color: AppColors.primary,
                                 shape: BoxShape.circle,
-                                border: Border.all(color: Colors.white, width: 2),
+                                border: Border.all(
+                                  color: Colors.white,
+                                  width: 2,
+                                ),
                               ),
                               child: const Icon(
                                 Icons.camera_alt_rounded,
@@ -926,9 +992,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
               // Nâng cấp tài khoản row
               InkWell(
                 onTap: _showUpgradeAccountDialog,
-                borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
+                borderRadius: const BorderRadius.vertical(
+                  bottom: Radius.circular(20),
+                ),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 18,
+                    vertical: 14,
+                  ),
                   child: Row(
                     children: const [
                       Icon(
@@ -992,9 +1063,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         ],
       ),
-      child: Column(
-        children: children,
-      ),
+      child: Column(children: children),
     );
   }
 

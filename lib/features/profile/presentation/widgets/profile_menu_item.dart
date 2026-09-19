@@ -48,7 +48,9 @@ class ProfileMenuItem extends StatelessWidget {
                 height: 36,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: (iconColor ?? AppColors.primary).withValues(alpha: 0.1),
+                  color: (iconColor ?? AppColors.primary).withValues(
+                    alpha: 0.1,
+                  ),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(
@@ -72,7 +74,8 @@ class ProfileMenuItem extends StatelessWidget {
                       Flexible(
                         child: Text(
                           title,
-                          style: titleStyle ??
+                          style:
+                              titleStyle ??
                               const TextStyle(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w500,
