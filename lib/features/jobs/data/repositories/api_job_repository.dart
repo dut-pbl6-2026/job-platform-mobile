@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import '../../../../core/network/dio_provider.dart';
+import '../../../../core/services/hive_cache_service.dart';
 import '../../domain/models/job_filter_params.dart';
 import '../../domain/models/job_model.dart';
 import '../../domain/repositories/job_repository.dart';
@@ -51,6 +52,31 @@ class ApiJobRepository implements IJobRepository {
       if (params.experienceLevel != null) {
         queryParams['experienceLevel'] = params.experienceLevel!.value;
       }
+      if (params.skills.isNotEmpty) {
+        queryParams['skills'] = params.skills.join(',');
+      }
+      if (params.specialization != null &&
+          params.specialization!.trim().isNotEmpty) {
+        queryParams['specialization'] = params.specialization;
+      }
+      if (params.workplaceType != null &&
+          params.workplaceType!.trim().isNotEmpty) {
+        queryParams['workplaceType'] = params.workplaceType;
+      }
+      if (params.country != null && params.country!.trim().isNotEmpty) {
+        queryParams['country'] = params.country;
+      }
+      if (params.internationalRegion != null &&
+          params.internationalRegion!.trim().isNotEmpty) {
+        queryParams['region'] = params.internationalRegion;
+      }
+      if (params.salaryRangeId != null &&
+          params.salaryRangeId!.trim().isNotEmpty) {
+        queryParams['salaryRange'] = params.salaryRangeId;
+      }
+      if (params.currency.isNotEmpty) {
+        queryParams['currency'] = params.currency;
+      }
       if (params.salaryMin != null) {
         queryParams['minSalary'] = params.salaryMin.toString();
       }
@@ -93,6 +119,11 @@ class ApiJobRepository implements IJobRepository {
                 .toList() ??
             [];
 
+        // Cache jobs in Hive for offline browsing (OFFLINE-01)
+        if (items.isNotEmpty) {
+          await HiveCacheService.instance.saveJobs(items);
+        }
+
         return PaginatedJobs(
           items: items,
           total: data['total'] as int? ?? items.length,
@@ -103,6 +134,50 @@ class ApiJobRepository implements IJobRepository {
       }
     } catch (e) {
       debugPrint('[ApiJobRepository] Gateway connection fallback: $e');
+
+      // Check Hive local cache before mock fallback (OFFLINE-01)
+      final cached = await HiveCacheService.instance.getCachedJobs();
+      if (cached.isNotEmpty) {
+        var filteredCached = List<JobModel>.from(cached);
+        if (params.keyword != null && params.keyword!.trim().isNotEmpty) {
+          final q = params.keyword!.trim().toLowerCase();
+          filteredCached = filteredCached
+              .where(
+                (j) =>
+                    j.title.toLowerCase().contains(q) ||
+                    j.companyName.toLowerCase().contains(q) ||
+                    j.skills.any((s) => s.toLowerCase().contains(q)),
+              )
+              .toList();
+        }
+        if (params.location != null &&
+            params.location!.trim().isNotEmpty &&
+            params.location != 'Tất cả') {
+          final loc = params.location!.trim().toLowerCase();
+          filteredCached = filteredCached
+              .where((j) => j.location.toLowerCase().contains(loc))
+              .toList();
+        }
+        if (params.skills.isNotEmpty) {
+          final filterSkillsLower = params.skills
+              .map((s) => s.toLowerCase())
+              .toSet();
+          filteredCached = filteredCached.where((j) {
+            final jobSkillsLower = j.skills.map((s) => s.toLowerCase()).toSet();
+            return filterSkillsLower.any((fs) => jobSkillsLower.contains(fs));
+          }).toList();
+        }
+        if (params.onlySaved) {
+          filteredCached = filteredCached.where((j) => j.isSaved).toList();
+        }
+        return PaginatedJobs(
+          items: filteredCached,
+          total: filteredCached.length,
+          page: params.page,
+          size: params.pageSize,
+          totalPages: 1,
+        );
+      }
     }
 
     // Graceful fallback to Mock repository if Gateway is offline during local test
@@ -130,10 +205,16 @@ class ApiJobRepository implements IJobRepository {
         } else {
           data = jsonDecode(response.data.toString()) as Map<String, dynamic>;
         }
-        return JobModel.fromJson(data);
+        final job = JobModel.fromJson(data);
+        await HiveCacheService.instance.saveJobDetail(job);
+        return job;
       }
     } catch (e) {
       debugPrint('[ApiJobRepository] Gateway getJobById fallback: $e');
+      final cached = await HiveCacheService.instance.getCachedJobDetail(id);
+      if (cached != null) {
+        return cached;
+      }
     }
     return _fallbackMockRepository.getJobById(id);
   }

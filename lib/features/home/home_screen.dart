@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -7,12 +8,20 @@ import '../../core/theme/app_theme.dart';
 import '../auth/data/repositories/api_auth_repository.dart';
 import '../auth/domain/models/user_model.dart';
 import '../auth/domain/repositories/auth_repository.dart';
+import '../jobs/data/repositories/mock_job_repository.dart';
+import '../jobs/domain/models/job_filter_params.dart';
+import '../jobs/domain/models/job_model.dart';
+import '../jobs/domain/repositories/job_repository.dart';
+import '../jobs/presentation/widgets/job_card.dart';
+import '../jobs/presentation/widgets/job_filter_bottom_sheet.dart';
+import '../jobs/presentation/widgets/job_shimmer_loading.dart';
 
-/// Home Screen - Placeholder Dashboard after successful authentication
+/// Commercial-grade Home Dashboard with fully integrated real-time job search & filtering
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key, this.authRepository});
+  const HomeScreen({super.key, this.authRepository, this.jobRepository});
 
   final IAuthRepository? authRepository;
+  final IJobRepository? jobRepository;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -20,18 +29,101 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   late final IAuthRepository _authRepository;
+  late final IJobRepository _jobRepository;
+
   bool _isLoggingOut = false;
+  bool _isLoadingJobs = true;
+  bool _isLoadingMore = false;
+  String? _errorMessage;
+
+  List<JobModel> _jobs = [];
+  int _totalJobs = 0;
+  int _currentPage = 0;
+  bool _hasNextPage = false;
+
+  JobFilterParams _filterParams = const JobFilterParams(pageSize: 10, page: 0);
+  String _selectedPill = 'Tất cả';
+
+  bool get _isFilterActive =>
+      _filterParams.activeFilterCount > 0 ||
+      (_selectedPill != 'Tất cả' && _selectedPill != 'Việc làm');
 
   @override
   void initState() {
     super.initState();
     _authRepository = widget.authRepository ?? ApiAuthRepository();
+    _jobRepository = widget.jobRepository ?? MockJobRepository();
+    _fetchJobs();
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+  }
+
+  Future<void> _fetchJobs({bool isResetPage = true}) async {
+    if (isResetPage) {
+      if (mounted) {
+        setState(() {
+          _isLoadingJobs = true;
+          _errorMessage = null;
+          _filterParams = _filterParams.copyWith(page: 0);
+        });
+      }
+    }
+
+    try {
+      final result = await _jobRepository.getJobs(_filterParams);
+      if (mounted) {
+        setState(() {
+          _jobs = result.items;
+          _totalJobs = result.total;
+          _currentPage = result.page;
+          _hasNextPage = result.hasNextPage;
+          _isLoadingJobs = false;
+          _errorMessage = null;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _isLoadingJobs = false;
+          _errorMessage = 'Không thể tải danh sách việc làm. Vui lòng thử lại.';
+        });
+      }
+    }
+  }
+
+  Future<void> _loadMoreJobs() async {
+    if (_isLoadingMore || !_hasNextPage) return;
+
+    setState(() => _isLoadingMore = true);
+
+    try {
+      final nextPage = _currentPage + 1;
+      final nextParams = _filterParams.copyWith(page: nextPage);
+      final result = await _jobRepository.getJobs(nextParams);
+
+      if (mounted) {
+        setState(() {
+          _jobs.addAll(result.items);
+          _currentPage = result.page;
+          _hasNextPage = result.hasNextPage;
+          _isLoadingMore = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _isLoadingMore = false);
+      }
+    }
   }
 
   Future<void> _handleLogout() async {
     final shouldLogout = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('Đăng xuất'),
         content: const Text('Bạn có chắc chắn muốn đăng xuất khỏi ứng dụng?'),
         actions: [
@@ -42,7 +134,10 @@ class _HomeScreenState extends State<HomeScreen> {
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.error,
-              minimumSize: const Size(80, 40),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
             onPressed: () => Navigator.of(context).pop(true),
             child: const Text('Đăng xuất'),
@@ -60,321 +155,541 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  void _openFilter() {
+    JobFilterBottomSheet.show(
+      context,
+      currentParams: _filterParams,
+      onApply: (params) {
+        setState(() {
+          _filterParams = params.copyWith(page: 0);
+          _selectedPill = 'Tùy chọn';
+        });
+        _fetchJobs(isResetPage: true);
+      },
+    );
+  }
+
+  void _handlePillTap(String pill) {
+    setState(() => _selectedPill = pill);
+    switch (pill) {
+      case 'Tất cả':
+        _filterParams = const JobFilterParams(pageSize: 10, page: 0);
+        break;
+      case 'IT / Phần mềm':
+        _filterParams = _filterParams.copyWith(
+          category: 'Công nghệ thông tin',
+          clearCategory: false,
+          page: 0,
+        );
+        break;
+      case 'Lương cao (30M+)':
+        _filterParams = _filterParams.copyWith(
+          salaryMin: 30000000,
+          clearSalaryMin: false,
+          page: 0,
+        );
+        break;
+      case 'Từ xa (Remote)':
+        _filterParams = _filterParams.copyWith(
+          workplaceType: 'remote',
+          clearWorkplaceType: false,
+          page: 0,
+        );
+        break;
+      case 'Địa điểm':
+        _openFilter();
+        return;
+    }
+    _fetchJobs(isResetPage: true);
+  }
+
+  void _resetFilters() {
+    setState(() {
+      _selectedPill = 'Tất cả';
+      _filterParams = const JobFilterParams(pageSize: 10, page: 0);
+    });
+    _fetchJobs(isResetPage: true);
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = AuthSession.instance.currentUser;
-    final token = AuthSession.instance.token;
     final isRecruiter = user?.role == UserRole.recruiter;
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: const Text('Job Platform'),
-        actions: [
-          IconButton(
-            icon: _isLoggingOut
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.logout_rounded, color: AppColors.error),
-            tooltip: 'Đăng xuất',
-            onPressed: _isLoggingOut ? null : _handleLogout,
-          ),
-        ],
-      ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // User Profile Header Card
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [AppColors.primary, AppColors.primaryDark],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.primary.withValues(alpha: 0.3),
-                      blurRadius: 15,
-                      offset: const Offset(0, 6),
-                    ),
-                  ],
+        child: RefreshIndicator(
+          onRefresh: () => _fetchJobs(isResetPage: true),
+          color: AppColors.primary,
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 1. Top App Header Bar
+                _buildTopHeader(user),
+
+                // 2. Interactive Search Bar with Filter Button (integrated on Home)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: _buildSearchBar(),
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        CircleAvatar(
-                          radius: 28,
-                          backgroundColor: Colors.white.withValues(alpha: 0.2),
-                          child: Text(
-                            user?.name.isNotEmpty == true
-                                ? user!.name[0].toUpperCase()
-                                : 'U',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 24,
+                const SizedBox(height: 14),
+
+                // 3. Category & Filter Pills Bar (directly filters Home jobs)
+                _buildFilterPills(),
+                const SizedBox(height: 18),
+
+                // 4. AI Skill Match Banner
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: _buildAiMatchBanner(),
+                ),
+                const SizedBox(height: 20),
+
+                // 5. Quick Functional Shortcuts
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: _buildQuickShortcuts(isRecruiter),
+                ),
+                const SizedBox(height: 22),
+
+                // 6. Real-time Search & Recommended Jobs Section
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _isFilterActive
+                                  ? 'Kết quả tìm kiếm'
+                                  : 'Việc làm đề xuất',
+                              style: Theme.of(context).textTheme.titleLarge
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 18,
+                                  ),
+                            ),
+                            if (_totalJobs > 0) ...[
+                              const SizedBox(height: 2),
+                              Text(
+                                'Tìm thấy $_totalJobs cơ hội việc làm',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: AppColors.textSecondary,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                      if (_isFilterActive)
+                        TextButton.icon(
+                          onPressed: _resetFilters,
+                          icon: const Icon(Icons.refresh_rounded, size: 14),
+                          label: const Text(
+                            'Đặt lại',
+                            style: TextStyle(
+                              fontSize: 12,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                         ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                user?.name ?? 'Người dùng',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                user?.email ?? 'user@example.com',
-                                style: TextStyle(
-                                  color: Colors.white.withValues(alpha: 0.85),
-                                  fontSize: 13,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        // Role Badge
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 5,
-                          ),
-                          decoration: BoxDecoration(
-                            color: isRecruiter
-                                ? AppColors.secondary
-                                : Colors.white.withValues(alpha: 0.25),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Text(
-                            user?.role.displayName ?? 'Ứng viên',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    const Divider(color: Colors.white24),
-                    const SizedBox(height: 8),
-                    // Mock Token info row
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.vpn_key_outlined,
-                          color: Colors.white70,
-                          size: 16,
-                        ),
-                        const SizedBox(width: 6),
-                        Expanded(
-                          child: Text(
-                            token != null
-                                ? 'JWT: ${token.substring(0, 24)}...'
-                                : 'Chưa có Token',
-                            style: const TextStyle(
-                              color: Colors.white70,
-                              fontSize: 11,
-                              fontFamily: 'monospace',
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 24),
-
-              // Roadmap status banner
-              Text(
-                'Lộ trình phát triển (Phase 1)',
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-              const SizedBox(height: 12),
-
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    children: [
-                      _buildRoadmapItem(
-                        context,
-                        week: 'Tuần 1',
-                        title: 'Đăng nhập / Đăng ký & Điều hướng',
-                        status: 'Đã hoàn thành',
-                        isDone: true,
-                      ),
-                      const Divider(height: 20),
-                      _buildRoadmapItem(
-                        context,
-                        week: 'Tuần 2',
-                        title: 'Danh sách việc làm & Tìm kiếm',
-                        status: 'Đã hoàn thành',
-                        isDone: true,
-                      ),
-                      const Divider(height: 20),
-                      _buildRoadmapItem(
-                        context,
-                        week: 'Tuần 3',
-                        title: 'Nộp CV & Hồ sơ ứng viên',
-                        status: 'Đã hoàn thành',
-                        isDone: true,
-                      ),
-                      const Divider(height: 20),
-                      _buildRoadmapItem(
-                        context,
-                        week: 'Tuần 4',
-                        title: 'Tích hợp API Gateway (YARP)',
-                        status: 'Kế hoạch',
-                        isDone: false,
-                      ),
                     ],
                   ),
                 ),
-              ),
+                const SizedBox(height: 12),
 
-              const SizedBox(height: 24),
-
-              // Quick Actions
-              Text(
-                'Chức năng nhanh',
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-              const SizedBox(height: 12),
-
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildActionCard(
-                      context,
-                      icon: Icons.work_outline_rounded,
-                      title: isRecruiter ? 'Đăng tin tuyển' : 'Tìm việc làm',
-                      subtitle: isRecruiter
-                          ? 'Quản lý tin đăng'
-                          : 'Khám phá cơ hội',
-                      color: AppColors.primary,
-                      onTap: () {
-                        context.go(AppRoutes.jobs);
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildActionCard(
-                      context,
-                      icon: Icons.person_outline_rounded,
-                      title: 'Hồ sơ cá nhân',
-                      subtitle: 'Thông tin & CV',
-                      color: AppColors.secondary,
-                      onTap: () {
-                        context.go(AppRoutes.profile);
-                      },
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildActionCard(
-                      context,
-                      icon: Icons.history_edu_rounded,
-                      title: 'Lịch sử ứng tuyển',
-                      subtitle: 'Theo dõi tiến độ',
-                      color: const Color(0xFF8B5CF6),
-                      onTap: () {
-                        context.go(AppRoutes.applications);
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            ],
+                // Job cards list
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: _buildJobsList(),
+                ),
+                const SizedBox(height: 28),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildRoadmapItem(
-    BuildContext context, {
-    required String week,
-    required String title,
-    required String status,
-    required bool isDone,
-  }) {
-    return Row(
-      children: [
-        Icon(
-          isDone ? Icons.check_circle : Icons.radio_button_unchecked,
-          color: isDone ? AppColors.success : AppColors.textHint,
-          size: 20,
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+  // --- 1. Modern Top Header ---
+  Widget _buildTopHeader(UserModel? user) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+      child: Row(
+        children: [
+          // User Avatar with Status indicator
+          Stack(
             children: [
-              Text(
-                '$week: $title',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: isDone ? FontWeight.w600 : FontWeight.w400,
-                  color: isDone
-                      ? AppColors.textPrimary
-                      : AppColors.textSecondary,
+              CircleAvatar(
+                radius: 22,
+                backgroundColor: AppColors.primary.withValues(alpha: 0.15),
+                child: Text(
+                  user?.name.isNotEmpty == true
+                      ? user!.name[0].toUpperCase()
+                      : 'U',
+                  style: const TextStyle(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                  ),
+                ),
+              ),
+              Positioned(
+                right: 0,
+                bottom: 0,
+                child: Container(
+                  width: 11,
+                  height: 11,
+                  decoration: BoxDecoration(
+                    color: AppColors.success,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 2),
+                  ),
                 ),
               ),
             ],
           ),
-        ),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-          decoration: BoxDecoration(
-            color: isDone
-                ? AppColors.success.withValues(alpha: 0.1)
-                : AppColors.border,
-            borderRadius: BorderRadius.circular(6),
-          ),
-          child: Text(
-            status,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
-              color: isDone ? AppColors.success : AppColors.textSecondary,
+          const SizedBox(width: 12),
+
+          // Name and greeting
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      user?.name ?? 'Ứng viên',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(width: 4),
+                    const Icon(
+                      Icons.verified_rounded,
+                      size: 14,
+                      color: AppColors.primary,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  user?.role.displayName ?? 'Tìm kiếm cơ hội mới',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
             ),
+          ),
+
+          // Header action buttons (Notification, Message, Logout)
+          IconButton(
+            icon: const Badge(
+              smallSize: 8,
+              backgroundColor: AppColors.error,
+              child: Icon(Icons.notifications_none_rounded, size: 24),
+            ),
+            tooltip: 'Thông báo',
+            onPressed: () {
+              context.push(AppRoutes.notifications);
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.forum_outlined, size: 22),
+            tooltip: 'AI Copilot',
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text(
+                    'Tính năng AI Job Copilot (Phase 3 đang phát triển)',
+                  ),
+                  duration: Duration(seconds: 2),
+                ),
+              );
+            },
+          ),
+          IconButton(
+            icon: _isLoggingOut
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(
+                    Icons.logout_rounded,
+                    color: AppColors.textSecondary,
+                    size: 22,
+                  ),
+            tooltip: 'Đăng xuất',
+            onPressed: _isLoggingOut ? null : _handleLogout,
+          ),
+        ],
+      ),
+    );
+  }
+
+  // --- 2. Tappable Search Bar on Home ---
+  Widget _buildSearchBar() {
+    return InkWell(
+      onTap: () => context.push(AppRoutes.search),
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        height: 50,
+        padding: const EdgeInsets.symmetric(horizontal: 14),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.border),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            const Icon(
+              Icons.search_rounded,
+              color: AppColors.primary,
+              size: 22,
+            ),
+            const SizedBox(width: 10),
+            const Expanded(
+              child: Text(
+                'Tìm kiếm công việc, công ty, kỹ năng...',
+                style: TextStyle(color: AppColors.textHint, fontSize: 13),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            Container(height: 24, width: 1, color: AppColors.border),
+            const SizedBox(width: 8),
+            IconButton(
+              icon: const Icon(
+                Icons.tune_rounded,
+                color: AppColors.textSecondary,
+                size: 20,
+              ),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+              tooltip: 'Bộ lọc',
+              onPressed: () => context.push(AppRoutes.search),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // --- 3. Filter / Category Pills Bar (directly filters Home list) ---
+  Widget _buildFilterPills() {
+    final pills = [
+      'Tất cả',
+      'Địa điểm',
+      'Từ xa (Remote)',
+      'Lương cao (30M+)',
+      'IT / Phần mềm',
+    ];
+
+    return SizedBox(
+      height: 36,
+      child: ListView.separated(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        scrollDirection: Axis.horizontal,
+        itemCount: pills.length,
+        separatorBuilder: (context, index) => const SizedBox(width: 8),
+        itemBuilder: (context, index) {
+          final pill = pills[index];
+          final isSelected = _selectedPill == pill;
+
+          return ChoiceChip(
+            label: Text(
+              pill,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                color: isSelected ? Colors.white : AppColors.textPrimary,
+              ),
+            ),
+            selected: isSelected,
+            selectedColor: AppColors.primary,
+            backgroundColor: AppColors.surface,
+            side: BorderSide(
+              color: isSelected ? AppColors.primary : AppColors.border,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            showCheckmark: false,
+            onSelected: (_) => _handlePillTap(pill),
+          );
+        },
+      ),
+    );
+  }
+
+  // --- 4. 90% Skill Match AI Banner ---
+  Widget _buildAiMatchBanner() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF1E3A8A), Color(0xFF2563EB), Color(0xFF3B82F6)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF2563EB).withValues(alpha: 0.35),
+            blurRadius: 14,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          // Icon badge
+          Container(
+            width: 46,
+            height: 46,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(
+              Icons.auto_awesome_rounded,
+              color: Colors.white,
+              size: 26,
+            ),
+          ),
+          const SizedBox(width: 14),
+
+          // Text content
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.25),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: const Text(
+                        '90% MATCH',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    const Text(
+                      'Cá nhân hóa cho bạn',
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 5),
+                const Text(
+                  'Hồ sơ của bạn phù hợp với các cơ hội hàng đầu',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Navigation CTA icon
+          IconButton(
+            icon: const Icon(Icons.arrow_forward_rounded, color: Colors.white),
+            onPressed: () {
+              // Filters jobs matching profile on Home
+              _handlePillTap('IT / Phần mềm');
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  // --- 5. Quick Shortcuts ---
+  Widget _buildQuickShortcuts(bool isRecruiter) {
+    return Row(
+      children: [
+        Expanded(
+          child: _buildCompactCard(
+            icon: isRecruiter
+                ? Icons.add_business_rounded
+                : Icons.note_add_outlined,
+            title: isRecruiter ? 'Đăng tin' : 'Tạo CV',
+            subtitle: isRecruiter ? 'Tuyển dụng mới' : 'Mẫu chuẩn ATS',
+            color: AppColors.primary,
+            onTap: () {
+              if (isRecruiter) {
+                context.go(AppRoutes.jobs);
+              } else {
+                context.go(AppRoutes.createCv);
+              }
+            },
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: _buildCompactCard(
+            icon: Icons.person_outline_rounded,
+            title: 'Hồ sơ',
+            subtitle: 'CV & Kỹ năng',
+            color: AppColors.secondary,
+            onTap: () => context.go(AppRoutes.profile),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: _buildCompactCard(
+            icon: Icons.history_edu_rounded,
+            title: 'Ứng tuyển',
+            subtitle: 'Theo dõi đơn',
+            color: const Color(0xFF8B5CF6),
+            onTap: () => context.go(AppRoutes.applications),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildActionCard(
-    BuildContext context, {
+  Widget _buildCompactCard({
     required IconData icon,
     required String title,
     required String subtitle,
@@ -383,45 +698,185 @@ class _HomeScreenState extends State<HomeScreen> {
   }) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(14),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(14),
           border: Border.all(color: AppColors.border),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.02),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              padding: const EdgeInsets.all(10),
+              padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
                 color: color.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(10),
+                shape: BoxShape.circle,
               ),
-              child: Icon(icon, color: color, size: 24),
+              child: Icon(icon, color: color, size: 20),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
             Text(
               title,
               style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
                 color: AppColors.textPrimary,
               ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
             const SizedBox(height: 2),
             Text(
               subtitle,
               style: const TextStyle(
-                fontSize: 12,
+                fontSize: 10,
                 color: AppColors.textSecondary,
               ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),
       ),
+    );
+  }
+
+  // --- 6. Jobs List with Live Search Results & Load More ---
+  Widget _buildJobsList() {
+    if (_isLoadingJobs) {
+      return const JobShimmerLoading();
+    }
+
+    if (_errorMessage != null) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 24),
+        child: Center(
+          child: Column(
+            children: [
+              const Icon(
+                Icons.error_outline_rounded,
+                color: AppColors.error,
+                size: 40,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                _errorMessage!,
+                style: const TextStyle(color: AppColors.textSecondary),
+              ),
+              const SizedBox(height: 12),
+              ElevatedButton(
+                onPressed: () => _fetchJobs(isResetPage: true),
+                child: const Text('Thử lại'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (_jobs.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+          child: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: AppColors.textHint.withValues(alpha: 0.08),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.search_off_rounded,
+                  size: 36,
+                  color: AppColors.textHint,
+                ),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Không tìm thấy việc làm phù hợp',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                'Thử tìm kiếm với từ khóa khác hoặc điều chỉnh bộ lọc để có kết quả tốt hơn.',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+              ),
+              const SizedBox(height: 14),
+              OutlinedButton.icon(
+                onPressed: _resetFilters,
+                icon: const Icon(Icons.refresh_rounded, size: 16),
+                label: const Text('Xóa bộ lọc & Đặt lại'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      children: [
+        ListView.separated(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: _jobs.length,
+          separatorBuilder: (context, index) => const SizedBox(height: 12),
+          itemBuilder: (context, index) {
+            final job = _jobs[index];
+            return JobCard(
+              job: job,
+              onTap: () => context.push('${AppRoutes.jobs}/${job.id}'),
+              onBookmarkToggle: () async {
+                await _jobRepository.toggleSaveJob(job.id);
+                if (mounted) {
+                  setState(() {
+                    _jobs[index] = job.copyWith(isSaved: !job.isSaved);
+                  });
+                }
+              },
+            );
+          },
+        ),
+        if (_hasNextPage) ...[
+          const SizedBox(height: 16),
+          Center(
+            child: _isLoadingMore
+                ? const SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(strokeWidth: 2.5),
+                  )
+                : OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 10,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    onPressed: _loadMoreJobs,
+                    icon: const Icon(Icons.expand_more_rounded, size: 18),
+                    label: const Text('Xem thêm việc làm'),
+                  ),
+          ),
+        ],
+      ],
     );
   }
 }

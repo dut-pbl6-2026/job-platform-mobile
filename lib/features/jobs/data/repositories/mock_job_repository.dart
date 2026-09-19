@@ -389,7 +389,68 @@ class MockJobRepository implements IJobRepository {
       }).toList();
     }
 
-    // 7. Only saved bookmark filter
+    // 7. Skills filter (SEARCH-01)
+    if (params.skills.isNotEmpty) {
+      final filterSkillsLower = params.skills
+          .map((s) => s.toLowerCase())
+          .toSet();
+      filteredList = filteredList.where((job) {
+        final jobSkillsLower = job.skills.map((s) => s.toLowerCase()).toSet();
+        return filterSkillsLower.any((fs) => jobSkillsLower.contains(fs));
+      }).toList();
+    }
+
+    // 8. Specialization filter
+    if (params.specialization != null &&
+        params.specialization!.trim().isNotEmpty) {
+      final spec = params.specialization!.trim().toLowerCase();
+      filteredList = filteredList.where((job) {
+        return job.title.toLowerCase().contains(spec) ||
+            job.description.toLowerCase().contains(spec) ||
+            job.requirements.toLowerCase().contains(spec) ||
+            job.skills.any((s) => s.toLowerCase().contains(spec));
+      }).toList();
+    }
+
+    // 9. Workplace Type filter (on_site, hybrid, remote)
+    if (params.workplaceType != null &&
+        params.workplaceType!.trim().isNotEmpty) {
+      final wp = params.workplaceType!.trim().toLowerCase();
+      if (wp == 'remote') {
+        filteredList = filteredList.where((job) {
+          return job.jobType == JobType.remote ||
+              job.location.toLowerCase().contains('remote') ||
+              job.location.toLowerCase().contains('từ xa');
+        }).toList();
+      } else if (wp == 'hybrid') {
+        filteredList = filteredList.where((job) {
+          return job.jobType == JobType.hybrid ||
+              job.description.toLowerCase().contains('hybrid') ||
+              job.location.toLowerCase().contains('hybrid');
+        }).toList();
+      }
+    }
+
+    // 10. Country & International Region filter
+    if (params.country == 'JP' ||
+        (params.internationalRegion != null &&
+            params.internationalRegion!.trim().isNotEmpty)) {
+      final region = params.internationalRegion?.trim().toLowerCase();
+      filteredList = filteredList.where((job) {
+        final loc = job.location.toLowerCase();
+        final isJp =
+            loc.contains('nhật bản') ||
+            loc.contains('japan') ||
+            loc.contains('tokyo') ||
+            loc.contains('osaka');
+        if (region != null && region.isNotEmpty && region != 'khác') {
+          return loc.contains(region) || isJp;
+        }
+        return isJp;
+      }).toList();
+    }
+
+    // 11. Only saved bookmark filter
     if (params.onlySaved) {
       filteredList = filteredList.where((job) => job.isSaved).toList();
     }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/router/app_router.dart';
+import '../../../core/services/hive_cache_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../data/repositories/api_job_repository.dart';
 import '../domain/models/job_filter_params.dart';
@@ -11,7 +12,7 @@ import 'widgets/job_filter_bottom_sheet.dart';
 import 'widgets/job_search_bar.dart';
 import 'widgets/job_shimmer_loading.dart';
 
-/// Job List and Search Screen (MOB-01-02, JOB-01, SEARCH-01)
+/// Job List and Search Screen (MOB-01-02, JOB-01, SEARCH-01, OFFLINE-01)
 class JobListScreen extends StatefulWidget {
   final IJobRepository? jobRepository;
 
@@ -35,6 +36,7 @@ class _JobListScreenState extends State<JobListScreen> {
   int _totalJobs = 0;
   int _currentPage = 0;
   bool _hasNextPage = false;
+  List<String> _recentSearches = [];
 
   // Selected quick filter chip
   String _selectedQuickChip = 'Tất cả';
@@ -44,7 +46,17 @@ class _JobListScreenState extends State<JobListScreen> {
     super.initState();
     _jobRepository = widget.jobRepository ?? ApiJobRepository();
     _scrollController.addListener(_onScroll);
+    _loadRecentSearches();
     _fetchJobs();
+  }
+
+  Future<void> _loadRecentSearches() async {
+    final searches = await HiveCacheService.instance.getRecentSearches();
+    if (mounted) {
+      setState(() {
+        _recentSearches = searches;
+      });
+    }
   }
 
   @override
@@ -132,6 +144,11 @@ class _JobListScreenState extends State<JobListScreen> {
       clearKeyword: keyword.trim().isEmpty,
       page: 0,
     );
+    if (keyword.trim().length >= 3) {
+      HiveCacheService.instance
+          .saveRecentSearch(keyword.trim())
+          .then((_) => _loadRecentSearches());
+    }
     _fetchJobs(isResetPage: true);
   }
 
@@ -235,13 +252,6 @@ class _JobListScreenState extends State<JobListScreen> {
         title: const Text('Tìm việc làm'),
         centerTitle: true,
         elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.tune_rounded),
-            tooltip: 'Bộ lọc',
-            onPressed: _handleOpenFilter,
-          ),
-        ],
       ),
       body: SafeArea(
         child: Column(
@@ -255,12 +265,25 @@ class _JobListScreenState extends State<JobListScreen> {
                   JobSearchBar(
                     initialValue: _filterParams.keyword ?? '',
                     onChanged: _handleSearch,
+                    onSubmitted: (query) {
+                      if (query.trim().isNotEmpty) {
+                        HiveCacheService.instance
+                            .saveRecentSearch(query.trim())
+                            .then((_) => _loadRecentSearches());
+                      }
+                    },
                     onFilterTap: _handleOpenFilter,
                     activeFilterCount: _filterParams.activeFilterCount,
                   ),
                   const SizedBox(height: 12),
                   // Quick category pill list
                   _buildQuickCategoryChips(),
+                  if (_recentSearches.isNotEmpty &&
+                      (_filterParams.keyword == null ||
+                          _filterParams.keyword!.isEmpty)) ...[
+                    const SizedBox(height: 10),
+                    _buildRecentSearchesSection(),
+                  ],
                 ],
               ),
             ),
@@ -318,6 +341,88 @@ class _JobListScreenState extends State<JobListScreen> {
           );
         },
       ),
+    );
+  }
+
+  Widget _buildRecentSearchesSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Row(
+              children: [
+                Icon(
+                  Icons.history_rounded,
+                  size: 14,
+                  color: AppColors.textSecondary,
+                ),
+                SizedBox(width: 4),
+                Text(
+                  'Tìm kiếm gần đây',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+            InkWell(
+              onTap: () async {
+                await HiveCacheService.instance.clearRecentSearches();
+                _loadRecentSearches();
+              },
+              child: const Text(
+                'Xóa lịch sử',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: AppColors.textHint,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        SizedBox(
+          height: 30,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: _recentSearches.length,
+            separatorBuilder: (context, index) => const SizedBox(width: 6),
+            itemBuilder: (context, index) {
+              final query = _recentSearches[index];
+              return InputChip(
+                label: Text(query),
+                labelStyle: const TextStyle(
+                  fontSize: 11,
+                  color: AppColors.textPrimary,
+                ),
+                visualDensity: VisualDensity.compact,
+                backgroundColor: AppColors.surfaceVariant.withValues(
+                  alpha: 0.7,
+                ),
+                side: BorderSide(
+                  color: AppColors.border.withValues(alpha: 0.6),
+                  width: 0.8,
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                onPressed: () {
+                  _handleSearch(query);
+                },
+                onDeleted: () async {
+                  await HiveCacheService.instance.removeRecentSearch(query);
+                  _loadRecentSearches();
+                },
+                deleteIconColor: AppColors.textHint,
+                deleteIcon: const Icon(Icons.close_rounded, size: 13),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 

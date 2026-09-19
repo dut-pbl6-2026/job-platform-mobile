@@ -63,3 +63,5 @@ job-platform-docs/
 template-prompt.md
 .github/workflows/gemini-pr-review.yml
 diff.txt
+PR_REVIEW_COMMENT.md
+PR_REVIEW_REPORT.md
