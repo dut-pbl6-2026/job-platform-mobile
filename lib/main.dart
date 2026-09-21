@@ -7,7 +7,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app.dart';
 import 'core/services/push_notification_service.dart';
-import 'core/session/auth_session.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
