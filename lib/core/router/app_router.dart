@@ -7,14 +7,17 @@ import '../../features/auth/login_screen.dart';
 import '../../features/auth/presentation/forgot_password_screen.dart';
 import '../../features/auth/presentation/reset_password_screen.dart';
 import '../../features/auth/register_screen.dart';
+import '../../features/cv/presentation/create_cv_screen.dart';
 import '../../features/home/home_screen.dart';
 import '../../features/home/main_navigation_screen.dart';
 import '../../features/jobs/presentation/job_detail_screen.dart';
 import '../../features/jobs/presentation/job_list_screen.dart';
+import '../../features/jobs/presentation/search_screen.dart';
 import '../../features/applications/presentation/application_detail_screen.dart';
 import '../../features/applications/presentation/application_history_screen.dart';
 import '../../features/applications/presentation/apply_job_screen.dart';
 import '../../features/notifications/presentation/notification_screen.dart';
+import '../../features/profile/presentation/profile_detail_screen.dart';
 import '../../features/profile/presentation/profile_screen.dart';
 import '../../features/splash/splash_screen.dart';
 
@@ -27,12 +30,15 @@ class AppRoutes {
   static const String register = '/register';
   static const String home = '/home';
   static const String jobs = '/jobs';
+  static const String search = '/search';
   static const String jobDetail = '/jobs/:id';
   static const String applyJob = '/jobs/:id/apply';
   static const String applications = '/applications';
   static const String applicationDetail = '/applications/:id';
   static const String profile = '/profile';
+  static const String profileDetail = '/profile/detail';
   static const String notifications = '/notifications';
+  static const String createCv = '/create-cv';
   static const String forgotPassword = '/forgot-password';
   static const String resetPassword = '/reset-password';
 
@@ -42,6 +48,8 @@ class AppRoutes {
     login,
     register,
     jobs,
+    search,
+    createCv,
     forgotPassword,
     resetPassword,
   ];
@@ -117,6 +125,49 @@ class AppRouter {
         name: 'notifications',
         builder: (context, state) => const NotificationScreen(),
       ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: AppRoutes.search,
+        name: 'search',
+        builder: (context, state) {
+          final query = state.uri.queryParameters['q'];
+          return SearchScreen(initialQuery: query);
+        },
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: AppRoutes.jobs,
+        name: 'jobs',
+        builder: (context, state) => const JobListScreen(),
+        routes: [
+          GoRoute(
+            parentNavigatorKey: _rootNavigatorKey,
+            path: ':id',
+            name: 'job-detail',
+            builder: (context, state) {
+              final jobId = state.pathParameters['id'] ?? '';
+              return JobDetailScreen(jobId: jobId);
+            },
+            routes: [
+              GoRoute(
+                parentNavigatorKey: _rootNavigatorKey,
+                path: 'apply',
+                name: 'apply-job',
+                builder: (context, state) {
+                  final jobId = state.pathParameters['id'] ?? '';
+                  final extra = state.extra as Map<String, dynamic>?;
+                  return ApplyJobScreen(
+                    jobId: jobId,
+                    jobTitle: extra?['title'] ?? 'Vị trí tuyển dụng',
+                    companyName: extra?['company'] ?? 'Doanh nghiệp',
+                    companyLogo: extra?['logo'],
+                  );
+                },
+              ),
+            ],
+          ),
+        ],
+      ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
           return MainNavigationScreen(navigationShell: navigationShell);
@@ -134,37 +185,9 @@ class AppRouter {
           StatefulShellBranch(
             routes: [
               GoRoute(
-                path: AppRoutes.jobs,
-                name: 'jobs',
-                builder: (context, state) => const JobListScreen(),
-                routes: [
-                  GoRoute(
-                    parentNavigatorKey: _rootNavigatorKey,
-                    path: ':id',
-                    name: 'job-detail',
-                    builder: (context, state) {
-                      final jobId = state.pathParameters['id'] ?? '';
-                      return JobDetailScreen(jobId: jobId);
-                    },
-                    routes: [
-                      GoRoute(
-                        parentNavigatorKey: _rootNavigatorKey,
-                        path: 'apply',
-                        name: 'apply-job',
-                        builder: (context, state) {
-                          final jobId = state.pathParameters['id'] ?? '';
-                          final extra = state.extra as Map<String, dynamic>?;
-                          return ApplyJobScreen(
-                            jobId: jobId,
-                            jobTitle: extra?['title'] ?? 'Vị trí tuyển dụng',
-                            companyName: extra?['company'] ?? 'Doanh nghiệp',
-                            companyLogo: extra?['logo'],
-                          );
-                        },
-                      ),
-                    ],
-                  ),
-                ],
+                path: AppRoutes.createCv,
+                name: 'create-cv',
+                builder: (context, state) => const CreateCvScreen(),
               ),
             ],
           ),
@@ -194,6 +217,14 @@ class AppRouter {
                 path: AppRoutes.profile,
                 name: 'profile',
                 builder: (context, state) => const ProfileScreen(),
+                routes: [
+                  GoRoute(
+                    parentNavigatorKey: _rootNavigatorKey,
+                    path: 'detail',
+                    name: 'profile-detail',
+                    builder: (context, state) => const ProfileDetailScreen(),
+                  ),
+                ],
               ),
             ],
           ),

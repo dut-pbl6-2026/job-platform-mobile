@@ -55,6 +55,28 @@ class ApiJobRepository implements IJobRepository {
       if (params.skills.isNotEmpty) {
         queryParams['skills'] = params.skills.join(',');
       }
+      if (params.specialization != null &&
+          params.specialization!.trim().isNotEmpty) {
+        queryParams['specialization'] = params.specialization;
+      }
+      if (params.workplaceType != null &&
+          params.workplaceType!.trim().isNotEmpty) {
+        queryParams['workplaceType'] = params.workplaceType;
+      }
+      if (params.country != null && params.country!.trim().isNotEmpty) {
+        queryParams['country'] = params.country;
+      }
+      if (params.internationalRegion != null &&
+          params.internationalRegion!.trim().isNotEmpty) {
+        queryParams['region'] = params.internationalRegion;
+      }
+      if (params.salaryRangeId != null &&
+          params.salaryRangeId!.trim().isNotEmpty) {
+        queryParams['salaryRange'] = params.salaryRangeId;
+      }
+      if (params.currency.isNotEmpty) {
+        queryParams['currency'] = params.currency;
+      }
       if (params.salaryMin != null) {
         queryParams['minSalary'] = params.salaryMin.toString();
       }

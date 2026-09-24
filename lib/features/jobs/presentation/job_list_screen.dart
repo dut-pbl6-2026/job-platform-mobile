@@ -252,13 +252,6 @@ class _JobListScreenState extends State<JobListScreen> {
         title: const Text('Tìm việc làm'),
         centerTitle: true,
         elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.tune_rounded),
-            tooltip: 'Bộ lọc',
-            onPressed: _handleOpenFilter,
-          ),
-        ],
       ),
       body: SafeArea(
         child: Column(
