@@ -1,39 +1,24 @@
 import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app.dart';
-import 'core/services/hive_cache_service.dart';
-import 'core/session/auth_session.dart';
+import 'core/services/push_notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Load session safely without blocking app render
-  try {
-    await AuthSession.instance.load();
-  } catch (e) {
-    debugPrint('[Main] AuthSession load error: $e');
-  }
-
-  // Initialize Hive offline cache asynchronously (OFFLINE-01)
-  unawaited(
-    HiveCacheService.instance.init().catchError((e) {
-      debugPrint('[Main] Hive initialization error: $e');
-    }),
-  );
-
-  // Lock orientation to portrait on mobile devices (per SRS 7.2.2)
+  // Lock orientation to portrait on mobile devices (per SRS 7.2.2 - Portrait primary)
   if (!kIsWeb) {
-    try {
-      await SystemChrome.setPreferredOrientations([
-        DeviceOrientation.portraitUp,
-        DeviceOrientation.portraitDown,
-      ]);
-    } catch (_) {}
+    await SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+    ]);
 
+    // Set system UI overlay style
     SystemChrome.setSystemUIOverlayStyle(
       const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
@@ -44,5 +29,13 @@ void main() async {
     );
   }
 
+  // Mount App widget tree immediately so UI renders without white screen delay
   runApp(const ProviderScope(child: App()));
+
+  // Initialize Push Notification Service asynchronously in background (PUSH-01)
+  unawaited(
+    PushNotificationService.instance.initialize().catchError((e) {
+      debugPrint('Push notification service initialization error: $e');
+    }),
+  );
 }

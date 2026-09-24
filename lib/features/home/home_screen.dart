@@ -3,25 +3,25 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/router/app_router.dart';
+import '../../core/services/push_notification_service.dart';
 import '../../core/session/auth_session.dart';
 import '../../core/theme/app_theme.dart';
 import '../auth/data/repositories/api_auth_repository.dart';
 import '../auth/domain/models/user_model.dart';
 import '../auth/domain/repositories/auth_repository.dart';
-import '../jobs/data/repositories/mock_job_repository.dart';
-import '../jobs/domain/models/job_filter_params.dart';
-import '../jobs/domain/models/job_model.dart';
-import '../jobs/domain/repositories/job_repository.dart';
-import '../jobs/presentation/widgets/job_card.dart';
-import '../jobs/presentation/widgets/job_filter_bottom_sheet.dart';
-import '../jobs/presentation/widgets/job_shimmer_loading.dart';
+import '../notifications/data/repositories/api_notification_repository.dart';
+import '../notifications/domain/repositories/notification_repository.dart';
 
 /// Commercial-grade Home Dashboard with fully integrated real-time job search & filtering
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key, this.authRepository, this.jobRepository});
+  const HomeScreen({
+    super.key,
+    this.authRepository,
+    this.notificationRepository,
+  });
 
   final IAuthRepository? authRepository;
-  final IJobRepository? jobRepository;
+  final INotificationRepository? notificationRepository;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -29,94 +29,35 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   late final IAuthRepository _authRepository;
-  late final IJobRepository _jobRepository;
-
+  late final INotificationRepository _notificationRepository;
   bool _isLoggingOut = false;
-  bool _isLoadingJobs = true;
-  bool _isLoadingMore = false;
-  String? _errorMessage;
-
-  List<JobModel> _jobs = [];
-  int _totalJobs = 0;
-  int _currentPage = 0;
-  bool _hasNextPage = false;
-
-  JobFilterParams _filterParams = const JobFilterParams(pageSize: 10, page: 0);
-  String _selectedPill = 'Tất cả';
-
-  bool get _isFilterActive =>
-      _filterParams.activeFilterCount > 0 ||
-      (_selectedPill != 'Tất cả' && _selectedPill != 'Việc làm');
+  int _unreadNotificationsCount = 0;
 
   @override
   void initState() {
     super.initState();
     _authRepository = widget.authRepository ?? ApiAuthRepository();
-    _jobRepository = widget.jobRepository ?? MockJobRepository();
-    _fetchJobs();
-  }
+    _notificationRepository =
+        widget.notificationRepository ?? ApiNotificationRepository();
+    _loadUnreadCount();
 
-  @override
-  void dispose() {
-    super.dispose();
-  }
-
-  Future<void> _fetchJobs({bool isResetPage = true}) async {
-    if (isResetPage) {
+    // Listen to incoming push notifications to dynamically increment badge
+    PushNotificationService.instance.onNotificationReceived.listen((_) {
       if (mounted) {
         setState(() {
-          _isLoadingJobs = true;
-          _errorMessage = null;
-          _filterParams = _filterParams.copyWith(page: 0);
+          _unreadNotificationsCount++;
         });
       }
-    }
+    });
+  }
 
+  Future<void> _loadUnreadCount() async {
     try {
-      final result = await _jobRepository.getJobs(_filterParams);
+      final count = await _notificationRepository.getUnreadCount();
       if (mounted) {
-        setState(() {
-          _jobs = result.items;
-          _totalJobs = result.total;
-          _currentPage = result.page;
-          _hasNextPage = result.hasNextPage;
-          _isLoadingJobs = false;
-          _errorMessage = null;
-        });
+        setState(() => _unreadNotificationsCount = count);
       }
-    } catch (_) {
-      if (mounted) {
-        setState(() {
-          _isLoadingJobs = false;
-          _errorMessage = 'Không thể tải danh sách việc làm. Vui lòng thử lại.';
-        });
-      }
-    }
-  }
-
-  Future<void> _loadMoreJobs() async {
-    if (_isLoadingMore || !_hasNextPage) return;
-
-    setState(() => _isLoadingMore = true);
-
-    try {
-      final nextPage = _currentPage + 1;
-      final nextParams = _filterParams.copyWith(page: nextPage);
-      final result = await _jobRepository.getJobs(nextParams);
-
-      if (mounted) {
-        setState(() {
-          _jobs.addAll(result.items);
-          _currentPage = result.page;
-          _hasNextPage = result.hasNextPage;
-          _isLoadingMore = false;
-        });
-      }
-    } catch (_) {
-      if (mounted) {
-        setState(() => _isLoadingMore = false);
-      }
-    }
+    } catch (_) {}
   }
 
   Future<void> _handleLogout() async {
@@ -148,6 +89,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     if (shouldLogout == true && mounted) {
       setState(() => _isLoggingOut = true);
+      await PushNotificationService.instance.unregisterTokenOnLogout();
       await _authRepository.logout();
       if (mounted) {
         context.go(AppRoutes.login);
@@ -218,6 +160,36 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
+      appBar: AppBar(
+        title: const Text('Job Platform'),
+        actions: [
+          IconButton(
+            key: const Key('home_notification_button'),
+            icon: Badge(
+              isLabelVisible: _unreadNotificationsCount > 0,
+              label: Text('$_unreadNotificationsCount'),
+              backgroundColor: AppColors.error,
+              child: const Icon(Icons.notifications_outlined),
+            ),
+            tooltip: 'Thông báo',
+            onPressed: () async {
+              await context.push(AppRoutes.notifications);
+              _loadUnreadCount();
+            },
+          ),
+          IconButton(
+            icon: _isLoggingOut
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.logout_rounded, color: AppColors.error),
+            tooltip: 'Đăng xuất',
+            onPressed: _isLoggingOut ? null : _handleLogout,
+          ),
+        ],
+      ),
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: () => _fetchJobs(isResetPage: true),

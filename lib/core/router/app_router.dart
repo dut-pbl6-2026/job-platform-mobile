@@ -17,7 +17,6 @@ import '../../features/applications/presentation/application_detail_screen.dart'
 import '../../features/applications/presentation/application_history_screen.dart';
 import '../../features/applications/presentation/apply_job_screen.dart';
 import '../../features/notifications/presentation/notification_screen.dart';
-import '../../features/profile/presentation/profile_detail_screen.dart';
 import '../../features/profile/presentation/profile_screen.dart';
 import '../../features/splash/splash_screen.dart';
 
@@ -36,9 +35,7 @@ class AppRoutes {
   static const String applications = '/applications';
   static const String applicationDetail = '/applications/:id';
   static const String profile = '/profile';
-  static const String profileDetail = '/profile/detail';
   static const String notifications = '/notifications';
-  static const String createCv = '/create-cv';
   static const String forgotPassword = '/forgot-password';
   static const String resetPassword = '/reset-password';
 
@@ -124,49 +121,6 @@ class AppRouter {
         path: AppRoutes.notifications,
         name: 'notifications',
         builder: (context, state) => const NotificationScreen(),
-      ),
-      GoRoute(
-        parentNavigatorKey: _rootNavigatorKey,
-        path: AppRoutes.search,
-        name: 'search',
-        builder: (context, state) {
-          final query = state.uri.queryParameters['q'];
-          return SearchScreen(initialQuery: query);
-        },
-      ),
-      GoRoute(
-        parentNavigatorKey: _rootNavigatorKey,
-        path: AppRoutes.jobs,
-        name: 'jobs',
-        builder: (context, state) => const JobListScreen(),
-        routes: [
-          GoRoute(
-            parentNavigatorKey: _rootNavigatorKey,
-            path: ':id',
-            name: 'job-detail',
-            builder: (context, state) {
-              final jobId = state.pathParameters['id'] ?? '';
-              return JobDetailScreen(jobId: jobId);
-            },
-            routes: [
-              GoRoute(
-                parentNavigatorKey: _rootNavigatorKey,
-                path: 'apply',
-                name: 'apply-job',
-                builder: (context, state) {
-                  final jobId = state.pathParameters['id'] ?? '';
-                  final extra = state.extra as Map<String, dynamic>?;
-                  return ApplyJobScreen(
-                    jobId: jobId,
-                    jobTitle: extra?['title'] ?? 'Vị trí tuyển dụng',
-                    companyName: extra?['company'] ?? 'Doanh nghiệp',
-                    companyLogo: extra?['logo'],
-                  );
-                },
-              ),
-            ],
-          ),
-        ],
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
