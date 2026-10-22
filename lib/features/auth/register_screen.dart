@@ -8,6 +8,7 @@ import '../../core/error/failures.dart';
 import 'data/repositories/api_auth_repository.dart';
 import 'domain/models/user_model.dart';
 import 'domain/repositories/auth_repository.dart';
+import 'presentation/widgets/auth_layout.dart';
 
 /// Register Screen - Create new candidate or recruiter account
 /// Features:
@@ -40,6 +41,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _isPasswordVisible = false;
   bool _isConfirmPasswordVisible = false;
   bool _isLoading = false;
+  bool _showForm = false;
   double _passwordStrength = 0.0;
   String _passwordStrengthLabel = '';
   Color _passwordStrengthColor = AppColors.textHint;
@@ -213,233 +215,248 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded),
-          onPressed: () {
-            if (context.canPop()) {
-              context.pop();
-            } else {
-              context.go(AppRoutes.login);
-            }
-          },
-        ),
-      ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 8),
-
-              // Title section
-              Text(
-                'Tạo tài khoản mới',
-                style: Theme.of(context).textTheme.headlineLarge,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Tham gia nền tảng tuyển dụng và tìm việc hàng đầu',
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-
-              const SizedBox(height: 24),
-
-              // Role selector section
-              _buildRoleSelector(),
-
-              const SizedBox(height: 24),
-
-              // Register form
-              _buildRegisterForm(),
-
-              const SizedBox(height: 28),
-
-              // Register submit button
-              _buildSubmitButton(),
-
-              const SizedBox(height: 24),
-
-              // Login navigation link
-              _buildLoginLink(),
-
-              const SizedBox(height: 24),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildRoleSelector() {
-    return Column(
+  Widget build(BuildContext context) => AuthLayout(
+    child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Bạn là ai?',
-          style: Theme.of(
-            context,
-          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
-        ),
-        const SizedBox(height: 12),
-        SegmentedButton<UserRole>(
-          segments: const [
-            ButtonSegment<UserRole>(
-              value: UserRole.user,
-              label: Text('Ứng viên'),
-              icon: Icon(Icons.person_search_outlined),
-            ),
-            ButtonSegment<UserRole>(
-              value: UserRole.recruiter,
-              label: Text('Nhà tuyển dụng'),
-              icon: Icon(Icons.business_outlined),
-            ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const AuthBrand(),
+            if (_showForm)
+              TextButton(
+                onPressed: _isLoading
+                    ? null
+                    : () => setState(() => _showForm = false),
+                child: const Text('Đổi vai trò'),
+              ),
           ],
-          selected: {_selectedRole},
-          onSelectionChanged: (newSelection) {
-            setState(() {
-              _selectedRole = newSelection.first;
-            });
-          },
-          style: ButtonStyle(
-            backgroundColor: WidgetStateProperty.resolveWith<Color>((states) {
-              if (states.contains(WidgetState.selected)) {
-                return AppColors.primary;
-              }
-              return AppColors.surfaceVariant;
+        ),
+        const SizedBox(height: 23),
+        Text(
+          !_showForm
+              ? 'Tạo tài khoản'
+              : _selectedRole == UserRole.user
+              ? 'Đăng ký ứng viên'
+              : 'Đăng ký nhà tuyển dụng',
+          style: const TextStyle(
+            fontSize: 25,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF141A24),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          !_showForm
+              ? 'Bắt đầu bằng cách cho chúng tôi biết bạn là\nai.'
+              : _selectedRole == UserRole.user
+              ? 'Tạo hồ sơ để tìm công việc phù hợp.'
+              : 'Tạo tài khoản để đăng tin và tìm ứng viên.',
+          style: const TextStyle(
+            fontSize: 13,
+            color: Color(0xFF666B7A),
+            height: 1.5,
+          ),
+        ),
+        const SizedBox(height: 24),
+        if (!_showForm)
+          _buildRoleSelector()
+        else ...[
+          _buildRegisterForm(),
+          const SizedBox(height: 14),
+          _buildSubmitButton(),
+        ],
+        const SizedBox(height: 40),
+        _buildLoginLink(),
+      ],
+    ),
+  );
+
+  Widget _buildRoleSelector() => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      const Text(
+        'Bạn là ai?',
+        style: TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
+          color: AppColors.textPrimary,
+        ),
+      ),
+      const SizedBox(height: 20),
+      for (final role in [UserRole.user, UserRole.recruiter]) ...[
+        Material(
+          color: role == _selectedRole ? const Color(0xFFF2FAFF) : Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+            side: BorderSide(
+              color: role == _selectedRole
+                  ? AppColors.primary
+                  : AppColors.border,
+            ),
+          ),
+          child: InkWell(
+            key: Key('register_role_${role.name}'),
+            borderRadius: BorderRadius.circular(18),
+            onTap: () => setState(() {
+              _selectedRole = role;
+              _showForm = true;
             }),
-            foregroundColor: WidgetStateProperty.resolveWith<Color>((states) {
-              if (states.contains(WidgetState.selected)) {
-                return Colors.white;
-              }
-              return AppColors.textPrimary;
-            }),
-            shape: WidgetStateProperty.all(
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 100),
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            role.displayName,
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: role == _selectedRole
+                                  ? AppColors.primary
+                                  : AppColors.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            role == UserRole.user
+                                ? 'Tìm kiếm và ứng tuyển việc làm phù hợp.'
+                                : 'Đăng tin và tìm kiếm ứng viên.',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    const Icon(
+                      Icons.arrow_forward,
+                      color: AppColors.primary,
+                      size: 20,
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
         ),
+        const SizedBox(height: 20),
       ],
-    );
-  }
+    ],
+  );
 
-  Widget _buildRegisterForm() {
-    return Form(
+  Widget _buildRegisterForm() => AutofillGroup(
+    child: Form(
       key: _formKey,
       child: Column(
         children: [
-          // Full Name field
-          TextFormField(
-            controller: _nameController,
-            textInputAction: TextInputAction.next,
-            validator: _validateName,
-            decoration: const InputDecoration(
-              labelText: 'Họ và tên',
-              hintText: 'Nguyễn Văn A',
-              prefixIcon: Icon(Icons.badge_outlined),
+          AuthField(
+            label: 'Họ và tên',
+            child: TextFormField(
+              controller: _nameController,
+              autofillHints: const [AutofillHints.name],
+              textInputAction: TextInputAction.next,
+              enabled: !_isLoading,
+              validator: _validateName,
+              decoration: const InputDecoration(hintText: 'Nhập họ và tên'),
             ),
           ),
-
-          const SizedBox(height: 16),
-
-          // Email field
-          TextFormField(
-            controller: _emailController,
-            keyboardType: TextInputType.emailAddress,
-            textInputAction: TextInputAction.next,
-            validator: _validateEmail,
-            decoration: const InputDecoration(
-              labelText: 'Email',
-              hintText: 'example@email.com',
-              prefixIcon: Icon(Icons.email_outlined),
+          const SizedBox(height: 10),
+          AuthField(
+            label: 'Email',
+            child: TextFormField(
+              controller: _emailController,
+              autofillHints: const [AutofillHints.email],
+              keyboardType: TextInputType.emailAddress,
+              textInputAction: TextInputAction.next,
+              enabled: !_isLoading,
+              validator: _validateEmail,
+              decoration: const InputDecoration(hintText: 'Nhập email của bạn'),
             ),
           ),
-
-          const SizedBox(height: 16),
-
-          // Password field
-          TextFormField(
-            controller: _passwordController,
-            obscureText: !_isPasswordVisible,
-            textInputAction: TextInputAction.next,
-            validator: _validatePassword,
-            decoration: InputDecoration(
-              labelText: 'Mật khẩu',
-              hintText: 'Tối thiểu 8 ký tự',
-              prefixIcon: const Icon(Icons.lock_outline),
-              suffixIcon: IconButton(
-                icon: Icon(
-                  _isPasswordVisible
-                      ? Icons.visibility_off_outlined
-                      : Icons.visibility_outlined,
-                  color: AppColors.textSecondary,
+          const SizedBox(height: 10),
+          AuthField(
+            label: 'Mật khẩu',
+            child: TextFormField(
+              controller: _passwordController,
+              autofillHints: const [AutofillHints.newPassword],
+              obscureText: !_isPasswordVisible,
+              textInputAction: TextInputAction.next,
+              enabled: !_isLoading,
+              validator: _validatePassword,
+              decoration: InputDecoration(
+                hintText: 'Tạo mật khẩu',
+                suffixIcon: IconButton(
+                  tooltip: _isPasswordVisible ? 'Ẩn mật khẩu' : 'Hiện mật khẩu',
+                  onPressed: () =>
+                      setState(() => _isPasswordVisible = !_isPasswordVisible),
+                  icon: Icon(
+                    _isPasswordVisible
+                        ? Icons.visibility_off_outlined
+                        : Icons.visibility_outlined,
+                    size: 20,
+                  ),
                 ),
-                onPressed: () {
-                  setState(() => _isPasswordVisible = !_isPasswordVisible);
-                },
               ),
             ),
           ),
-
-          // Password strength indicator
           if (_passwordController.text.isNotEmpty) ...[
             const SizedBox(height: 12),
             _buildPasswordStrengthIndicator(),
           ],
-
-          const SizedBox(height: 16),
-
-          // Confirm Password field
-          TextFormField(
-            controller: _confirmPasswordController,
-            obscureText: !_isConfirmPasswordVisible,
-            textInputAction: TextInputAction.done,
-            validator: _validateConfirmPassword,
-            onFieldSubmitted: (_) => _handleRegister(),
-            decoration: InputDecoration(
-              labelText: 'Xác nhận mật khẩu',
-              hintText: 'Nhập lại mật khẩu',
-              prefixIcon: const Icon(Icons.lock_reset_outlined),
-              suffixIcon: IconButton(
-                icon: Icon(
-                  _isConfirmPasswordVisible
-                      ? Icons.visibility_off_outlined
-                      : Icons.visibility_outlined,
-                  color: AppColors.textSecondary,
+          const SizedBox(height: 10),
+          AuthField(
+            label: 'Xác nhận mật khẩu',
+            child: TextFormField(
+              controller: _confirmPasswordController,
+              obscureText: !_isConfirmPasswordVisible,
+              textInputAction: TextInputAction.done,
+              enabled: !_isLoading,
+              validator: _validateConfirmPassword,
+              onFieldSubmitted: (_) => _handleRegister(),
+              decoration: InputDecoration(
+                hintText: 'Nhập lại mật khẩu',
+                suffixIcon: IconButton(
+                  tooltip: _isConfirmPasswordVisible
+                      ? 'Ẩn mật khẩu'
+                      : 'Hiện mật khẩu',
+                  onPressed: () => setState(
+                    () =>
+                        _isConfirmPasswordVisible = !_isConfirmPasswordVisible,
+                  ),
+                  icon: Icon(
+                    _isConfirmPasswordVisible
+                        ? Icons.visibility_off_outlined
+                        : Icons.visibility_outlined,
+                    size: 20,
+                  ),
                 ),
-                onPressed: () {
-                  setState(() {
-                    _isConfirmPasswordVisible = !_isConfirmPasswordVisible;
-                  });
-                },
               ),
             ),
           ),
-
           if (_selectedRole == UserRole.recruiter) ...[
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _companyIdController,
-              validator: _validateCompanyId,
-              decoration: const InputDecoration(
-                labelText: 'Mã công ty',
-                hintText: 'UUID công ty (từ /api/companies)',
-                prefixIcon: Icon(Icons.business_center_outlined),
+            const SizedBox(height: 10),
+            AuthField(
+              label: 'Mã công ty',
+              child: TextFormField(
+                controller: _companyIdController,
+                enabled: !_isLoading,
+                validator: _validateCompanyId,
+                decoration: const InputDecoration(hintText: 'Nhập mã công ty'),
               ),
             ),
           ],
         ],
       ),
-    );
-  }
-
-  /// Password strength indicator with animated bar and per-criteria checklist.
+    ),
+  );
   Widget _buildPasswordStrengthIndicator() {
     final password = _passwordController.text;
 
@@ -536,6 +553,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       width: double.infinity,
       height: 52,
       child: ElevatedButton(
+        style: ElevatedButton.styleFrom(shape: const StadiumBorder()),
         onPressed: _isLoading ? null : _handleRegister,
         child: _isLoading
             ? const SizedBox(
@@ -557,8 +575,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   Widget _buildLoginLink() {
     return Center(
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
+      child: Wrap(
+        alignment: WrapAlignment.center,
+        crossAxisAlignment: WrapCrossAlignment.center,
         children: [
           Text(
             'Đã có tài khoản? ',

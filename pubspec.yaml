@@ -12,7 +12,7 @@ dependencies:
 
   cupertino_icons: ^1.0.8
   go_router: ^15.1.2
-  google_fonts: ^6.2.1
+  flutter_svg: ^2.2.0
   flutter_native_splash: ^2.4.6
   dio: ^5.4.0
   flutter_secure_storage: ^9.0.0
@@ -37,6 +37,14 @@ flutter:
 
   assets:
     - assets/images/
+    - assets/figma/
+  fonts:
+    - family: Roboto
+      fonts:
+        - asset: assets/fonts/Roboto-Variable.ttf
+    - family: NotoSymbols
+      fonts:
+        - asset: assets/fonts/NotoSansSymbols2-Regular.ttf
 
 # flutter_native_splash configuration
 flutter_native_splash:
