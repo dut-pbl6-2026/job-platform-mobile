@@ -495,12 +495,6 @@ class _CreateCvScreenState extends State<CreateCvScreen> {
     final skillsController = TextEditingController(
       text: 'Figma, UI Design, Wireframing, Auto Layout, User Flows',
     );
-<<<<<<< HEAD
-=======
-    final skillsController = TextEditingController(
-      text: 'Figma, UI Design, Wireframing, Auto Layout, User Flows',
-    );
->>>>>>> 615e751c49482cd808414e1c70c0156dff01de1b
     final expController = TextEditingController(
       text:
           'UI/UX Designer tại Badoo Inc. (2024 - Hiện tại)\nJunior Product Designer tại TechLab (2022 - 2024)',
