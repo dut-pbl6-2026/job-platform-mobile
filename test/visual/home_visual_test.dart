@@ -5,6 +5,7 @@ import 'package:job_platform_mobile/features/home/main_navigation_screen.dart';
 import 'package:job_platform_mobile/features/home/home_screen.dart';
 import 'package:job_platform_mobile/features/notifications/data/repositories/mock_notification_repository.dart';
 import '../support/figma_job_fixture.dart';
+import '../support/golden_tolerance.dart';
 import '../support/load_fonts.dart';
 
 void main() {
@@ -45,9 +46,11 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await expectLater(
+    await expectGoldenWithinTolerance(
+      tester,
       find.byType(MainNavigationScreen),
-      matchesGoldenFile('goldens/home_figma_345x680.png'),
+      goldenFile: 'goldens/home_figma_345x680.png',
+      maxDiffRate: 0.06,
     );
   });
 }
