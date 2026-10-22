@@ -63,8 +63,12 @@ class JobDetailBottomBar extends StatelessWidget {
               ),
             ),
             style: OutlinedButton.styleFrom(
-              foregroundColor: isSaved ? AppColors.primary : AppColors.textSecondary,
-              backgroundColor: isSaved ? AppColors.primary.withValues(alpha: 0.08) : Colors.white,
+              foregroundColor: isSaved
+                  ? AppColors.primary
+                  : AppColors.textSecondary,
+              backgroundColor: isSaved
+                  ? AppColors.primary.withValues(alpha: 0.08)
+                  : Colors.white,
               side: BorderSide(
                 color: isSaved ? AppColors.primary : AppColors.border,
               ),

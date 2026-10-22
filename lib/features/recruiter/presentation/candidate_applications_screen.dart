@@ -8,10 +8,12 @@ class CandidateApplicationsScreen extends StatefulWidget {
   const CandidateApplicationsScreen({super.key});
 
   @override
-  State<CandidateApplicationsScreen> createState() => _CandidateApplicationsScreenState();
+  State<CandidateApplicationsScreen> createState() =>
+      _CandidateApplicationsScreenState();
 }
 
-class _CandidateApplicationsScreenState extends State<CandidateApplicationsScreen> {
+class _CandidateApplicationsScreenState
+    extends State<CandidateApplicationsScreen> {
   final List<Map<String, dynamic>> _candidates = [
     {
       'id': 'cand_1',
@@ -105,7 +107,11 @@ class _CandidateApplicationsScreenState extends State<CandidateApplicationsScree
                     backgroundColor: AppColors.primary.withValues(alpha: 0.15),
                     child: Text(
                       (cand['name'] as String)[0],
-                      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.primary),
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primary,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 14),
@@ -115,11 +121,18 @@ class _CandidateApplicationsScreenState extends State<CandidateApplicationsScree
                       children: [
                         Text(
                           cand['name'] as String,
-                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textPrimary,
+                          ),
                         ),
                         Text(
                           '${cand['title']} · ${cand['experience']}',
-                          style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: AppColors.textSecondary,
+                          ),
                         ),
                       ],
                     ),
@@ -140,7 +153,11 @@ class _CandidateApplicationsScreenState extends State<CandidateApplicationsScree
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.picture_as_pdf_rounded, color: AppColors.error, size: 28),
+                    const Icon(
+                      Icons.picture_as_pdf_rounded,
+                      color: AppColors.error,
+                      size: 28,
+                    ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(
@@ -148,13 +165,25 @@ class _CandidateApplicationsScreenState extends State<CandidateApplicationsScree
                         children: [
                           Text(
                             cand['cvName'] as String,
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                            ),
                           ),
-                          const Text('Đính kèm trong hồ sơ · Nhấn để xem', style: TextStyle(fontSize: 11, color: AppColors.textHint)),
+                          const Text(
+                            'Đính kèm trong hồ sơ · Nhấn để xem',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: AppColors.textHint,
+                            ),
+                          ),
                         ],
                       ),
                     ),
-                    const Icon(Icons.download_rounded, color: AppColors.primary),
+                    const Icon(
+                      Icons.download_rounded,
+                      color: AppColors.primary,
+                    ),
                   ],
                 ),
               ),
@@ -162,7 +191,11 @@ class _CandidateApplicationsScreenState extends State<CandidateApplicationsScree
               const SizedBox(height: 18),
               const Text(
                 'Cập nhật trạng thái ứng tuyển:',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
               ),
               const SizedBox(height: 10),
 
@@ -170,7 +203,9 @@ class _CandidateApplicationsScreenState extends State<CandidateApplicationsScree
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
-                children: ['Chờ xem', 'Đã xem', 'Được nhận', 'Từ chối'].map((status) {
+                children: ['Chờ xem', 'Đã xem', 'Được nhận', 'Từ chối'].map((
+                  status,
+                ) {
                   final isCurrent = cand['status'] == status;
                   return ChoiceChip(
                     label: Text(status),
@@ -232,7 +267,10 @@ class _CandidateApplicationsScreenState extends State<CandidateApplicationsScree
                         color: AppColors.primary.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: const Icon(Icons.group_outlined, color: AppColors.primary),
+                      child: const Icon(
+                        Icons.group_outlined,
+                        color: AppColors.primary,
+                      ),
                     ),
                     const SizedBox(width: 14),
                     Expanded(
@@ -250,7 +288,10 @@ class _CandidateApplicationsScreenState extends State<CandidateApplicationsScree
                           const SizedBox(height: 2),
                           const Text(
                             'Chờ xem · Đã xem · Được nhận',
-                            style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AppColors.textSecondary,
+                            ),
                           ),
                         ],
                       ),
@@ -300,10 +341,15 @@ class _CandidateApplicationsScreenState extends State<CandidateApplicationsScree
                         children: [
                           CircleAvatar(
                             radius: 20,
-                            backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                            backgroundColor: AppColors.primary.withValues(
+                              alpha: 0.1,
+                            ),
                             child: Text(
                               (cand['name'] as String)[0],
-                              style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.primary,
+                              ),
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -322,13 +368,19 @@ class _CandidateApplicationsScreenState extends State<CandidateApplicationsScree
                                 const SizedBox(height: 2),
                                 Text(
                                   '${cand['title']} · ${cand['experience']}',
-                                  style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: AppColors.textSecondary,
+                                  ),
                                 ),
                               ],
                             ),
                           ),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
                             decoration: BoxDecoration(
                               color: statusColor.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(8),
@@ -348,20 +400,30 @@ class _CandidateApplicationsScreenState extends State<CandidateApplicationsScree
                       Row(
                         children: [
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
                             decoration: BoxDecoration(
                               color: AppColors.primary.withValues(alpha: 0.08),
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Text(
                               '${cand['matchScore']}% phù hợp',
-                              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primary),
+                              style: const TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.primary,
+                              ),
                             ),
                           ),
                           const SizedBox(width: 8),
                           Text(
                             'Ứng tuyển: ${cand['appliedDate']}',
-                            style: const TextStyle(fontSize: 11, color: AppColors.textHint),
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: AppColors.textHint,
+                            ),
                           ),
                         ],
                       ),
@@ -372,12 +434,17 @@ class _CandidateApplicationsScreenState extends State<CandidateApplicationsScree
                           onPressed: () => _showCandidateDetail(index),
                           style: OutlinedButton.styleFrom(
                             side: const BorderSide(color: AppColors.primary),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
                             minimumSize: const Size(0, 38),
                           ),
                           child: Text(
                             'Xem hồ sơ ${cand['name']}',
-                            style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold),
+                            style: const TextStyle(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                       ),

@@ -32,7 +32,8 @@ class _SavedJobsScreenState extends State<SavedJobsScreen> {
       jobType: JobType.fullTime,
       isSaved: true,
       description: 'Thiết kế giao diện ứng dụng di động và web hiện đại.',
-      requirements: 'Thành thạo Figma, tối thiểu 2 năm kinh nghiệm thiết kế sản phẩm.',
+      requirements:
+          'Thành thạo Figma, tối thiểu 2 năm kinh nghiệm thiết kế sản phẩm.',
       benefits: 'Thưởng dự án, bảo hiểm đầy đủ, laptop công ty.',
       postedAt: DateTime.now().subtract(const Duration(hours: 4)),
     ),
@@ -156,7 +157,11 @@ class _SavedJobsScreenState extends State<SavedJobsScreen> {
                           const SizedBox(height: 2),
                           const Row(
                             children: [
-                              Icon(Icons.cloud_done_rounded, size: 14, color: AppColors.success),
+                              Icon(
+                                Icons.cloud_done_rounded,
+                                size: 14,
+                                color: AppColors.success,
+                              ),
                               SizedBox(width: 4),
                               Text(
                                 'Đồng bộ lần cuối: hôm nay, 09:41',
@@ -187,15 +192,23 @@ class _SavedJobsScreenState extends State<SavedJobsScreen> {
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.search_rounded, color: AppColors.textHint, size: 20),
+                    const Icon(
+                      Icons.search_rounded,
+                      color: AppColors.textHint,
+                      size: 20,
+                    ),
                     const SizedBox(width: 10),
                     Expanded(
                       child: TextField(
                         controller: _searchController,
-                        onChanged: (v) => setState(() => _searchFilter = v.trim()),
+                        onChanged: (v) =>
+                            setState(() => _searchFilter = v.trim()),
                         decoration: const InputDecoration(
                           hintText: 'Tìm trong việc làm đã lưu...',
-                          hintStyle: TextStyle(fontSize: 13, color: AppColors.textHint),
+                          hintStyle: TextStyle(
+                            fontSize: 13,
+                            color: AppColors.textHint,
+                          ),
                           border: InputBorder.none,
                           enabledBorder: InputBorder.none,
                           focusedBorder: InputBorder.none,
@@ -225,11 +238,18 @@ class _SavedJobsScreenState extends State<SavedJobsScreen> {
                     padding: const EdgeInsets.symmetric(vertical: 40),
                     child: Column(
                       children: [
-                        const Icon(Icons.bookmark_border_rounded, size: 48, color: AppColors.textHint),
+                        const Icon(
+                          Icons.bookmark_border_rounded,
+                          size: 48,
+                          color: AppColors.textHint,
+                        ),
                         const SizedBox(height: 10),
                         const Text(
                           'Không tìm thấy việc làm đã lưu phù hợp',
-                          style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: AppColors.textSecondary,
+                          ),
                         ),
                       ],
                     ),

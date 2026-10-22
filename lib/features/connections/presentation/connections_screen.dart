@@ -56,7 +56,8 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
         positionTitle: 'UI/UX Designer',
         location: 'Đà Nẵng · Toàn thời gian',
         salaryRange: '20.000.000 - 35.000.000 ₫',
-        note: 'Hồ sơ của bạn rất phù hợp với sản phẩm mới của chúng tôi. Mời bạn trao đổi nhanh về vị trí này nhé!',
+        note:
+            'Hồ sơ của bạn rất phù hợp với sản phẩm mới của chúng tôi. Mời bạn trao đổi nhanh về vị trí này nhé!',
         status: 'pending',
         deadlineText: 'Còn 3 ngày để phản hồi',
       ),
@@ -66,7 +67,8 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
         positionTitle: 'Product Designer',
         location: 'TP. Hồ Chí Minh · Hybrid',
         salaryRange: '30.000.000 - 50.000.000 ₫',
-        note: 'Chào bạn, phòng thiết kế Meta Việt Nam muốn kết nối để mời bạn tham gia vòng phỏng vấn sớm.',
+        note:
+            'Chào bạn, phòng thiết kế Meta Việt Nam muốn kết nối để mời bạn tham gia vòng phỏng vấn sớm.',
         status: 'pending',
         deadlineText: 'Còn 5 ngày để phản hồi',
       ),
@@ -79,7 +81,8 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
         note: 'Mời ứng viên tham gia dự án Fintech thị trường Nhật Bản.',
         status: 'responded',
         deadlineText: 'Đã chấp nhận kết nối',
-        responseText: 'Bạn đã đồng ý kết nối vào 08/10/2026. Nhà tuyển dụng sẽ gửi lịch hẹn phỏng vấn.',
+        responseText:
+            'Bạn đã đồng ý kết nối vào 08/10/2026. Nhà tuyển dụng sẽ gửi lịch hẹn phỏng vấn.',
       ),
       const RecruiterInvite(
         id: 'inv_4',
@@ -90,7 +93,8 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
         note: 'Đã phản hồi lịch trao đổi trực tuyến.',
         status: 'responded',
         deadlineText: 'Đã hoàn tất trao đổi',
-        responseText: 'Đã hoàn tất cuộc trao đổi online lúc 14:00 ngày 05/10/2026.',
+        responseText:
+            'Đã hoàn tất cuộc trao đổi online lúc 14:00 ngày 05/10/2026.',
       ),
       const RecruiterInvite(
         id: 'inv_5',
@@ -142,13 +146,16 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
                     note: invite.note,
                     status: 'responded',
                     deadlineText: 'Đã chấp nhận kết nối',
-                    responseText: 'Bạn đã đồng ý kết nối. Nhà tuyển dụng sẽ sớm gửi lịch hẹn.',
+                    responseText:
+                        'Bạn đã đồng ý kết nối. Nhà tuyển dụng sẽ sớm gửi lịch hẹn.',
                   );
                 }
               });
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('Đã chấp nhận kết nối với ${invite.companyName}!'),
+                  content: Text(
+                    'Đã chấp nhận kết nối với ${invite.companyName}!',
+                  ),
                   backgroundColor: AppColors.success,
                   behavior: SnackBarBehavior.floating,
                 ),
@@ -166,9 +173,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Từ chối lời mời'),
-        content: Text(
-          'Bạn muốn từ chối lời mời từ ${invite.companyName}?',
-        ),
+        content: Text('Bạn muốn từ chối lời mời từ ${invite.companyName}?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -189,7 +194,8 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
                     note: invite.note,
                     status: 'responded',
                     deadlineText: 'Đã từ chối lời mời',
-                    responseText: 'Bạn đã từ chối lời mời này một cách lịch sự.',
+                    responseText:
+                        'Bạn đã từ chối lời mời này một cách lịch sự.',
                   );
                 }
               });
@@ -200,7 +206,10 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
                 ),
               );
             },
-            child: const Text('Từ chối', style: TextStyle(color: AppColors.error)),
+            child: const Text(
+              'Từ chối',
+              style: TextStyle(color: AppColors.error),
+            ),
           ),
         ],
       ),
@@ -210,7 +219,9 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
   @override
   Widget build(BuildContext context) {
     final pendingCount = _invites.where((i) => i.status == 'pending').length;
-    final respondedCount = _invites.where((i) => i.status == 'responded').length;
+    final respondedCount = _invites
+        .where((i) => i.status == 'responded')
+        .length;
     final expiredCount = _invites.where((i) => i.status == 'expired').length;
 
     return Scaffold(
@@ -377,7 +388,10 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
               if (count > 0) ...[
                 const SizedBox(width: 4),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 5,
+                    vertical: 1,
+                  ),
                   decoration: BoxDecoration(
                     color: isSelected
                         ? Colors.white.withValues(alpha: 0.25)
@@ -389,7 +403,9 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
-                      color: isSelected ? Colors.white : AppColors.textSecondary,
+                      color: isSelected
+                          ? Colors.white
+                          : AppColors.textSecondary,
                     ),
                   ),
                 ),
@@ -471,8 +487,8 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
                   color: invite.status == 'pending'
                       ? AppColors.primary.withValues(alpha: 0.08)
                       : invite.status == 'responded'
-                          ? AppColors.success.withValues(alpha: 0.1)
-                          : AppColors.error.withValues(alpha: 0.08),
+                      ? AppColors.success.withValues(alpha: 0.1)
+                      : AppColors.error.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
@@ -483,8 +499,8 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
                     color: invite.status == 'pending'
                         ? AppColors.primary
                         : invite.status == 'responded'
-                            ? AppColors.success
-                            : AppColors.error,
+                        ? AppColors.success
+                        : AppColors.error,
                   ),
                 ),
               ),
@@ -507,7 +523,11 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
           const SizedBox(height: 4),
           Row(
             children: [
-              const Icon(Icons.payments_outlined, size: 14, color: AppColors.primary),
+              const Icon(
+                Icons.payments_outlined,
+                size: 14,
+                color: AppColors.primary,
+              ),
               const SizedBox(width: 4),
               Text(
                 invite.salaryRange,
@@ -556,7 +576,10 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
                         borderRadius: BorderRadius.circular(10),
                       ),
                     ),
-                    child: const Text('Từ chối', style: TextStyle(fontSize: 13)),
+                    child: const Text(
+                      'Từ chối',
+                      style: TextStyle(fontSize: 13),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -574,7 +597,10 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
                     ),
                     child: const Text(
                       'Chấp nhận kết nối',
-                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ),

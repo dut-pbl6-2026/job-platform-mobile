@@ -13,7 +13,9 @@ class RecruiterDashboardScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final user = AuthSession.instance.currentUser;
-    final companyName = user != null ? '${user.name} (Doanh nghiệp)' : 'Badoo Inc.';
+    final companyName = user != null
+        ? '${user.name} (Doanh nghiệp)'
+        : 'Badoo Inc.';
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -74,7 +76,11 @@ class RecruiterDashboardScreen extends StatelessWidget {
                             color: Colors.white.withValues(alpha: 0.2),
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(Icons.business_rounded, color: Colors.white, size: 26),
+                          child: const Icon(
+                            Icons.business_rounded,
+                            color: Colors.white,
+                            size: 26,
+                          ),
                         ),
                         const SizedBox(width: 14),
                         Expanded(
@@ -95,21 +101,32 @@ class RecruiterDashboardScreen extends StatelessWidget {
                                   Text(
                                     companyName,
                                     style: TextStyle(
-                                      color: Colors.white.withValues(alpha: 0.95),
+                                      color: Colors.white.withValues(
+                                        alpha: 0.95,
+                                      ),
                                       fontSize: 13,
                                       fontWeight: FontWeight.w500,
                                     ),
                                   ),
                                   const SizedBox(width: 6),
                                   Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 6,
+                                      vertical: 2,
+                                    ),
                                     decoration: BoxDecoration(
-                                      color: Colors.white.withValues(alpha: 0.25),
+                                      color: Colors.white.withValues(
+                                        alpha: 0.25,
+                                      ),
                                       borderRadius: BorderRadius.circular(6),
                                     ),
                                     child: const Text(
                                       'Đã xác minh',
-                                      style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ),
                                   ),
                                 ],
@@ -142,7 +159,11 @@ class RecruiterDashboardScreen extends StatelessWidget {
                         const SizedBox(width: 12),
                         _buildMetricBox('28', 'Hồ sơ mới', AppColors.warning),
                         const SizedBox(width: 12),
-                        _buildMetricBox('12', 'Đã tiếp nhận', AppColors.success),
+                        _buildMetricBox(
+                          '12',
+                          'Đã tiếp nhận',
+                          AppColors.success,
+                        ),
                       ],
                     ),
                   ],
@@ -166,7 +187,8 @@ class RecruiterDashboardScreen extends StatelessWidget {
               _buildActionTile(
                 icon: Icons.list_alt_rounded,
                 title: 'Quản lý tin tuyển dụng',
-                subtitle: 'Xem danh sách 6 tin tuyển dụng đang mở và trạng thái',
+                subtitle:
+                    'Xem danh sách 6 tin tuyển dụng đang mở và trạng thái',
                 onTap: () => context.push(AppRoutes.recruiterJobs),
               ),
               _buildActionTile(
@@ -179,7 +201,8 @@ class RecruiterDashboardScreen extends StatelessWidget {
               _buildActionTile(
                 icon: Icons.people_outline_rounded,
                 title: 'Hồ sơ ứng viên',
-                subtitle: 'Duyệt 28 hồ sơ ứng tuyển, xem CV và cập nhật trạng thái',
+                subtitle:
+                    'Duyệt 28 hồ sơ ứng tuyển, xem CV và cập nhật trạng thái',
                 onTap: () => context.push(AppRoutes.recruiterCandidates),
               ),
               _buildActionTile(
@@ -247,7 +270,9 @@ class RecruiterDashboardScreen extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: isPrimary ? AppColors.primary.withValues(alpha: 0.3) : AppColors.border,
+          color: isPrimary
+              ? AppColors.primary.withValues(alpha: 0.3)
+              : AppColors.border,
         ),
       ),
       child: Material(
@@ -255,42 +280,48 @@ class RecruiterDashboardScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
         clipBehavior: Clip.antiAlias,
         child: ListTile(
-        onTap: onTap,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-        leading: Container(
-          width: 44,
-          height: 44,
-          decoration: BoxDecoration(
-            color: isPrimary
-                ? AppColors.primary.withValues(alpha: 0.12)
-                : AppColors.surfaceVariant,
-            borderRadius: BorderRadius.circular(12),
+          onTap: onTap,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 6,
           ),
-          child: Icon(
-            icon,
-            color: isPrimary ? AppColors.primary : AppColors.textPrimary,
-            size: 22,
+          leading: Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: isPrimary
+                  ? AppColors.primary.withValues(alpha: 0.12)
+                  : AppColors.surfaceVariant,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              icon,
+              color: isPrimary ? AppColors.primary : AppColors.textPrimary,
+              size: 22,
+            ),
           ),
-        ),
-        title: Text(
-          title,
-          style: TextStyle(
-            fontSize: 14.5,
-            fontWeight: FontWeight.bold,
-            color: isPrimary ? AppColors.primary : AppColors.textPrimary,
+          title: Text(
+            title,
+            style: TextStyle(
+              fontSize: 14.5,
+              fontWeight: FontWeight.bold,
+              color: isPrimary ? AppColors.primary : AppColors.textPrimary,
+            ),
           ),
-        ),
-        subtitle: Text(
-          subtitle,
-          style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
-        ),
-        trailing: const Icon(
-          Icons.arrow_forward_ios_rounded,
-          size: 14,
-          color: AppColors.textHint,
+          subtitle: Text(
+            subtitle,
+            style: const TextStyle(
+              fontSize: 12,
+              color: AppColors.textSecondary,
+            ),
+          ),
+          trailing: const Icon(
+            Icons.arrow_forward_ios_rounded,
+            size: 14,
+            color: AppColors.textHint,
+          ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 }
