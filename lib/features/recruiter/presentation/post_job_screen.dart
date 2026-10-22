@@ -17,8 +17,12 @@ class _PostJobScreenState extends State<PostJobScreen> {
 
   final _titleController = TextEditingController(text: 'UI/UX Designer');
   final _locationController = TextEditingController(text: 'Đà Nẵng · Hybrid');
-  final _industryController = TextEditingController(text: 'Công nghệ thông tin · IT');
-  final _salaryController = TextEditingController(text: '15.000.000 – 25.000.000 ₫');
+  final _industryController = TextEditingController(
+    text: 'Công nghệ thông tin · IT',
+  );
+  final _salaryController = TextEditingController(
+    text: '15.000.000 – 25.000.000 ₫',
+  );
   final _descController = TextEditingController(
     text: 'Thiết kế giao diện web/mobile; thành thạo Figma, Design System; phối hợp cùng đội ngũ kỹ sư.',
   );
@@ -103,7 +107,9 @@ class _PostJobScreenState extends State<PostJobScreen> {
                   label: 'Tiêu đề vị trí',
                   controller: _titleController,
                   hint: 'Ví dụ: Senior UI/UX Designer',
-                  validator: (v) => v?.trim().isEmpty == true ? 'Vui lòng nhập tiêu đề' : null,
+                  validator: (v) => v?.trim().isEmpty == true
+                      ? 'Vui lòng nhập tiêu đề'
+                      : null,
                 ),
                 const SizedBox(height: 14),
 
@@ -111,7 +117,9 @@ class _PostJobScreenState extends State<PostJobScreen> {
                   label: 'Công ty & Địa điểm làm việc',
                   controller: _locationController,
                   hint: 'Ví dụ: Badoo Inc. · Đà Nẵng',
-                  validator: (v) => v?.trim().isEmpty == true ? 'Vui lòng nhập địa điểm' : null,
+                  validator: (v) => v?.trim().isEmpty == true
+                      ? 'Vui lòng nhập địa điểm'
+                      : null,
                 ),
                 const SizedBox(height: 14),
 
@@ -123,22 +131,45 @@ class _PostJobScreenState extends State<PostJobScreen> {
                         children: [
                           const Text(
                             'Loại hình làm việc',
-                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textPrimary,
+                            ),
                           ),
                           const SizedBox(height: 6),
                           DropdownButtonFormField<String>(
                             value: _employmentType,
                             decoration: InputDecoration(
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 12,
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
                             ),
                             items: const [
-                              DropdownMenuItem(value: 'Toàn thời gian', child: Text('Toàn thời gian')),
-                              DropdownMenuItem(value: 'Bán thời gian', child: Text('Bán thời gian')),
-                              DropdownMenuItem(value: 'Thực tập', child: Text('Thực tập')),
-                              DropdownMenuItem(value: 'Từ xa', child: Text('Từ xa')),
+                              DropdownMenuItem(
+                                value: 'Toàn thời gian',
+                                child: Text('Toàn thời gian'),
+                              ),
+                              DropdownMenuItem(
+                                value: 'Bán thời gian',
+                                child: Text('Bán thời gian'),
+                              ),
+                              DropdownMenuItem(
+                                value: 'Thực tập',
+                                child: Text('Thực tập'),
+                              ),
+                              DropdownMenuItem(
+                                value: 'Từ xa',
+                                child: Text('Từ xa'),
+                              ),
                             ],
-                            onChanged: (v) => setState(() => _employmentType = v ?? _employmentType),
+                            onChanged: (v) => setState(
+                              () => _employmentType = v ?? _employmentType,
+                            ),
                           ),
                         ],
                       ),
@@ -150,22 +181,45 @@ class _PostJobScreenState extends State<PostJobScreen> {
                         children: [
                           const Text(
                             'Cấp độ kinh nghiệm',
-                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textPrimary,
+                            ),
                           ),
                           const SizedBox(height: 6),
                           DropdownButtonFormField<String>(
                             value: _experienceLevel,
                             decoration: InputDecoration(
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 12,
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
                             ),
                             items: const [
-                              DropdownMenuItem(value: 'Intern', child: Text('Intern')),
-                              DropdownMenuItem(value: 'Junior', child: Text('Junior')),
-                              DropdownMenuItem(value: 'Middle', child: Text('Middle')),
-                              DropdownMenuItem(value: 'Senior', child: Text('Senior')),
+                              DropdownMenuItem(
+                                value: 'Intern',
+                                child: Text('Intern'),
+                              ),
+                              DropdownMenuItem(
+                                value: 'Junior',
+                                child: Text('Junior'),
+                              ),
+                              DropdownMenuItem(
+                                value: 'Middle',
+                                child: Text('Middle'),
+                              ),
+                              DropdownMenuItem(
+                                value: 'Senior',
+                                child: Text('Senior'),
+                              ),
                             ],
-                            onChanged: (v) => setState(() => _experienceLevel = v ?? _experienceLevel),
+                            onChanged: (v) => setState(
+                              () => _experienceLevel = v ?? _experienceLevel,
+                            ),
                           ),
                         ],
                       ),
@@ -178,7 +232,9 @@ class _PostJobScreenState extends State<PostJobScreen> {
                   label: 'Mức lương & Tiền tệ',
                   controller: _salaryController,
                   hint: 'Ví dụ: 15.000.000 – 25.000.000 · VND',
-                  validator: (v) => v?.trim().isEmpty == true ? 'Vui lòng nhập mức lương' : null,
+                  validator: (v) => v?.trim().isEmpty == true
+                      ? 'Vui lòng nhập mức lương'
+                      : null,
                 ),
                 const SizedBox(height: 14),
 
@@ -187,7 +243,8 @@ class _PostJobScreenState extends State<PostJobScreen> {
                   controller: _descController,
                   hint: 'Mô tả chi tiết trách nhiệm và kỹ năng cần có',
                   maxLines: 4,
-                  validator: (v) => v?.trim().isEmpty == true ? 'Vui lòng nhập mô tả' : null,
+                  validator: (v) =>
+                      v?.trim().isEmpty == true ? 'Vui lòng nhập mô tả' : null,
                 ),
                 const SizedBox(height: 14),
 
@@ -213,7 +270,10 @@ class _PostJobScreenState extends State<PostJobScreen> {
                   ),
                   child: const Text(
                     'Xem trước & Xuất bản tin',
-                    style: TextStyle(fontSize: 15.5, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      fontSize: 15.5,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ],
@@ -249,7 +309,10 @@ class _PostJobScreenState extends State<PostJobScreen> {
           validator: validator,
           decoration: InputDecoration(
             hintText: hint,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: 12,
+            ),
           ),
         ),
       ],

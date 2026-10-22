@@ -110,7 +110,10 @@ class _RecruiterJobsScreenState extends State<RecruiterJobsScreen> {
                         color: AppColors.primary.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: const Icon(Icons.campaign_outlined, color: AppColors.primary),
+                      child: const Icon(
+                        Icons.campaign_outlined,
+                        color: AppColors.primary,
+                      ),
                     ),
                     const SizedBox(width: 14),
                     Expanded(
@@ -182,13 +185,16 @@ class _RecruiterJobsScreenState extends State<RecruiterJobsScreen> {
                             ),
                           ),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
                             decoration: BoxDecoration(
                               color: isOpen
                                   ? AppColors.success.withValues(alpha: 0.1)
                                   : isPending
-                                      ? AppColors.warning.withValues(alpha: 0.1)
-                                      : AppColors.textHint.withValues(alpha: 0.1),
+                                  ? AppColors.warning.withValues(alpha: 0.1)
+                                  : AppColors.textHint.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(
@@ -199,8 +205,8 @@ class _RecruiterJobsScreenState extends State<RecruiterJobsScreen> {
                                 color: isOpen
                                     ? AppColors.success
                                     : isPending
-                                        ? AppColors.warning
-                                        : AppColors.textSecondary,
+                                    ? AppColors.warning
+                                    : AppColors.textSecondary,
                               ),
                             ),
                           ),
@@ -209,7 +215,10 @@ class _RecruiterJobsScreenState extends State<RecruiterJobsScreen> {
                       const SizedBox(height: 6),
                       Text(
                         '${job['location']} · ${job['salary']}',
-                        style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: AppColors.textSecondary,
+                        ),
                       ),
                       const SizedBox(height: 6),
                       Text(
@@ -229,7 +238,8 @@ class _RecruiterJobsScreenState extends State<RecruiterJobsScreen> {
                         children: [
                           Expanded(
                             child: OutlinedButton(
-                              onPressed: () => context.push(AppRoutes.recruiterCandidates),
+                              onPressed: () =>
+                                  context.push(AppRoutes.recruiterCandidates),
                               style: OutlinedButton.styleFrom(
                                 side: const BorderSide(color: AppColors.border),
                                 minimumSize: const Size(0, 38),
@@ -239,23 +249,37 @@ class _RecruiterJobsScreenState extends State<RecruiterJobsScreen> {
                               ),
                               child: Text(
                                 'Xem ứng viên (${job['applications']})',
-                                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ),
                           ),
                           const SizedBox(width: 8),
                           IconButton(
-                            icon: const Icon(Icons.edit_outlined, size: 20, color: AppColors.primary),
+                            icon: const Icon(
+                              Icons.edit_outlined,
+                              size: 20,
+                              color: AppColors.primary,
+                            ),
                             tooltip: 'Chỉnh sửa tin',
-                            onPressed: () => context.push(AppRoutes.recruiterPostJob),
+                            onPressed: () =>
+                                context.push(AppRoutes.recruiterPostJob),
                           ),
                           IconButton(
-                            icon: const Icon(Icons.delete_outline_rounded, size: 20, color: AppColors.error),
+                            icon: const Icon(
+                              Icons.delete_outline_rounded,
+                              size: 20,
+                              color: AppColors.error,
+                            ),
                             tooltip: 'Đóng / Xóa tin',
                             onPressed: () {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
-                                  content: Text('Đã cập nhật trạng thái tin: ${job['title']}'),
+                                  content: Text(
+                                    'Đã cập nhật trạng thái tin: ${job['title']}',
+                                  ),
                                   behavior: SnackBarBehavior.floating,
                                 ),
                               );
