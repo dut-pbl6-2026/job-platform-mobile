@@ -6,16 +6,19 @@ import '../../core/router/app_router.dart';
 import '../../core/services/push_notification_service.dart';
 import '../../core/session/auth_session.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/widgets/app_content.dart';
+import '../../core/widgets/design_asset.dart';
+import '../../core/widgets/user_avatar.dart';
 import '../auth/data/repositories/api_auth_repository.dart';
 import '../auth/domain/models/user_model.dart';
 import '../auth/domain/repositories/auth_repository.dart';
-import '../jobs/data/repositories/mock_job_repository.dart';
+import '../jobs/data/repositories/api_job_repository.dart';
 import '../jobs/domain/models/job_filter_params.dart';
 import '../jobs/domain/models/job_model.dart';
 import '../jobs/domain/repositories/job_repository.dart';
-import '../jobs/presentation/widgets/job_card.dart';
 import '../jobs/presentation/widgets/job_filter_bottom_sheet.dart';
 import '../jobs/presentation/widgets/job_shimmer_loading.dart';
+import '../jobs/presentation/widgets/compact_job_card.dart';
 import '../notifications/data/repositories/api_notification_repository.dart';
 import '../notifications/domain/repositories/notification_repository.dart';
 
@@ -49,6 +52,7 @@ class _HomeScreenState extends State<HomeScreen> {
   StreamSubscription<dynamic>? _notifSub;
 
   List<JobModel> _jobs = [];
+  final Set<String> _savingIds = {};
   int _totalJobs = 0;
   int _currentPage = 0;
   bool _hasNextPage = false;
@@ -64,7 +68,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _authRepository = widget.authRepository ?? ApiAuthRepository();
-    _jobRepository = widget.jobRepository ?? MockJobRepository();
+    _jobRepository = widget.jobRepository ?? ApiJobRepository();
     _notificationRepository =
         widget.notificationRepository ?? ApiNotificationRepository();
     _fetchJobs();
@@ -218,14 +222,14 @@ class _HomeScreenState extends State<HomeScreen> {
           page: 0,
         );
         break;
-      case 'Lương cao (30M+)':
+      case 'Lương':
         _filterParams = _filterParams.copyWith(
           salaryMin: 30000000,
           clearSalaryMin: false,
           page: 0,
         );
         break;
-      case 'Từ xa (Remote)':
+      case 'Từ xa':
         _filterParams = _filterParams.copyWith(
           workplaceType: 'remote',
           clearWorkplaceType: false,
@@ -247,55 +251,57 @@ class _HomeScreenState extends State<HomeScreen> {
     _fetchJobs(isResetPage: true);
   }
 
+  Future<void> _toggleBookmark(JobModel job) async {
+    if (_savingIds.contains(job.id)) return;
+    setState(() => _savingIds.add(job.id));
+    try {
+      final saved = await _jobRepository.toggleSaveJob(job.id);
+      if (!mounted) return;
+      setState(() {
+        _jobs = _jobs
+            .map(
+              (item) =>
+                  item.id == job.id ? item.copyWith(isSaved: saved) : item,
+            )
+            .toList();
+      });
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Không thể lưu việc làm. Vui lòng thử lại.'),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _savingIds.remove(job.id));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = AuthSession.instance.currentUser;
     final isRecruiter = user?.role == UserRole.recruiter;
-
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.surface,
       body: SafeArea(
+        bottom: false,
         child: RefreshIndicator(
           onRefresh: () => _fetchJobs(isResetPage: true),
-          color: AppColors.primary,
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // 1. Top App Header Bar
-                _buildTopHeader(user),
-
-                // 2. Interactive Search Bar with Filter Button (integrated on Home)
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: _buildSearchBar(),
-                ),
-                const SizedBox(height: 14),
-
-                // 3. Category & Filter Pills Bar (directly filters Home jobs)
-                _buildFilterPills(),
-                const SizedBox(height: 18),
-
-                // 4. AI Skill Match Banner
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: _buildAiMatchBanner(),
-                ),
-                const SizedBox(height: 20),
-
-                // 5. Quick Functional Shortcuts
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: _buildQuickShortcuts(isRecruiter),
-                ),
-                const SizedBox(height: 22),
-
-                // 6. Real-time Search & Recommended Jobs Section
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            child: AppContent(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildTopHeader(user),
+                  _buildSearchBar(),
+                  const SizedBox(height: 9),
+                  _buildFilterPills(),
+                  _buildAiMatchBanner(),
+                  const SizedBox(height: 10),
+                  _buildQuickShortcuts(isRecruiter),
+                  const SizedBox(height: 9),
+                  Row(
                     children: [
                       Expanded(
                         child: Column(
@@ -305,50 +311,36 @@ class _HomeScreenState extends State<HomeScreen> {
                               _isFilterActive
                                   ? 'Kết quả tìm kiếm'
                                   : 'Việc làm đề xuất',
-                              style: Theme.of(context).textTheme.titleLarge
-                                  ?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 18,
-                                  ),
-                            ),
-                            if (_totalJobs > 0) ...[
-                              const SizedBox(height: 2),
-                              Text(
-                                'Tìm thấy $_totalJobs cơ hội việc làm',
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  color: AppColors.textSecondary,
-                                  fontWeight: FontWeight.w500,
-                                ),
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
                               ),
-                            ],
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              _isFilterActive
+                                  ? 'Tìm thấy $_totalJobs cơ hội việc làm'
+                                  : 'Khám phá cơ hội phù hợp với bạn',
+                              style: const TextStyle(
+                                fontSize: 9,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
                           ],
                         ),
                       ),
                       if (_isFilterActive)
-                        TextButton.icon(
+                        TextButton(
                           onPressed: _resetFilters,
-                          icon: const Icon(Icons.refresh_rounded, size: 14),
-                          label: const Text(
-                            'Đặt lại',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
+                          child: const Text('Đặt lại'),
                         ),
                     ],
                   ),
-                ),
-                const SizedBox(height: 12),
-
-                // Job cards list
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: _buildJobsList(),
-                ),
-                const SizedBox(height: 28),
-              ],
+                  const SizedBox(height: 12),
+                  _buildJobsList(),
+                  const SizedBox(height: 28),
+                ],
+              ),
             ),
           ),
         ),
@@ -356,440 +348,308 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // --- 1. Modern Top Header ---
-  Widget _buildTopHeader(UserModel? user) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-      child: Row(
-        children: [
-          // User Avatar with Status indicator
-          Stack(
+  Widget _buildTopHeader(UserModel? user) => Padding(
+    padding: const EdgeInsets.only(top: 14, bottom: 7),
+    child: Row(
+      children: [
+        UserAvatar(name: user?.name, imageUrl: user?.avatarUrl),
+        const SizedBox(width: 17),
+        Expanded(
+          child: Text(
+            user?.name ?? 'Ứng viên',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+          ),
+        ),
+        IconButton(
+          key: const Key('home_notification_button'),
+          tooltip: 'Thông báo',
+          icon: Badge(
+            isLabelVisible: _unreadNotificationsCount > 0,
+            label: Text('$_unreadNotificationsCount'),
+            child: const DesignAsset('home-notification'),
+          ),
+          onPressed: () async {
+            await context.push(AppRoutes.notifications);
+            if (mounted) _loadUnreadCount();
+          },
+        ),
+        IconButton(
+          key: const Key('home_ai_copilot_button'),
+          tooltip: 'AI Copilot',
+          icon: const DesignAsset('home-chat'),
+          onPressed: () => context.push(AppRoutes.aiCopilot),
+        ),
+        IconButton(
+          tooltip: 'Menu tài khoản',
+          icon: _isLoggingOut
+              ? const SizedBox.square(
+                  dimension: 25,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const DesignAsset('home-menu'),
+          onPressed: _isLoggingOut ? null : _openAccountMenu,
+        ),
+      ],
+    ),
+  );
+
+  void _openAccountMenu() {
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.person_outline),
+              title: const Text('Hồ sơ'),
+              onTap: () {
+                Navigator.pop(sheetContext);
+                context.go(AppRoutes.profile);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.bookmark_outline),
+              title: const Text('Việc làm đã lưu'),
+              onTap: () {
+                Navigator.pop(sheetContext);
+                context.push(AppRoutes.savedJobs);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.logout),
+              title: const Text('Đăng xuất'),
+              onTap: () {
+                Navigator.pop(sheetContext);
+                _handleLogout();
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSearchBar() => Material(
+    color: AppColors.searchSurface,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(47),
+      side: const BorderSide(color: AppColors.border),
+    ),
+    child: InkWell(
+      borderRadius: BorderRadius.circular(47),
+      onTap: () => context.push(AppRoutes.search),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(
+          minHeight: AppDimensions.searchHeight,
+        ),
+        child: Padding(
+          padding: const EdgeInsets.only(left: 10),
+          child: Row(
             children: [
-              CircleAvatar(
-                radius: 22,
-                backgroundColor: AppColors.primary.withValues(alpha: 0.15),
+              const DesignAsset('home-search'),
+              const SizedBox(width: 10),
+              const Expanded(
                 child: Text(
-                  user?.name.isNotEmpty == true
-                      ? user!.name[0].toUpperCase()
-                      : 'U',
+                  'Tìm việc, công ty, kỹ năng...',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 10, color: Color(0x99000000)),
+                ),
+              ),
+              IconButton(
+                tooltip: 'Bộ lọc',
+                icon: const DesignAsset('home-tune'),
+                onPressed: () => context.push(AppRoutes.search),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
+
+  Widget _buildFilterPills() => Row(
+    children: [
+      Expanded(
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              for (final pill in ['Tất cả', 'Địa điểm', 'Từ xa', 'Lương'])
+                Padding(
+                  padding: const EdgeInsets.only(right: 4),
+                  child: Semantics(
+                    selected: _selectedPill == pill,
+                    child: TextButton(
+                      onPressed: () => _handlePillTap(pill),
+                      style: TextButton.styleFrom(
+                        foregroundColor: _selectedPill == pill
+                            ? Colors.white
+                            : AppColors.darkSurface,
+                        padding: const EdgeInsets.symmetric(horizontal: 3),
+                        minimumSize: const Size(0, 48),
+                        shape: const StadiumBorder(),
+                      ),
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: _selectedPill == pill
+                              ? AppColors.primary
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(27),
+                        ),
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: _selectedPill == pill ? 20 : 5,
+                            vertical: 6,
+                          ),
+                          child: Text(
+                            pill,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+      IconButton(
+        tooltip: 'Tất cả bộ lọc',
+        onPressed: _openFilter,
+        icon: const DesignAsset('home-filters'),
+      ),
+    ],
+  );
+
+  Widget _buildAiMatchBanner() => Material(
+    color: AppColors.primary,
+    borderRadius: BorderRadius.circular(14),
+    child: InkWell(
+      onTap: () => context.push(AppRoutes.resumeScoring),
+      borderRadius: BorderRadius.circular(14),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(
+          minHeight: AppDimensions.bannerHeight,
+          minWidth: double.infinity,
+        ),
+        child: const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '✦  AI MATCH  ·  Cá nhân hóa cho bạn',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              SizedBox(height: 3),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Khám phá mức độ phù hợp của hồ sơ',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  Icon(Icons.arrow_forward, color: Colors.white, size: 14),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
+
+  Widget _buildQuickShortcuts(bool isRecruiter) => Row(
+    children: [
+      Expanded(
+        child: _shortcut(
+          isRecruiter ? '+' : '▣',
+          isRecruiter ? 'Đăng tin' : 'Tạo CV',
+          () => context.go(
+            isRecruiter ? AppRoutes.recruiterPostJob : AppRoutes.createCv,
+          ),
+        ),
+      ),
+      const SizedBox(width: 8),
+      Expanded(
+        child: _shortcut('◉', 'Hồ sơ', () => context.go(AppRoutes.profile)),
+      ),
+      const SizedBox(width: 8),
+      Expanded(
+        child: _shortcut(
+          '✓',
+          'Ứng tuyển',
+          () => context.go(AppRoutes.applications),
+        ),
+      ),
+    ],
+  );
+
+  Widget _shortcut(String glyph, String title, VoidCallback onTap) => Material(
+    color: AppColors.surface,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(12),
+      side: const BorderSide(color: AppColors.border),
+    ),
+    child: InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(
+          minHeight: AppDimensions.shortcutHeight,
+        ),
+        child: Padding(
+          padding: const EdgeInsets.only(top: 20, bottom: 12),
+          child: Column(
+            children: [
+              Container(
+                width: 30,
+                height: 30,
+                alignment: Alignment.center,
+                decoration: const BoxDecoration(
+                  color: AppColors.primaryLight,
+                  shape: BoxShape.circle,
+                ),
+                child: Text(
+                  glyph,
                   style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
                     color: AppColors.primary,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
                   ),
                 ),
               ),
-              Positioned(
-                right: 0,
-                bottom: 0,
-                child: Container(
-                  width: 11,
-                  height: 11,
-                  decoration: BoxDecoration(
-                    color: AppColors.success,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 2),
-                  ),
+              const SizedBox(height: 3),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ],
           ),
-          const SizedBox(width: 12),
-
-          // Name and greeting
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Text(
-                      user?.name ?? 'Ứng viên',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(width: 4),
-                    const Icon(
-                      Icons.verified_rounded,
-                      size: 14,
-                      color: AppColors.primary,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  user?.role.displayName ?? 'Tìm kiếm cơ hội mới',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // Header action buttons (Notification, Message, Logout)
-          IconButton(
-            key: const Key('home_notification_button'),
-            icon: Badge(
-              isLabelVisible: _unreadNotificationsCount > 0,
-              label: Text('$_unreadNotificationsCount'),
-              backgroundColor: AppColors.error,
-              child: const Icon(Icons.notifications_none_rounded, size: 24),
-            ),
-            tooltip: 'Thông báo',
-            onPressed: () async {
-              await context.push(AppRoutes.notifications);
-              _loadUnreadCount();
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.forum_outlined, size: 22),
-            tooltip: 'AI Copilot',
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text(
-                    'Tính năng AI Job Copilot (Phase 3 đang phát triển)',
-                  ),
-                  duration: Duration(seconds: 2),
-                ),
-              );
-            },
-          ),
-          IconButton(
-            icon: _isLoggingOut
-                ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(
-                    Icons.logout_rounded,
-                    color: AppColors.textSecondary,
-                    size: 22,
-                  ),
-            tooltip: 'Đăng xuất',
-            onPressed: _isLoggingOut ? null : _handleLogout,
-          ),
-        ],
-      ),
-    );
-  }
-
-  // --- 2. Tappable Search Bar on Home ---
-  Widget _buildSearchBar() {
-    return InkWell(
-      onTap: () => context.push(AppRoutes.search),
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        height: 50,
-        padding: const EdgeInsets.symmetric(horizontal: 14),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.border),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.03),
-              blurRadius: 10,
-              offset: const Offset(0, 3),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            const Icon(
-              Icons.search_rounded,
-              color: AppColors.primary,
-              size: 22,
-            ),
-            const SizedBox(width: 10),
-            const Expanded(
-              child: Text(
-                'Tìm kiếm công việc, công ty, kỹ năng...',
-                style: TextStyle(color: AppColors.textHint, fontSize: 13),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            Container(height: 24, width: 1, color: AppColors.border),
-            const SizedBox(width: 8),
-            IconButton(
-              icon: const Icon(
-                Icons.tune_rounded,
-                color: AppColors.textSecondary,
-                size: 20,
-              ),
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
-              tooltip: 'Bộ lọc',
-              onPressed: () => context.push(AppRoutes.search),
-            ),
-          ],
         ),
       ),
-    );
-  }
-
-  // --- 3. Filter / Category Pills Bar (directly filters Home list) ---
-  Widget _buildFilterPills() {
-    final pills = [
-      'Tất cả',
-      'Địa điểm',
-      'Từ xa (Remote)',
-      'Lương cao (30M+)',
-      'IT / Phần mềm',
-    ];
-
-    return SizedBox(
-      height: 36,
-      child: ListView.separated(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        scrollDirection: Axis.horizontal,
-        itemCount: pills.length,
-        separatorBuilder: (context, index) => const SizedBox(width: 8),
-        itemBuilder: (context, index) {
-          final pill = pills[index];
-          final isSelected = _selectedPill == pill;
-
-          return ChoiceChip(
-            label: Text(
-              pill,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                color: isSelected ? Colors.white : AppColors.textPrimary,
-              ),
-            ),
-            selected: isSelected,
-            selectedColor: AppColors.primary,
-            backgroundColor: AppColors.surface,
-            side: BorderSide(
-              color: isSelected ? AppColors.primary : AppColors.border,
-            ),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-            ),
-            showCheckmark: false,
-            onSelected: (_) => _handlePillTap(pill),
-          );
-        },
-      ),
-    );
-  }
-
-  // --- 4. 90% Skill Match AI Banner ---
-  Widget _buildAiMatchBanner() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF1E3A8A), Color(0xFF2563EB), Color(0xFF3B82F6)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF2563EB).withValues(alpha: 0.35),
-            blurRadius: 14,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          // Icon badge
-          Container(
-            width: 46,
-            height: 46,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Icon(
-              Icons.auto_awesome_rounded,
-              color: Colors.white,
-              size: 26,
-            ),
-          ),
-          const SizedBox(width: 14),
-
-          // Text content
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.25),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: const Text(
-                        '90% MATCH',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    const Text(
-                      'Cá nhân hóa cho bạn',
-                      style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 5),
-                const Text(
-                  'Hồ sơ của bạn phù hợp với các cơ hội hàng đầu',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // Navigation CTA icon
-          IconButton(
-            icon: const Icon(Icons.arrow_forward_rounded, color: Colors.white),
-            onPressed: () {
-              // Filters jobs matching profile on Home
-              _handlePillTap('IT / Phần mềm');
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  // --- 5. Quick Shortcuts ---
-  Widget _buildQuickShortcuts(bool isRecruiter) {
-    return Row(
-      children: [
-        Expanded(
-          child: _buildCompactCard(
-            icon: isRecruiter
-                ? Icons.add_business_rounded
-                : Icons.note_add_outlined,
-            title: isRecruiter ? 'Đăng tin' : 'Tạo CV',
-            subtitle: isRecruiter ? 'Tuyển dụng mới' : 'Mẫu chuẩn ATS',
-            color: AppColors.primary,
-            onTap: () {
-              if (isRecruiter) {
-                context.go(AppRoutes.jobs);
-              } else {
-                context.go(AppRoutes.createCv);
-              }
-            },
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: _buildCompactCard(
-            icon: Icons.person_outline_rounded,
-            title: 'Hồ sơ',
-            subtitle: 'CV & Kỹ năng',
-            color: AppColors.secondary,
-            onTap: () => context.go(AppRoutes.profile),
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: _buildCompactCard(
-            icon: Icons.history_edu_rounded,
-            title: 'Ứng tuyển',
-            subtitle: 'Theo dõi đơn',
-            color: const Color(0xFF8B5CF6),
-            onTap: () => context.go(AppRoutes.applications),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildCompactCard({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(14),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.border),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.02),
-              blurRadius: 6,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, color: color, size: 20),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 2),
-            Text(
-              subtitle,
-              style: const TextStyle(
-                fontSize: 10,
-                color: AppColors.textSecondary,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // --- 6. Jobs List with Live Search Results & Load More ---
+    ),
+  );
   Widget _buildJobsList() {
     if (_isLoadingJobs) {
       return const JobShimmerLoading();
@@ -876,17 +736,12 @@ class _HomeScreenState extends State<HomeScreen> {
           separatorBuilder: (context, index) => const SizedBox(height: 12),
           itemBuilder: (context, index) {
             final job = _jobs[index];
-            return JobCard(
+            return CompactJobCard(
               job: job,
               onTap: () => context.push('${AppRoutes.jobs}/${job.id}'),
-              onBookmarkToggle: () async {
-                await _jobRepository.toggleSaveJob(job.id);
-                if (mounted) {
-                  setState(() {
-                    _jobs[index] = job.copyWith(isSaved: !job.isSaved);
-                  });
-                }
-              },
+              onBookmarkToggle: _savingIds.contains(job.id)
+                  ? null
+                  : () => _toggleBookmark(job),
             );
           },
         ),

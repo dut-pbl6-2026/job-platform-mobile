@@ -18,6 +18,53 @@ void main() {
   });
 
   group('AppRouter Route Guard Tests (Issue 4.2 / SEC-08)', () {
+    test('Personal Figma routes require authentication', () {
+      for (final path in [
+        AppRoutes.aiCopilot,
+        AppRoutes.resumeScoring,
+        AppRoutes.savedJobs,
+        AppRoutes.createCv,
+        AppRoutes.connections,
+      ]) {
+        final redirect = AppRouter.router.configuration.topRedirect(
+          TestBuildContext(),
+          TestGoRouterState(path),
+        );
+        expect(redirect, AppRoutes.login, reason: path);
+      }
+    });
+
+    test('Candidate cannot access recruiter screens', () {
+      AuthSession.instance.setSession(
+        AuthResult(
+          user: UserModel(
+            id: 'candidate',
+            name: 'Candidate',
+            email: 'c@example.com',
+            role: UserRole.user,
+            createdAt: DateTime.now(),
+          ),
+          token: 'jwt-token',
+          refreshToken: 'refresh-token',
+          expiresAt: DateTime.now().add(const Duration(hours: 1)),
+        ),
+      );
+      for (final path in [
+        AppRoutes.recruiterDashboard,
+        AppRoutes.recruiterJobs,
+        AppRoutes.recruiterPostJob,
+        AppRoutes.recruiterCandidates,
+      ]) {
+        expect(
+          AppRouter.router.configuration.topRedirect(
+            TestBuildContext(),
+            TestGoRouterState(path),
+          ),
+          AppRoutes.home,
+        );
+      }
+    });
+
     test(
       'Unauthenticated user navigating to /jobs/1/apply is redirected to login',
       () {

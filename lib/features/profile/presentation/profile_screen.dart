@@ -559,10 +559,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         icon: Icons.favorite_border_rounded,
                         iconColor: AppColors.primary,
                         title: 'Việc làm đã lưu',
-                        onTap: () => _showInformationDialog(
-                          'Việc làm đã lưu',
-                          'Xem lại các công việc bạn đã đánh dấu yêu thích để dễ dàng theo dõi và ứng tuyển bất cứ lúc nào.',
-                        ),
+                        onTap: () => context.push(AppRoutes.savedJobs),
                       ),
                       _buildDivider(),
                       ProfileMenuItem(
@@ -593,10 +590,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         icon: Icons.person_add_alt_outlined,
                         iconColor: AppColors.primary,
                         title: 'NTD muốn kết nối với bạn',
-                        onTap: () => _showInformationDialog(
-                          'NTD muốn kết nối với bạn',
-                          'Hiện tại bạn không có lời mời kết nối nào đang chờ xử lý.',
-                        ),
+                        onTap: () => context.push(AppRoutes.connections),
                       ),
                       _buildDivider(),
                       ProfileMenuItem(
