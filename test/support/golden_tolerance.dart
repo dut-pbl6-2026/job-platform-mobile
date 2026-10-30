@@ -16,7 +16,9 @@ Future<void> expectGoldenWithinTolerance(
   }
 
   final boundary = tester.firstRenderObject<RenderRepaintBoundary>(finder);
-  final image = await boundary.toImage(pixelRatio: tester.view.devicePixelRatio);
+  final image = await boundary.toImage(
+    pixelRatio: tester.view.devicePixelRatio,
+  );
   try {
     final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
     if (byteData == null) {
