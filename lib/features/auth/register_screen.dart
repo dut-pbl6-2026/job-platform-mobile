@@ -179,7 +179,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Đăng ký tài khoản ${result.user.role.displayName} thành công!',
+              'Đăng ký tài khoản ${result.user.role?.displayName ?? ''} thành công!',
             ),
             backgroundColor: AppColors.success,
             behavior: SnackBarBehavior.floating,
