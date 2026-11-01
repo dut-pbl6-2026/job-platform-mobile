@@ -422,7 +422,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  user?.role.displayName ?? 'Tìm kiếm cơ hội mới',
+                  user?.role?.displayName ?? 'Tìm kiếm cơ hội mới',
                   style: const TextStyle(
                     fontSize: 12,
                     color: AppColors.textSecondary,

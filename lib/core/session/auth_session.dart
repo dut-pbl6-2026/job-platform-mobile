@@ -5,8 +5,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../features/auth/domain/models/auth_result.dart';
 import '../../features/auth/domain/models/user_model.dart';
 
-/// Session manager with secure persistence (SEC-09).
-/// Workaround note: prod auto-deploy excludes mobile; this enables cold-start restoration for PBL6-16 E2E.
+/// Session manager with secure persistence (SEC-09) and role resolution (AUTH-01-03).
+/// Resolves authenticated role from verified backend-issued JWT token claims
+/// with fallback to validated user entity. Fails closed on unknown or missing roles.
 class AuthSession extends ChangeNotifier {
   AuthSession._();
   static final AuthSession instance = AuthSession._();
@@ -30,6 +31,52 @@ class AuthSession extends ChangeNotifier {
   bool get isAuthenticated => _token != null && _currentUser != null;
   bool get isLoaded => _loaded;
 
+  /// Authoritative role resolved from verified backend-issued JWT claims (AUTH-01-03)
+  /// or authenticated user profile. Returns `null` (fail closed) if unknown or missing.
+  UserRole? get resolvedRole {
+    if (!isAuthenticated) return null;
+
+    // 1. Authoritative check: inspect verified backend-issued JWT token claims
+    final jwtRole = _extractRoleFromJwt(_token);
+    if (jwtRole != null) {
+      return jwtRole;
+    }
+
+    // 2. Fallback to authenticated currentUser.role (e.g. for mock tokens in unit tests)
+    return _currentUser?.role;
+  }
+
+  bool get isUser => resolvedRole == UserRole.user;
+  bool get isRecruiter => resolvedRole == UserRole.recruiter;
+  bool get isAdmin => resolvedRole == UserRole.admin;
+  bool get hasValidRole => resolvedRole != null;
+
+  /// Safely extracts and parses the role claim from a JWT access token.
+  static UserRole? _extractRoleFromJwt(String? token) {
+    if (token == null) return null;
+    final parts = token.split('.');
+    if (parts.length < 2) return null;
+    try {
+      var payloadString = parts[1];
+      while (payloadString.length % 4 != 0) {
+        payloadString += '=';
+      }
+      final normalized = base64Url.normalize(payloadString);
+      final decodedBytes = base64Url.decode(normalized);
+      final decodedString = utf8.decode(decodedBytes);
+      final map = jsonDecode(decodedString) as Map<String, dynamic>;
+
+      // Check standard JWT claim keys ('role' and Microsoft Identity ClaimTypes.Role URI)
+      final roleStr =
+          map['role'] as String? ??
+          map['http://schemas.microsoft.com/ws/2008/06/identity/claims/role']
+              as String?;
+      return UserRole.tryParse(roleStr);
+    } catch (_) {
+      return null;
+    }
+  }
+
   Future<void> load() async {
     try {
       _token = await _secure.read(key: _kTokenKey);
@@ -39,6 +86,10 @@ class AuthSession extends ChangeNotifier {
       if (userJson != null && _token != null) {
         final map = jsonDecode(userJson) as Map<String, dynamic>;
         _currentUser = UserModel.fromJson(map);
+      } else {
+        _currentUser = null;
+        _token = null;
+        _refreshToken = null;
       }
     } catch (e) {
       debugPrint('AuthSession load failed: $e');

@@ -136,7 +136,19 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
       return;
     }
 
-    // 2. If unauthenticated: prompt login
+    // 2. If Admin: Show moderation preview (ADMIN-01)
+    if (user?.role == UserRole.admin) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Chức năng kiểm duyệt tin tuyển dụng thuộc cổng Quản trị (ADMIN-01)',
+          ),
+        ),
+      );
+      return;
+    }
+
+    // 3. If unauthenticated: prompt login
     if (!isAuthenticated) {
       showDialog(
         context: context,
@@ -164,7 +176,9 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
     }
 
     // 3. If Candidate (UserRole.user): Navigate to application flow (MOB-01-04)
-    _showApplyBottomSheet();
+    if (user?.role == UserRole.user) {
+      _showApplyBottomSheet();
+    }
   }
 
   void _showApplyBottomSheet() {
