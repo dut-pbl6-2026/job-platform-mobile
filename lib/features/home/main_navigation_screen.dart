@@ -190,10 +190,9 @@ class JobBottomNavigation extends StatelessWidget {
     return switch (index) {
       0 => DesignAsset('nav-home', width: 23, height: 23, color: iconColor),
       1 => DesignAsset('nav-jobs', width: 23, height: 23, color: iconColor),
-      2 => DesignAsset(
-        'nav-cv', // Thay ký tự vuông '▣' bằng asset hoặc Icon chuẩn
-        width: 23,
-        height: 23,
+      2 => Icon(
+        Icons.description_outlined,
+        size: 23,
         color: iconColor,
       ),
       3 => DesignAsset(

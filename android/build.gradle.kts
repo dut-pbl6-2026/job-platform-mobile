@@ -22,15 +22,9 @@ subprojects {
 }
 
 subprojects {
-    // file_picker 11 skips KGP on AGP 9, but this app retains legacy Kotlin
-    // support until all plugins migrate. Ensure its Kotlin sources still build.
-    if (name == "file_picker" &&
-        providers.gradleProperty("android.builtInKotlin").orNull == "false") {
-        pluginManager.withPlugin("com.android.library") {
-            pluginManager.apply("org.jetbrains.kotlin.android")
-            extensions.configure<org.jetbrains.kotlin.gradle.dsl.KotlinAndroidProjectExtension> {
-                compilerOptions.jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
-            }
+    plugins.withId("com.android.library") {
+        if (!plugins.hasPlugin("org.jetbrains.kotlin.android") && !plugins.hasPlugin("kotlin-android")) {
+            plugins.apply("org.jetbrains.kotlin.android")
         }
     }
 }
