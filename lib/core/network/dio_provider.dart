@@ -7,7 +7,7 @@ import 'package:job_platform_mobile/features/auth/domain/models/auth_result.dart
 
 const _baseUrl = String.fromEnvironment(
   'FLUTTER_API_URL',
-  defaultValue: 'https://jp-gateway.onrender.com',
+  defaultValue: 'http://10.0.2.2:5000', // Android emulator -> host gateway
 );
 
 /// Singleton Dio with Queued AuthInterceptor (401 → refresh → retry, concurrency-safe).
