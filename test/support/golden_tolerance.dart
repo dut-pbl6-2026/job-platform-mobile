@@ -25,6 +25,8 @@ Future<void> expectGoldenWithinTolerance(
       fail('Unable to capture PNG bytes for golden comparison: $goldenFile');
     }
     final imageBytes = byteData.buffer.asUint8List();
+    
+    // ignore: invalid_use_of_protected_member
     final goldenBytes = await comparator.getGoldenBytes(Uri.parse(goldenFile));
     final comparison = await GoldenFileComparator.compareLists(
       imageBytes,
@@ -42,3 +44,5 @@ Future<void> expectGoldenWithinTolerance(
     image.dispose();
   }
 }
+
+
