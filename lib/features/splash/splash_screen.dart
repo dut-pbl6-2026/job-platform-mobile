@@ -54,9 +54,10 @@ class _SplashScreenState extends State<SplashScreen>
   Future<void> _navigateAfterInit() async {
     await Future.delayed(const Duration(milliseconds: 2500));
     if (mounted) {
-      final destination = AuthSession.instance.isAuthenticated
-          ? AppRoutes.home
-          : AppRoutes.login;
+      final isValidSession =
+          AuthSession.instance.isAuthenticated &&
+          AuthSession.instance.resolvedRole != null;
+      final destination = isValidSession ? AppRoutes.home : AppRoutes.login;
       context.go(destination);
     }
   }

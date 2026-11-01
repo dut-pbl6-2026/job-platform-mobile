@@ -26,7 +26,7 @@ class AuthResult {
             id: json['userId'] as String? ?? 'unknown',
             name: json['fullName'] as String? ?? json['name'] as String? ?? '',
             email: json['email'] as String? ?? '',
-            role: UserRole.fromString(json['role'] as String? ?? 'User'),
+            role: UserRole.tryParse(json['role'] as String?),
             createdAt: DateTime.now(),
           );
     return AuthResult(

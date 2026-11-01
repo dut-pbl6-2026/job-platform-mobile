@@ -65,4 +65,4 @@ flutter run
   - Tuân thủ các quy tắc bảo mật (SEC) và tiêu chuẩn SRS đề ra (ví dụ: quy định về độ mạnh mật khẩu, mã hóa token, thời hạn session, phân quyền 3 nhóm người dùng: Admin, Recruiter, User).
 
 ## Deploy (Mobile — TM4 Khoa, excluded prod)
-- Build: `flutter pub get` `ApiAuthRepository FLUTTER_API_URL=https://jp-gateway.onrender.com --dart-define` `AuthSession.load() minSdk 23` `excluded prod` `backlog.md#2`
+- Build: `flutter pub get` `ApiAuthRepository FLUTTER_API_URL=http://10.0.2.2:5000 --dart-define` `AuthSession.load() minSdk 23` `excluded prod` `backlog.md#2`

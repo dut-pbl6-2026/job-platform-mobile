@@ -9,11 +9,28 @@ enum UserRole {
 
   const UserRole(this.value, this.displayName);
 
+  static UserRole? tryParse(String? value) {
+    if (value == null) return null;
+    final normalized = value.trim().toLowerCase();
+    if (normalized.isEmpty) return null;
+    for (final role in UserRole.values) {
+      if (role.value.toLowerCase() == normalized) {
+        return role;
+      }
+    }
+    return null;
+  }
+
   static UserRole fromString(String value) {
-    return UserRole.values.firstWhere(
-      (role) => role.value.toLowerCase() == value.toLowerCase(),
-      orElse: () => UserRole.user,
-    );
+    final parsed = tryParse(value);
+    if (parsed == null) {
+      throw ArgumentError.value(
+        value,
+        'value',
+        'Unknown or missing UserRole: $value',
+      );
+    }
+    return parsed;
   }
 }
 
@@ -22,7 +39,7 @@ class UserModel {
   final String id;
   final String name;
   final String email;
-  final UserRole role;
+  final UserRole? role;
   final String? avatarUrl;
   final DateTime createdAt;
 
@@ -30,7 +47,7 @@ class UserModel {
     required this.id,
     required this.name,
     required this.email,
-    required this.role,
+    this.role,
     this.avatarUrl,
     required this.createdAt,
   });
@@ -40,7 +57,7 @@ class UserModel {
       id: json['id'] as String? ?? json['userId'] as String? ?? 'unknown',
       name: json['fullName'] as String? ?? json['name'] as String? ?? '',
       email: json['email'] as String? ?? '',
-      role: UserRole.fromString(json['role'] as String? ?? 'User'),
+      role: UserRole.tryParse(json['role'] as String?),
       avatarUrl: json['avatarUrl'] as String?,
       createdAt: json['createdAt'] != null
           ? DateTime.parse(json['createdAt'] as String)
@@ -53,7 +70,7 @@ class UserModel {
       'id': id,
       'name': name,
       'email': email,
-      'role': role.value,
+      'role': role?.value,
       'avatarUrl': avatarUrl,
       'createdAt': createdAt.toIso8601String(),
     };
