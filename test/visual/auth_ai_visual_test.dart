@@ -5,7 +5,6 @@ import 'package:job_platform_mobile/features/auth/login_screen.dart';
 import 'package:job_platform_mobile/features/auth/register_screen.dart';
 import 'package:job_platform_mobile/features/ai_copilot/presentation/ai_copilot_screen.dart';
 import '../support/fake_ai_repository.dart';
-import '../support/golden_tolerance.dart';
 import '../support/load_fonts.dart';
 
 void main() {
@@ -40,11 +39,9 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
-      await expectGoldenWithinTolerance(
-        tester,
+      await expectLater(
         find.byType(Scaffold),
-        goldenFile: 'goldens/${entry.key}_345x680.png',
-        maxDiffRate: 0.06,
+        matchesGoldenFile('goldens/${entry.key}_345x680.png'),
       );
     });
   }
