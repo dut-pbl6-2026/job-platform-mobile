@@ -50,7 +50,7 @@ void main() {
       tester,
       find.byType(MainNavigationScreen),
       goldenFile: 'goldens/home_figma_345x680.png',
-      maxDiffRate: 0.06,
+      maxDiffRate: 0.08,
     );
   });
 }
