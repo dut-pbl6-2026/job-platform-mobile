@@ -356,8 +356,9 @@ class JobBottomNavigation extends StatelessWidget {
                                     ),
                                     boxShadow: [
                                       BoxShadow(
-                                        color: const Color(0xFF123D8C)
-                                            .withValues(alpha: 0.12),
+                                        color: const Color(
+                                          0xFF123D8C,
+                                        ).withValues(alpha: 0.12),
                                         blurRadius: 6,
                                         offset: const Offset(0, 2),
                                       ),

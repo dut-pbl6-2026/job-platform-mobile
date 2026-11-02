@@ -617,9 +617,7 @@ class _HomeScreenState extends State<HomeScreen> {
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
       child: ConstrainedBox(
-        constraints: const BoxConstraints(
-          minHeight: 68,
-        ),
+        constraints: const BoxConstraints(minHeight: 68),
         child: Padding(
           padding: const EdgeInsets.only(top: 16, bottom: 10),
           child: Column(
@@ -632,11 +630,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   color: AppColors.primaryLight,
                   shape: BoxShape.circle,
                 ),
-                child: Icon(
-                  icon,
-                  size: 16,
-                  color: AppColors.primary,
-                ),
+                child: Icon(icon, size: 16, color: AppColors.primary),
               ),
               const SizedBox(height: 3),
               Text(

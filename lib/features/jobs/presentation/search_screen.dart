@@ -752,12 +752,7 @@ class _SearchScreenState extends State<SearchScreen> {
   // --- Discovery State (Recent Searches + Trending Suggestions) ---
   Widget _buildSearchDiscovery() {
     return SingleChildScrollView(
-      padding: const EdgeInsets.only(
-        left: 16,
-        right: 16,
-        top: 16,
-        bottom: 90,
-      ),
+      padding: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 90),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
