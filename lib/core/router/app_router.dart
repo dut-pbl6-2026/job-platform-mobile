@@ -251,10 +251,14 @@ class AppRouter {
           ),
         ],
       ),
-      StatefulShellRoute.indexedStack(
-        builder: (context, state, navigationShell) {
-          return MainNavigationScreen(navigationShell: navigationShell);
+      StatefulShellRoute(
+        navigatorContainerBuilder: (context, navigationShell, children) {
+          return MainNavigationScreen(
+            navigationShell: navigationShell,
+            children: children,
+          );
         },
+        builder: (context, state, navigationShell) => navigationShell,
         branches: [
           // Branch 0: Trang chủ (#2073:870)
           StatefulShellBranch(

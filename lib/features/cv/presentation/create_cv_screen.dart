@@ -3,6 +3,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/fade_slide_transition.dart';
+import '../../../core/widgets/pressable_card.dart';
 
 /// Commercial Create CV Screen
 /// Allows candidate to browse modern ATS templates and prepare professional CVs
@@ -216,34 +218,48 @@ class _CreateCvScreenState extends State<CreateCvScreen> {
                   itemBuilder: (context, index) {
                     final cat = _categories[index];
                     final isSelected = _selectedCategory == cat;
-                    return ChoiceChip(
-                      label: Text(
-                        cat,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: isSelected
-                              ? FontWeight.bold
-                              : FontWeight.normal,
-                          color: isSelected
-                              ? Colors.white
-                              : AppColors.textPrimary,
+                    return Semantics(
+                      button: true,
+                      selected: isSelected,
+                      child: GestureDetector(
+                        onTap: () => setState(() => _selectedCategory = cat),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          curve: Curves.easeInOut,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? AppColors.primary
+                                : AppColors.surface,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: isSelected
+                                  ? AppColors.primary
+                                  : AppColors.border,
+                              width: 1,
+                            ),
+                          ),
+                          child: Center(
+                            child: AnimatedDefaultTextStyle(
+                              duration: const Duration(milliseconds: 200),
+                              curve: Curves.easeInOut,
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: isSelected
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                                color: isSelected
+                                    ? Colors.white
+                                    : AppColors.textPrimary,
+                              ),
+                              child: Text(cat),
+                            ),
+                          ),
                         ),
                       ),
-                      selected: isSelected,
-                      selectedColor: AppColors.primary,
-                      backgroundColor: AppColors.surface,
-                      showCheckmark: false,
-                      side: BorderSide(
-                        color: isSelected
-                            ? AppColors.primary
-                            : AppColors.border,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      onSelected: (_) {
-                        setState(() => _selectedCategory = cat);
-                      },
                     );
                   },
                 ),
@@ -261,6 +277,7 @@ class _CreateCvScreenState extends State<CreateCvScreen> {
               const SizedBox(height: 12),
 
               ListView.separated(
+                key: ValueKey<String>(_selectedCategory),
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 itemCount: filteredTemplates.length,
@@ -268,7 +285,10 @@ class _CreateCvScreenState extends State<CreateCvScreen> {
                     const SizedBox(height: 12),
                 itemBuilder: (context, index) {
                   final t = filteredTemplates[index];
-                  return _buildTemplateCard(t);
+                  return FadeSlideTransition(
+                    index: index,
+                    child: PressableCard(child: _buildTemplateCard(t)),
+                  );
                 },
               ),
               const SizedBox(height: 20),

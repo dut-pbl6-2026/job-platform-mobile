@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_theme.dart';
 import '../domain/models/job_model.dart';
 import 'widgets/job_card.dart';
+import '../../../core/widgets/fade_slide_transition.dart';
+import '../../../core/widgets/pressable_card.dart';
 
 /// Saved Jobs Screen — Faithful implementation of Figma #2178:5876
 /// ("SRS / iPhone 390 / Việc làm đã lưu")
@@ -261,12 +263,20 @@ class _SavedJobsScreenState extends State<SavedJobsScreen> {
                   ),
                 )
               else
-                ...filteredList.map((job) {
+                ...filteredList.asMap().entries.map((entry) {
+                  final index = entry.key;
+                  final job = entry.value;
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 12),
-                    child: JobCard(
-                      job: job,
-                      onTap: () => context.push('/jobs/${job.id}'),
+                    child: FadeSlideTransition(
+                      index: index,
+                      child: PressableCard(
+                        onTap: () => context.push('/jobs/${job.id}'),
+                        child: JobCard(
+                          job: job,
+                          onTap: () => context.push('/jobs/${job.id}'),
+                        ),
+                      ),
                     ),
                   );
                 }),

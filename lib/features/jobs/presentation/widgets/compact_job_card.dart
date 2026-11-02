@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/format_utils.dart';
+import '../../../../core/widgets/bookmark_button.dart';
 import '../../../../core/widgets/design_asset.dart';
+
 import '../../domain/models/job_model.dart';
 
 /// Compact listing from Figma 55:3503 with dynamic job content.
@@ -101,16 +103,10 @@ class CompactJobCard extends StatelessWidget {
               Positioned(
                 right: 1,
                 top: 0,
-                child: IconButton(
-                  tooltip: job.isSaved ? 'Bỏ lưu tin' : 'Lưu tin tuyển dụng',
-                  onPressed: onBookmarkToggle,
-                  icon: job.isSaved
-                      ? const Icon(
-                          Icons.bookmark,
-                          color: AppColors.primary,
-                          size: 20,
-                        )
-                      : const DesignAsset('bookmark'),
+                child: BookmarkButton(
+                  isSaved: job.isSaved,
+                  onToggle: onBookmarkToggle,
+                  size: 20,
                 ),
               ),
               Positioned(

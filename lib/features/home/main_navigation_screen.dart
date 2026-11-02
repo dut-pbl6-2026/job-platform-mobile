@@ -36,12 +36,14 @@ class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({
     super.key,
     this.navigationShell,
+    this.children,
     this.initialIndex = 0,
     this.homeScreen,
     this.body,
   });
 
   final StatefulNavigationShell? navigationShell;
+  final List<Widget>? children;
   final int initialIndex;
   final Widget? homeScreen;
   final Widget? body;
@@ -267,16 +269,32 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       const ConnectionsScreen(),
       const ProfileScreen(),
     ];
+
+    final Widget activePage;
+    if (widget.children != null && widget.children!.isNotEmpty) {
+      activePage = widget.children![index];
+    } else {
+      activePage = _visited.contains(index)
+          ? screens[index]
+          : const SizedBox.shrink();
+    }
+
     return Scaffold(
-      body:
-          widget.navigationShell ??
-          IndexedStack(
-            index: index,
-            children: [
-              for (var i = 0; i < screens.length; i++)
-                _visited.contains(i) ? screens[i] : const SizedBox.shrink(),
-            ],
-          ),
+      body: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 220),
+        switchInCurve: Curves.easeOutCubic,
+        switchOutCurve: Curves.easeInCubic,
+        transitionBuilder: (child, animation) {
+          return FadeTransition(
+            opacity: animation,
+            child: ScaleTransition(
+              scale: Tween<double>(begin: 0.97, end: 1.0).animate(animation),
+              child: child,
+            ),
+          );
+        },
+        child: KeyedSubtree(key: ValueKey<int>(index), child: activePage),
+      ),
       bottomNavigationBar: JobBottomNavigation(
         selectedIndex: index,
         onSelected: _select,
@@ -339,59 +357,74 @@ class JobBottomNavigation extends StatelessWidget {
                         children: [
                           // Giữ bounding box của Stack luôn lấp đầy vùng 74px của tab
                           const SizedBox.expand(),
-                          if (i == selectedIndex)
-                            Positioned(
-                              top: -8,
-                              child: Container(
-                                color: Colors.transparent,
-                                child: Container(
-                                  width: 48,
-                                  height: 48,
+                          AnimatedPositioned(
+                            duration: const Duration(milliseconds: 200),
+                            curve: Curves.easeOutBack,
+                            top: i == selectedIndex ? -8 : 10,
+                            child: Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                if (i == selectedIndex)
+                                  Container(
+                                    width: 48,
+                                    height: 48,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: const Color(
+                                            0xFF123D8C,
+                                          ).withValues(alpha: 0.12),
+                                          blurRadius: 6,
+                                          offset: const Offset(0, 2),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                AnimatedContainer(
+                                  duration: const Duration(milliseconds: 200),
+                                  curve: Curves.easeOutBack,
+                                  width: i == selectedIndex ? 48 : 28,
+                                  height: i == selectedIndex ? 48 : 28,
                                   decoration: BoxDecoration(
                                     shape: BoxShape.circle,
-                                    color: Colors.white,
+                                    color: i == selectedIndex
+                                        ? Colors.white
+                                        : Colors.transparent,
                                     border: Border.all(
-                                      color: const Color(0xFFC7DEFF),
+                                      color: i == selectedIndex
+                                          ? const Color(0xFFC7DEFF)
+                                          : Colors.transparent,
                                       width: 1,
                                     ),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: const Color(
-                                          0xFF123D8C,
-                                        ).withValues(alpha: 0.12),
-                                        blurRadius: 6,
-                                        offset: const Offset(0, 2),
-                                      ),
-                                    ],
                                   ),
                                   child: Center(
-                                    child: SizedBox(
-                                      width: 23,
-                                      height: 23,
-                                      child: Center(child: _buildIcon(i, user)),
+                                    child: AnimatedScale(
+                                      scale: i == selectedIndex ? 1.08 : 1.0,
+                                      duration: const Duration(
+                                        milliseconds: 200,
+                                      ),
+                                      curve: Curves.easeOutBack,
+                                      child: SizedBox(
+                                        width: 23,
+                                        height: 23,
+                                        child: Center(
+                                          child: _buildIcon(i, user),
+                                        ),
+                                      ),
                                     ),
                                   ),
                                 ),
-                              ),
-                            )
-                          else
-                            Positioned(
-                              top: 10,
-                              child: SizedBox(
-                                width: 23,
-                                height: 23,
-                                child: Center(child: _buildIcon(i, user)),
-                              ),
+                              ],
                             ),
+                          ),
                           Positioned(
                             top: 39,
                             left: 2,
                             right: 2,
-                            child: Text(
-                              _labels[i],
-                              textAlign: TextAlign.center,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
+                            child: AnimatedDefaultTextStyle(
+                              duration: const Duration(milliseconds: 200),
+                              curve: Curves.easeInOut,
                               style: TextStyle(
                                 fontSize: 8,
                                 fontWeight: i == selectedIndex
@@ -400,6 +433,12 @@ class JobBottomNavigation extends StatelessWidget {
                                 color: i == selectedIndex
                                     ? AppColors.primary
                                     : AppColors.darkSurface,
+                              ),
+                              child: Text(
+                                _labels[i],
+                                textAlign: TextAlign.center,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
                           ),

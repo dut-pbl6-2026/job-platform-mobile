@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/format_utils.dart';
+import '../../../../core/widgets/bookmark_button.dart';
 import '../../domain/models/job_model.dart';
 
 /// Material 3 Job Card component displaying job post details (MOB-01-02)
@@ -96,24 +97,10 @@ class JobCard extends StatelessWidget {
                     ),
                   ),
                   // Bookmark button
-                  IconButton(
-                    icon: Icon(
-                      job.isSaved
-                          ? Icons.bookmark_rounded
-                          : Icons.bookmark_border_rounded,
-                      color: job.isSaved
-                          ? AppColors.primary
-                          : AppColors.textHint,
-                      size: 22,
-                    ),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(
-                      minWidth: 32,
-                      minHeight: 32,
-                    ),
-                    visualDensity: VisualDensity.compact,
-                    tooltip: job.isSaved ? 'Bỏ lưu tin' : 'Lưu tin tuyển dụng',
-                    onPressed: onBookmarkToggle,
+                  BookmarkButton(
+                    isSaved: job.isSaved,
+                    onToggle: onBookmarkToggle,
+                    size: 22,
                   ),
                 ],
               ),

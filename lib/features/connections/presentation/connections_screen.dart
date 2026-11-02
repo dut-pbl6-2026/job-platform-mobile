@@ -4,6 +4,10 @@ import 'package:go_router/go_router.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/app_theme.dart';
 
+import '../../../core/widgets/fade_slide_transition.dart';
+
+import '../../../core/widgets/pressable_card.dart';
+
 /// Model representing a recruiter connection invitation per Figma #2069:832, #2090:963, #2090:993
 class RecruiterInvite {
   final String id;
@@ -359,7 +363,13 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
               if (_filteredInvites.isEmpty)
                 _buildEmptyState()
               else
-                ..._filteredInvites.map(_buildInviteCard),
+                ..._filteredInvites.asMap().entries.map((entry) {
+                  return FadeSlideTransition(
+                    key: ValueKey('invite_${entry.value.id}'),
+                    index: entry.key,
+                    child: PressableCard(child: _buildInviteCard(entry.value)),
+                  );
+                }),
             ],
           ),
         ),
@@ -374,25 +384,34 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
         onTap: () => setState(() => _activeTabIndex = index),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
+          curve: Curves.easeInOut,
           padding: const EdgeInsets.symmetric(vertical: 9),
           decoration: BoxDecoration(
             color: isSelected ? AppColors.primary : Colors.transparent,
             borderRadius: BorderRadius.circular(9),
+            border: Border.all(
+              color: isSelected ? AppColors.primary : Colors.transparent,
+              width: 1,
+            ),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(
-                title,
+              AnimatedDefaultTextStyle(
+                duration: const Duration(milliseconds: 200),
+                curve: Curves.easeInOut,
                 style: TextStyle(
                   fontSize: 12.5,
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
                   color: isSelected ? Colors.white : AppColors.textSecondary,
                 ),
+                child: Text(title),
               ),
               if (count > 0) ...[
                 const SizedBox(width: 4),
-                Container(
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  curve: Curves.easeInOut,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 5,
                     vertical: 1,
@@ -403,8 +422,9 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
                         : AppColors.surfaceVariant,
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Text(
-                    '$count',
+                  child: AnimatedDefaultTextStyle(
+                    duration: const Duration(milliseconds: 200),
+                    curve: Curves.easeInOut,
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
@@ -412,6 +432,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
                           ? Colors.white
                           : AppColors.textSecondary,
                     ),
+                    child: Text('$count'),
                   ),
                 ),
               ],

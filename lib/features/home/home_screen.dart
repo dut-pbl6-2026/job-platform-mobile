@@ -8,6 +8,10 @@ import '../../core/session/auth_session.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/app_content.dart';
 import '../../core/widgets/design_asset.dart';
+
+import '../../core/widgets/fade_slide_transition.dart';
+
+import '../../core/widgets/pressable_card.dart';
 import '../../core/widgets/user_avatar.dart';
 import '../auth/data/repositories/api_auth_repository.dart';
 import '../auth/domain/models/user_model.dart';
@@ -481,38 +485,44 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               for (final pill in ['Tất cả', 'Địa điểm', 'Từ xa', 'Lương'])
                 Padding(
-                  padding: const EdgeInsets.only(right: 4),
+                  padding: const EdgeInsets.only(right: 6),
                   child: Semantics(
                     selected: _selectedPill == pill,
-                    child: TextButton(
-                      onPressed: () => _handlePillTap(pill),
-                      style: TextButton.styleFrom(
-                        foregroundColor: _selectedPill == pill
-                            ? Colors.white
-                            : AppColors.darkSurface,
-                        padding: const EdgeInsets.symmetric(horizontal: 3),
-                        minimumSize: const Size(0, 48),
-                        shape: const StadiumBorder(),
-                      ),
-                      child: DecoratedBox(
+                    button: true,
+                    child: GestureDetector(
+                      onTap: () => _handlePillTap(pill),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        curve: Curves.easeInOut,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: _selectedPill == pill ? 20 : 12,
+                          vertical: 7,
+                        ),
                         decoration: BoxDecoration(
                           color: _selectedPill == pill
                               ? AppColors.primary
                               : Colors.transparent,
                           borderRadius: BorderRadius.circular(27),
+                          border: Border.all(
+                            color: _selectedPill == pill
+                                ? AppColors.primary
+                                : AppColors.border.withValues(alpha: 0.6),
+                            width: 1,
+                          ),
                         ),
-                        child: Padding(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: _selectedPill == pill ? 20 : 5,
-                            vertical: 6,
+                        child: AnimatedDefaultTextStyle(
+                          duration: const Duration(milliseconds: 200),
+                          curve: Curves.easeInOut,
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: _selectedPill == pill
+                                ? FontWeight.w600
+                                : FontWeight.w500,
+                            color: _selectedPill == pill
+                                ? Colors.white
+                                : AppColors.darkSurface,
                           ),
-                          child: Text(
-                            pill,
-                            style: const TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
+                          child: Text(pill),
                         ),
                       ),
                     ),
@@ -530,11 +540,10 @@ class _HomeScreenState extends State<HomeScreen> {
     ],
   );
 
-  Widget _buildAiMatchBanner() => Material(
-    color: AppColors.primary,
-    borderRadius: BorderRadius.circular(14),
-    child: InkWell(
-      onTap: () => context.push(AppRoutes.resumeScoring),
+  Widget _buildAiMatchBanner() => PressableCard(
+    onTap: () => context.push(AppRoutes.resumeScoring),
+    child: Material(
+      color: AppColors.primary,
       borderRadius: BorderRadius.circular(14),
       child: ConstrainedBox(
         constraints: const BoxConstraints(
@@ -732,12 +741,18 @@ class _HomeScreenState extends State<HomeScreen> {
           separatorBuilder: (context, index) => const SizedBox(height: 12),
           itemBuilder: (context, index) {
             final job = _jobs[index];
-            return JobCard(
-              job: job,
-              onTap: () => context.push('${AppRoutes.jobs}/${job.id}'),
-              onBookmarkToggle: _savingIds.contains(job.id)
-                  ? null
-                  : () => _toggleBookmark(job),
+            return FadeSlideTransition(
+              index: index,
+              child: PressableCard(
+                onTap: () => context.push('${AppRoutes.jobs}/${job.id}'),
+                child: JobCard(
+                  job: job,
+                  onTap: () => context.push('${AppRoutes.jobs}/${job.id}'),
+                  onBookmarkToggle: _savingIds.contains(job.id)
+                      ? null
+                      : () => _toggleBookmark(job),
+                ),
+              ),
             );
           },
         ),
