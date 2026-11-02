@@ -448,7 +448,12 @@ class _JobListScreenState extends State<JobListScreen> {
       color: AppColors.primary,
       child: ListView.separated(
         controller: _scrollController,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: const EdgeInsets.only(
+          left: 16,
+          right: 16,
+          top: 12,
+          bottom: 90,
+        ),
         itemCount: _jobs.length + (_hasNextPage ? 2 : 1),
         separatorBuilder: (context, index) => const SizedBox(height: 12),
         itemBuilder: (context, index) {
@@ -520,7 +525,12 @@ class _JobListScreenState extends State<JobListScreen> {
   Widget _buildEmptyState() {
     return Center(
       child: SingleChildScrollView(
-        padding: const EdgeInsets.all(32),
+        padding: const EdgeInsets.only(
+          left: 32,
+          right: 32,
+          top: 32,
+          bottom: 90,
+        ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [

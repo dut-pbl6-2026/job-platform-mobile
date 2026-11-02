@@ -341,24 +341,47 @@ class JobBottomNavigation extends StatelessWidget {
                           const SizedBox.expand(),
                           if (i == selectedIndex)
                             Positioned(
-                              top: -20,
-                              child: IgnorePointer(
-                                child: Image.asset(
-                                  'assets/figma/nav-selected.png',
-                                  width: 54,
-                                  height: 54,
-                                  fit: BoxFit.contain,
+                              top: -8,
+                              child: Container(
+                                color: Colors.transparent,
+                                child: Container(
+                                  width: 48,
+                                  height: 48,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: Colors.white,
+                                    border: Border.all(
+                                      color: const Color(0xFFC7DEFF),
+                                      width: 1,
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: const Color(0xFF123D8C)
+                                            .withValues(alpha: 0.12),
+                                        blurRadius: 6,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Center(
+                                    child: SizedBox(
+                                      width: 23,
+                                      height: 23,
+                                      child: Center(child: _buildIcon(i, user)),
+                                    ),
+                                  ),
                                 ),
                               ),
+                            )
+                          else
+                            Positioned(
+                              top: 10,
+                              child: SizedBox(
+                                width: 23,
+                                height: 23,
+                                child: Center(child: _buildIcon(i, user)),
+                              ),
                             ),
-                          Positioned(
-                            top: i == selectedIndex ? -5 : 10,
-                            child: SizedBox(
-                              width: 23,
-                              height: 23,
-                              child: Center(child: _buildIcon(i, user)),
-                            ),
-                          ),
                           Positioned(
                             top: 39,
                             left: 2,
@@ -370,7 +393,9 @@ class JobBottomNavigation extends StatelessWidget {
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
                                 fontSize: 8,
-                                fontWeight: FontWeight.w500,
+                                fontWeight: i == selectedIndex
+                                    ? FontWeight.w600
+                                    : FontWeight.w500,
                                 color: i == selectedIndex
                                     ? AppColors.primary
                                     : AppColors.darkSurface,

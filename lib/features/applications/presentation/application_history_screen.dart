@@ -247,7 +247,12 @@ class _ApplicationHistoryScreenState extends State<ApplicationHistoryScreen> {
       color: AppColors.primary,
       child: ListView.builder(
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.only(
+          left: 16,
+          right: 16,
+          top: 16,
+          bottom: 90,
+        ),
         itemCount: _applications.length,
         itemBuilder: (context, index) {
           final app = _applications[index];

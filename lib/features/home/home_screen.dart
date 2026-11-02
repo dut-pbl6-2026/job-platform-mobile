@@ -18,7 +18,7 @@ import '../jobs/domain/models/job_model.dart';
 import '../jobs/domain/repositories/job_repository.dart';
 import '../jobs/presentation/widgets/job_filter_bottom_sheet.dart';
 import '../jobs/presentation/widgets/job_shimmer_loading.dart';
-import '../jobs/presentation/widgets/compact_job_card.dart';
+import '../jobs/presentation/widgets/job_card.dart';
 import '../notifications/data/repositories/api_notification_repository.dart';
 import '../notifications/domain/repositories/notification_repository.dart';
 
@@ -289,6 +289,7 @@ class _HomeScreenState extends State<HomeScreen> {
           onRefresh: () => _fetchJobs(isResetPage: true),
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.only(bottom: 90),
             child: AppContent(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -580,7 +581,7 @@ class _HomeScreenState extends State<HomeScreen> {
     children: [
       Expanded(
         child: _shortcut(
-          isRecruiter ? '+' : '▣',
+          isRecruiter ? Icons.post_add_rounded : Icons.description_rounded,
           isRecruiter ? 'Đăng tin' : 'Tạo CV',
           () => context.go(
             isRecruiter ? AppRoutes.recruiterPostJob : AppRoutes.createCv,
@@ -589,12 +590,16 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       const SizedBox(width: 8),
       Expanded(
-        child: _shortcut('◉', 'Hồ sơ', () => context.go(AppRoutes.profile)),
+        child: _shortcut(
+          Icons.badge_rounded,
+          'Hồ sơ',
+          () => context.go(AppRoutes.profile),
+        ),
       ),
       const SizedBox(width: 8),
       Expanded(
         child: _shortcut(
-          '✓',
+          Icons.work_history_rounded,
           'Ứng tuyển',
           () => context.go(AppRoutes.applications),
         ),
@@ -602,7 +607,7 @@ class _HomeScreenState extends State<HomeScreen> {
     ],
   );
 
-  Widget _shortcut(String glyph, String title, VoidCallback onTap) => Material(
+  Widget _shortcut(IconData icon, String title, VoidCallback onTap) => Material(
     color: AppColors.surface,
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(12),
@@ -613,10 +618,10 @@ class _HomeScreenState extends State<HomeScreen> {
       borderRadius: BorderRadius.circular(12),
       child: ConstrainedBox(
         constraints: const BoxConstraints(
-          minHeight: AppDimensions.shortcutHeight,
+          minHeight: 68,
         ),
         child: Padding(
-          padding: const EdgeInsets.only(top: 20, bottom: 12),
+          padding: const EdgeInsets.only(top: 16, bottom: 10),
           child: Column(
             children: [
               Container(
@@ -627,13 +632,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   color: AppColors.primaryLight,
                   shape: BoxShape.circle,
                 ),
-                child: Text(
-                  glyph,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.primary,
-                  ),
+                child: Icon(
+                  icon,
+                  size: 16,
+                  color: AppColors.primary,
                 ),
               ),
               const SizedBox(height: 3),
@@ -736,7 +738,7 @@ class _HomeScreenState extends State<HomeScreen> {
           separatorBuilder: (context, index) => const SizedBox(height: 12),
           itemBuilder: (context, index) {
             final job = _jobs[index];
-            return CompactJobCard(
+            return JobCard(
               job: job,
               onTap: () => context.push('${AppRoutes.jobs}/${job.id}'),
               onBookmarkToggle: _savingIds.contains(job.id)

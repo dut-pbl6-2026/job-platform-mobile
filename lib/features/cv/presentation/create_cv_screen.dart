@@ -78,7 +78,12 @@ class _CreateCvScreenState extends State<CreateCvScreen> {
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.only(
+            left: 16,
+            right: 16,
+            top: 16,
+            bottom: 90,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -459,23 +464,6 @@ class _CreateCvScreenState extends State<CreateCvScreen> {
               'Chọn mẫu',
               style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
             ),
-          ),
-          const SizedBox(width: 4),
-          IconButton(
-            icon: const Icon(
-              Icons.chevron_right_rounded,
-              color: AppColors.primary,
-            ),
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    'Mẫu "${template['name']}" sẽ mở trong trình soạn thảo Sprint tiếp theo',
-                  ),
-                  duration: const Duration(seconds: 2),
-                ),
-              );
-            },
           ),
         ],
       ),

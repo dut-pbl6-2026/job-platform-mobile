@@ -752,7 +752,12 @@ class _SearchScreenState extends State<SearchScreen> {
   // --- Discovery State (Recent Searches + Trending Suggestions) ---
   Widget _buildSearchDiscovery() {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.only(
+        left: 16,
+        right: 16,
+        top: 16,
+        bottom: 90,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1063,7 +1068,12 @@ class _SearchScreenState extends State<SearchScreen> {
         // List of Results
         Expanded(
           child: ListView.separated(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.only(
+              left: 16,
+              right: 16,
+              top: 16,
+              bottom: 90,
+            ),
             itemCount: _results.length,
             separatorBuilder: (context, index) => const SizedBox(height: 12),
             itemBuilder: (context, index) {

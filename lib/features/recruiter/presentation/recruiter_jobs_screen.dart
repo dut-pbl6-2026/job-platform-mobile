@@ -119,9 +119,11 @@ class _RecruiterJobsScreenState extends State<RecruiterJobsScreen> {
                 ),
               )
             : SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 14,
+                padding: const EdgeInsets.only(
+                  left: 16,
+                  right: 16,
+                  top: 14,
+                  bottom: 90,
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,

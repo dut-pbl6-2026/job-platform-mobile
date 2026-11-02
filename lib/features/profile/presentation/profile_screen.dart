@@ -431,6 +431,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         color: AppColors.primary,
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.only(bottom: 90),
           child: Column(
             children: [
               // Header Stack with blue curved background & floating user card
@@ -481,7 +482,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ProfileMenuItem(
                         icon: Icons.laptop_chromebook_rounded,
                         iconColor: AppColors.primary,
-                        title: 'Trạng thái tìm việc',
+                        title: 'Sẵn sàng nhận việc ngay',
                         helpText:
                             'Bật trạng thái này để thông báo cho Nhà tuyển dụng biết bạn đang sẵn sàng đón nhận cơ hội việc làm mới.',
                         showChevron: false,

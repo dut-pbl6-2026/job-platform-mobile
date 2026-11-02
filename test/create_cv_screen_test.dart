@@ -33,11 +33,11 @@ void main() {
     expect(find.text('Modern Tech ATS'), findsOneWidget);
     expect(find.text('Executive Business'), findsOneWidget);
 
-    // Tap template action
-    await tester.tap(find.byIcon(Icons.chevron_right_rounded).first);
-    await tester.pump();
+    // Tap template action 'Chọn mẫu'
+    await tester.tap(find.text('Chọn mẫu').first);
+    await tester.pumpAndSettle();
 
-    // Verify SnackBar on tapping template
-    expect(find.byType(SnackBar), findsOneWidget);
+    // Verify modal bottom sheet opens with CV form
+    expect(find.text('Điền thông tin CV'), findsOneWidget);
   });
 }
