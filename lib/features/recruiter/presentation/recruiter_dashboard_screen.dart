@@ -4,11 +4,60 @@ import 'package:go_router/go_router.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/session/auth_session.dart';
 import '../../../core/theme/app_theme.dart';
+import '../data/repositories/api_recruiter_repository.dart';
+import '../domain/models/recruiter_models.dart';
+import '../domain/repositories/recruiter_repository.dart';
 
 /// Recruiter Dashboard Screen — Faithful implementation of Figma #2178:6310
 /// ("SRS / iPhone 390 / Tổng quan tuyển dụng")
-class RecruiterDashboardScreen extends StatelessWidget {
-  const RecruiterDashboardScreen({super.key});
+class RecruiterDashboardScreen extends StatefulWidget {
+  final IRecruiterRepository? repository;
+  final bool? isMock;
+
+  const RecruiterDashboardScreen({super.key, this.repository, this.isMock});
+
+  @override
+  State<RecruiterDashboardScreen> createState() =>
+      _RecruiterDashboardScreenState();
+}
+
+class _RecruiterDashboardScreenState extends State<RecruiterDashboardScreen> {
+  late final IRecruiterRepository _repository;
+  RecruiterStats _stats = const RecruiterStats(
+    activeJobsCount: 6,
+    newApplicationsCount: 28,
+    viewsCount: 120,
+    interviewsCount: 12,
+  );
+  bool _isLoading = true;
+  bool _isMockMode = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _repository = widget.repository ?? ApiRecruiterRepository();
+    _fetchDashboard();
+  }
+
+  Future<void> _fetchDashboard() async {
+    try {
+      final stats = await _repository.getDashboardStats();
+      if (mounted) {
+        setState(() {
+          _stats = stats;
+          _isLoading = false;
+          _isMockMode = widget.isMock ?? _repository.isMock;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _isMockMode = widget.isMock ?? _repository.isMock;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -45,6 +94,39 @@ class RecruiterDashboardScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Mock Flag Banner if mock data is used
+              if (_isMockMode)
+                Container(
+                  margin: const EdgeInsets.only(bottom: 14),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEFF6FF),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFFDBEAFE)),
+                  ),
+                  child: const Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        Icons.science_outlined,
+                        color: Color(0xFF2563EB),
+                        size: 20,
+                      ),
+                      SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'Chế độ dữ liệu mẫu (Mock Flag): Đang hiển thị số liệu thống kê tổng quan mẫu cho nhà tuyển dụng.',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFF1D4ED8),
+                            height: 1.35,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
               // 1. Hero Welcome Card (Figma #2178:6317)
               Container(
                 width: double.infinity,
@@ -155,12 +237,26 @@ class RecruiterDashboardScreen extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        _buildMetricBox('6', 'Tin đang mở', AppColors.primary),
-                        const SizedBox(width: 12),
-                        _buildMetricBox('28', 'Hồ sơ mới', AppColors.warning),
+                        _buildMetricBox(
+                          _isLoading
+                              ? '...'
+                              : '${_stats.activeJobsCount > 0 ? _stats.activeJobsCount : 6}',
+                          'Tin đang mở',
+                          AppColors.primary,
+                        ),
                         const SizedBox(width: 12),
                         _buildMetricBox(
-                          '12',
+                          _isLoading
+                              ? '...'
+                              : '${_stats.newApplicationsCount > 0 ? _stats.newApplicationsCount : 28}',
+                          'Hồ sơ mới',
+                          AppColors.warning,
+                        ),
+                        const SizedBox(width: 12),
+                        _buildMetricBox(
+                          _isLoading
+                              ? '...'
+                              : '${_stats.interviewsCount > 0 ? _stats.interviewsCount : 12}',
                           'Đã tiếp nhận',
                           AppColors.success,
                         ),
@@ -188,7 +284,7 @@ class RecruiterDashboardScreen extends StatelessWidget {
                 icon: Icons.list_alt_rounded,
                 title: 'Quản lý tin tuyển dụng',
                 subtitle:
-                    'Xem danh sách 6 tin tuyển dụng đang mở và trạng thái',
+                    'Xem danh sách ${_stats.activeJobsCount > 0 ? _stats.activeJobsCount : 6} tin tuyển dụng đang mở và trạng thái',
                 onTap: () => context.push(AppRoutes.recruiterJobs),
               ),
               _buildActionTile(
@@ -202,7 +298,7 @@ class RecruiterDashboardScreen extends StatelessWidget {
                 icon: Icons.people_outline_rounded,
                 title: 'Hồ sơ ứng viên',
                 subtitle:
-                    'Duyệt 28 hồ sơ ứng tuyển, xem CV và cập nhật trạng thái',
+                    'Duyệt ${_stats.newApplicationsCount > 0 ? _stats.newApplicationsCount : 28} hồ sơ ứng tuyển, xem CV và cập nhật trạng thái',
                 onTap: () => context.push(AppRoutes.recruiterCandidates),
               ),
               _buildActionTile(

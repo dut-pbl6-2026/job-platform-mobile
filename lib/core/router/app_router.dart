@@ -292,8 +292,7 @@ class AppRouter {
                           final extra = state.extra as Map<String, dynamic>?;
                           return ApplyJobScreen(
                             jobId: jobId,
-                            jobTitle:
-                                extra?['title'] ?? 'Vị trí tuyển dụng',
+                            jobTitle: extra?['title'] ?? 'Vị trí tuyển dụng',
                             companyName: extra?['company'] ?? 'Doanh nghiệp',
                             companyLogo: extra?['logo'],
                           );

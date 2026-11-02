@@ -1,12 +1,21 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../data/repositories/api_recruiter_repository.dart';
+import '../domain/models/recruiter_models.dart';
+import '../domain/repositories/recruiter_repository.dart';
 
 /// Post / Edit Job Screen — Faithful implementation of Figma #2178:6364
 /// ("SRS / iPhone 390 / Đăng / sửa tin tuyển dụng")
 class PostJobScreen extends StatefulWidget {
-  const PostJobScreen({super.key});
+  final IRecruiterRepository? repository;
+  final bool isPrototypeMode;
+
+  const PostJobScreen({
+    super.key,
+    this.repository,
+    this.isPrototypeMode = true,
+  });
 
   @override
   State<PostJobScreen> createState() => _PostJobScreenState();
@@ -15,25 +24,24 @@ class PostJobScreen extends StatefulWidget {
 class _PostJobScreenState extends State<PostJobScreen> {
   final _formKey = GlobalKey<FormState>();
 
-  final _titleController = TextEditingController(text: 'UI/UX Designer');
-  final _locationController = TextEditingController(text: 'Đà Nẵng · Hybrid');
-  final _industryController = TextEditingController(
-    text: 'Công nghệ thông tin · IT',
-  );
-  final _salaryController = TextEditingController(
-    text: '15.000.000 – 25.000.000 ₫',
-  );
-  final _descController = TextEditingController(
-    text:
-        'Thiết kế giao diện web/mobile; thành thạo Figma, Design System; phối hợp cùng đội ngũ kỹ sư.',
-  );
-  final _benefitsController = TextEditingController(
-    text:
-        'Bảo hiểm đầy đủ, thưởng hiệu suất dự án, môi trường làm việc linh hoạt.',
-  );
+  late final IRecruiterRepository _repository;
+
+  final _titleController = TextEditingController();
+  final _locationController = TextEditingController();
+  final _industryController = TextEditingController();
+  final _salaryController = TextEditingController();
+  final _descController = TextEditingController();
+  final _benefitsController = TextEditingController();
 
   String _employmentType = 'Toàn thời gian';
   String _experienceLevel = 'Junior';
+  bool _isSubmitting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _repository = widget.repository ?? ApiRecruiterRepository();
+  }
 
   @override
   void dispose() {
@@ -51,33 +59,72 @@ class _PostJobScreenState extends State<PostJobScreen> {
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('Xác nhận đăng tin'),
         content: Text(
-          'Tin tuyển dụng "${_titleController.text}" sẽ được gửi để kiểm duyệt và xuất bản.',
+          'Tin tuyển dụng "${_titleController.text}" sẽ được gửi đến job-svc để kiểm duyệt và xuất bản.',
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text('Xem lại'),
           ),
           ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context); // Close dialog
-              context.pop(); // Return to previous screen
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Tin tuyển dụng đã được gửi duyệt thành công!'),
-                  backgroundColor: AppColors.success,
-                  behavior: SnackBarBehavior.floating,
-                ),
-              );
+            onPressed: () async {
+              Navigator.pop(dialogContext); // Close dialog
+              await _submitJob();
             },
             child: const Text('Xuất bản'),
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _submitJob() async {
+    setState(() => _isSubmitting = true);
+
+    try {
+      final params = PostJobParams(
+        title: _titleController.text.trim(),
+        location: _locationController.text.trim(),
+        employmentType: _employmentType,
+        experienceLevel: _experienceLevel,
+        salaryText: _salaryController.text.trim(),
+        description: _descController.text.trim(),
+        requirements: _industryController.text.trim().isNotEmpty
+            ? _industryController.text.trim()
+            : null,
+        benefits: _benefitsController.text.trim().isNotEmpty
+            ? _benefitsController.text.trim()
+            : null,
+      );
+
+      await _repository.postJob(params);
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Tin tuyển dụng đã được gửi duyệt thành công!'),
+          backgroundColor: AppColors.success,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      Navigator.of(context).maybePop();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Lỗi gửi tin tuyển dụng: $e'),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
+    }
   }
 
   @override
@@ -105,6 +152,39 @@ class _PostJobScreenState extends State<PostJobScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Prototype / API Gateway indicator banner
+                if (widget.isPrototypeMode)
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 16),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFF7ED),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFFFFEDD5)),
+                    ),
+                    child: const Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(
+                          Icons.info_outline_rounded,
+                          color: Color(0xFFEA580C),
+                          size: 20,
+                        ),
+                        SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'Bản thử nghiệm (Beta): Tin tuyển dụng được gửi trực tiếp đến dịch vụ tuyển dụng (job-svc) qua YARP API Gateway.',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Color(0xFFC2410C),
+                              height: 1.35,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
                 _buildField(
                   label: 'Tiêu đề vị trí',
                   controller: _titleController,
@@ -118,7 +198,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
                 _buildField(
                   label: 'Công ty & Địa điểm làm việc',
                   controller: _locationController,
-                  hint: 'Ví dụ: Badoo Inc. · Đà Nẵng',
+                  hint: 'Ví dụ: Badoo Inc. · Đà Nẵng · Hybrid',
                   validator: (v) => v?.trim().isEmpty == true
                       ? 'Vui lòng nhập địa điểm'
                       : null,
@@ -233,7 +313,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
                 _buildField(
                   label: 'Mức lương & Tiền tệ',
                   controller: _salaryController,
-                  hint: 'Ví dụ: 15.000.000 – 25.000.000 · VND',
+                  hint: 'Ví dụ: 15.000.000 – 25.000.000 ₫',
                   validator: (v) => v?.trim().isEmpty == true
                       ? 'Vui lòng nhập mức lương'
                       : null,
@@ -260,7 +340,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
 
                 // Primary CTA (Figma #2178:6386)
                 ElevatedButton(
-                  onPressed: _handleSubmit,
+                  onPressed: _isSubmitting ? null : _handleSubmit,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,
@@ -270,13 +350,24 @@ class _PostJobScreenState extends State<PostJobScreen> {
                     ),
                     elevation: 0,
                   ),
-                  child: const Text(
-                    'Xem trước & Xuất bản tin',
-                    style: TextStyle(
-                      fontSize: 15.5,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                  child: _isSubmitting
+                      ? const SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.5,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.white,
+                            ),
+                          ),
+                        )
+                      : const Text(
+                          'Xem trước & Xuất bản tin',
+                          style: TextStyle(
+                            fontSize: 15.5,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                 ),
               ],
             ),
