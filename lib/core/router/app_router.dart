@@ -256,7 +256,7 @@ class AppRouter {
           return MainNavigationScreen(navigationShell: navigationShell);
         },
         branches: [
-          // Branch 0: Trang chá»§ (#2073:870)
+          // Branch 0: Trang chủ (#2073:870)
           StatefulShellBranch(
             routes: [
               GoRoute(
@@ -266,7 +266,7 @@ class AppRouter {
               ),
             ],
           ),
-          // Branch 1: Viá»‡c lÃ m (#2073:876)
+          // Branch 1: Việc làm (#2073:876)
           StatefulShellBranch(
             routes: [
               GoRoute(
@@ -293,8 +293,8 @@ class AppRouter {
                           return ApplyJobScreen(
                             jobId: jobId,
                             jobTitle:
-                                extra?['title'] ?? 'Vá»‹ trÃ­ tuyá»ƒn dá»¥ng',
-                            companyName: extra?['company'] ?? 'Doanh nghiá»‡p',
+                                extra?['title'] ?? 'Vị trí tuyển dụng',
+                            companyName: extra?['company'] ?? 'Doanh nghiệp',
                             companyLogo: extra?['logo'],
                           );
                         },
@@ -305,7 +305,7 @@ class AppRouter {
               ),
             ],
           ),
-          // Branch 2: Táº¡o CV (#2073:879)
+          // Branch 2: Tạo CV (#2073:879)
           StatefulShellBranch(
             routes: [
               GoRoute(
@@ -315,7 +315,7 @@ class AppRouter {
               ),
             ],
           ),
-          // Branch 3: NTD káº¿t ná»‘i (#2073:885)
+          // Branch 3: NTD kết nối (#2073:885)
           StatefulShellBranch(
             routes: [
               GoRoute(
@@ -325,7 +325,7 @@ class AppRouter {
               ),
             ],
           ),
-          // Branch 4: Há»“ sÆ¡ (#2073:888)
+          // Branch 4: Hồ sơ (#2073:888)
           StatefulShellBranch(
             routes: [
               GoRoute(
