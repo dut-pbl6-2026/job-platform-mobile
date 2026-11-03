@@ -84,7 +84,7 @@ class _CreateCvScreenState extends State<CreateCvScreen> {
             left: 16,
             right: 16,
             top: 16,
-            bottom: 90,
+            bottom: 96,
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

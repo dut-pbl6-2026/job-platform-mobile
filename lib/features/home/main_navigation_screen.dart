@@ -361,61 +361,65 @@ class JobBottomNavigation extends StatelessWidget {
                             duration: const Duration(milliseconds: 200),
                             curve: Curves.easeOutBack,
                             top: i == selectedIndex ? -8 : 10,
-                            child: Stack(
-                              alignment: Alignment.center,
-                              children: [
-                                if (i == selectedIndex)
-                                  Container(
-                                    width: 48,
-                                    height: 48,
+                            child: Container(
+                              color: Colors.transparent,
+                              child: Stack(
+                                alignment: Alignment.center,
+                                children: [
+                                  if (i == selectedIndex)
+                                    Container(
+                                      width: 48,
+                                      height: 48,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: Colors.white,
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: const Color(
+                                              0xFF123D8C,
+                                            ).withValues(alpha: 0.12),
+                                            blurRadius: 6,
+                                            offset: const Offset(0, 2),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  AnimatedContainer(
+                                    duration: const Duration(milliseconds: 200),
+                                    curve: Curves.easeOutBack,
+                                    width: i == selectedIndex ? 48 : 28,
+                                    height: i == selectedIndex ? 48 : 28,
                                     decoration: BoxDecoration(
                                       shape: BoxShape.circle,
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: const Color(
-                                            0xFF123D8C,
-                                          ).withValues(alpha: 0.12),
-                                          blurRadius: 6,
-                                          offset: const Offset(0, 2),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                AnimatedContainer(
-                                  duration: const Duration(milliseconds: 200),
-                                  curve: Curves.easeOutBack,
-                                  width: i == selectedIndex ? 48 : 28,
-                                  height: i == selectedIndex ? 48 : 28,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: i == selectedIndex
-                                        ? Colors.white
-                                        : Colors.transparent,
-                                    border: Border.all(
                                       color: i == selectedIndex
-                                          ? const Color(0xFFC7DEFF)
+                                          ? Colors.white
                                           : Colors.transparent,
-                                      width: 1,
-                                    ),
-                                  ),
-                                  child: Center(
-                                    child: AnimatedScale(
-                                      scale: i == selectedIndex ? 1.08 : 1.0,
-                                      duration: const Duration(
-                                        milliseconds: 200,
+                                      border: Border.all(
+                                        color: i == selectedIndex
+                                            ? const Color(0xFFC7DEFF)
+                                            : Colors.transparent,
+                                        width: 1,
                                       ),
-                                      curve: Curves.easeOutBack,
-                                      child: SizedBox(
-                                        width: 23,
-                                        height: 23,
-                                        child: Center(
-                                          child: _buildIcon(i, user),
+                                    ),
+                                    child: Center(
+                                      child: AnimatedScale(
+                                        scale: i == selectedIndex ? 1.08 : 1.0,
+                                        duration: const Duration(
+                                          milliseconds: 200,
+                                        ),
+                                        curve: Curves.easeOutBack,
+                                        child: SizedBox(
+                                          width: 23,
+                                          height: 23,
+                                          child: Center(
+                                            child: _buildIcon(i, user),
+                                          ),
                                         ),
                                       ),
                                     ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                           ),
                           Positioned(

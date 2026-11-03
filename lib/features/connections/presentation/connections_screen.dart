@@ -252,7 +252,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
             left: 16,
             right: 16,
             top: 14,
-            bottom: 90,
+            bottom: 96,
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

@@ -293,7 +293,7 @@ class _HomeScreenState extends State<HomeScreen> {
           onRefresh: () => _fetchJobs(isResetPage: true),
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.only(bottom: 90),
+            padding: const EdgeInsets.only(bottom: 96),
             child: AppContent(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -590,7 +590,7 @@ class _HomeScreenState extends State<HomeScreen> {
     children: [
       Expanded(
         child: _shortcut(
-          isRecruiter ? Icons.post_add_rounded : Icons.description_rounded,
+          isRecruiter ? Icons.post_add_rounded : Icons.description_outlined,
           isRecruiter ? 'Đăng tin' : 'Tạo CV',
           () => context.go(
             isRecruiter ? AppRoutes.recruiterPostJob : AppRoutes.createCv,
@@ -600,7 +600,7 @@ class _HomeScreenState extends State<HomeScreen> {
       const SizedBox(width: 8),
       Expanded(
         child: _shortcut(
-          Icons.badge_rounded,
+          Icons.visibility_outlined,
           'Hồ sơ',
           () => context.go(AppRoutes.profile),
         ),
@@ -608,7 +608,7 @@ class _HomeScreenState extends State<HomeScreen> {
       const SizedBox(width: 8),
       Expanded(
         child: _shortcut(
-          Icons.work_history_rounded,
+          Icons.send_outlined,
           'Ứng tuyển',
           () => context.go(AppRoutes.applications),
         ),
@@ -626,9 +626,9 @@ class _HomeScreenState extends State<HomeScreen> {
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
       child: ConstrainedBox(
-        constraints: const BoxConstraints(minHeight: 68),
+        constraints: const BoxConstraints(minHeight: 58),
         child: Padding(
-          padding: const EdgeInsets.only(top: 16, bottom: 10),
+          padding: const EdgeInsets.only(top: 10, bottom: 8),
           child: Column(
             children: [
               Container(

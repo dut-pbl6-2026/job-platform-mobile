@@ -471,7 +471,7 @@ class _JobListScreenState extends State<JobListScreen> {
           left: 16,
           right: 16,
           top: 12,
-          bottom: 90,
+          bottom: 96,
         ),
         itemCount: _jobs.length + (_hasNextPage ? 2 : 1),
         separatorBuilder: (context, index) => const SizedBox(height: 12),
@@ -554,7 +554,7 @@ class _JobListScreenState extends State<JobListScreen> {
           left: 32,
           right: 32,
           top: 32,
-          bottom: 90,
+          bottom: 96,
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,

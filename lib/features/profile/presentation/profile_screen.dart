@@ -431,7 +431,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         color: AppColors.primary,
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.only(bottom: 90),
+          padding: const EdgeInsets.only(bottom: 96),
           child: Column(
             children: [
               // Header Stack with blue curved background & floating user card
