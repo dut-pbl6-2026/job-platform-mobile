@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:dio/dio.dart';
 
 import '../../../core/network/dio_provider.dart';
@@ -11,6 +13,142 @@ class ApiAiRepository implements IAiRepository {
 
   @override
   void cancelCurrentRequest() => _cancelToken?.cancel();
+
+  @override
+  Stream<AiChatChunk> streamChat(String message, {String? sessionId}) async* {
+    if (message.trim().isEmpty) {
+      throw const AiFailure('Vui lòng nhập câu hỏi.');
+    }
+    final token = CancelToken();
+    _cancelToken = token;
+    try {
+      final response = await _dio.post<dynamic>(
+        '/api/ai/chat',
+        data: {
+          'message': message.trim(),
+          'sessionId': ?sessionId,
+          'stream': true,
+          'maxTokens': 512,
+        },
+        cancelToken: token,
+        options: Options(
+          responseType: ResponseType.stream,
+          receiveTimeout: const Duration(seconds: 60),
+          headers: {'Accept': 'text/event-stream, application/json'},
+        ),
+      );
+
+      final data = response.data;
+      String? currentSessionId = sessionId;
+
+      if (data is ResponseBody) {
+        final lineStream = data.stream
+            .cast<List<int>>()
+            .transform(utf8.decoder)
+            .transform(const LineSplitter());
+
+        await for (final line in lineStream) {
+          final trimmed = line.trim();
+          if (trimmed.isEmpty || trimmed.startsWith(':')) {
+            continue;
+          }
+
+          if (trimmed.startsWith('data:')) {
+            final raw = trimmed.substring(5).trim();
+            if (raw == '[DONE]') {
+              yield AiChatChunk(
+                delta: '',
+                sessionId: currentSessionId,
+                done: true,
+              );
+              return;
+            }
+
+            try {
+              final decoded = jsonDecode(raw);
+              if (decoded is Map) {
+                final delta =
+                    decoded['delta'] as String? ??
+                    decoded['text'] as String? ??
+                    decoded['response'] as String? ??
+                    '';
+                final sid = decoded['sessionId'] as String?;
+                if (sid != null && sid.isNotEmpty) {
+                  currentSessionId = sid;
+                }
+                final isDone = decoded['done'] == true;
+                if (delta.isNotEmpty || isDone) {
+                  yield AiChatChunk(
+                    delta: delta,
+                    sessionId: currentSessionId,
+                    done: isDone,
+                  );
+                }
+              } else if (decoded is String) {
+                yield AiChatChunk(delta: decoded, sessionId: currentSessionId);
+              }
+            } catch (_) {
+              yield AiChatChunk(delta: raw, sessionId: currentSessionId);
+            }
+          } else {
+            try {
+              final decoded = jsonDecode(trimmed);
+              if (decoded is Map) {
+                final delta =
+                    decoded['delta'] as String? ??
+                    decoded['response'] as String? ??
+                    decoded['text'] as String? ??
+                    '';
+                final sid = decoded['sessionId'] as String?;
+                if (sid != null && sid.isNotEmpty) {
+                  currentSessionId = sid;
+                }
+                final isDone = decoded['done'] == true;
+                if (delta.isNotEmpty || isDone) {
+                  yield AiChatChunk(
+                    delta: delta,
+                    sessionId: currentSessionId,
+                    done: isDone,
+                  );
+                }
+              }
+            } catch (_) {
+              // Ignore unparsed non-JSON lines
+            }
+          }
+        }
+      } else if (data is Map) {
+        final responseText =
+            data['response'] as String? ?? data['delta'] as String? ?? '';
+        final sid = data['sessionId'] as String? ?? currentSessionId;
+        yield AiChatChunk(delta: responseText, sessionId: sid, done: true);
+      } else if (data is String) {
+        yield AiChatChunk(delta: data, sessionId: currentSessionId, done: true);
+      }
+
+      yield AiChatChunk(delta: '', sessionId: currentSessionId, done: true);
+    } on DioException catch (error) {
+      throw _failure(error);
+    } finally {
+      if (identical(_cancelToken, token)) _cancelToken = null;
+    }
+  }
+
+  @override
+  Future<void> clearSession(String sessionId) async {
+    final cleanId = sessionId.trim();
+    if (cleanId.isEmpty) return;
+    try {
+      await _dio.delete<dynamic>(
+        '/api/ai/session/${Uri.encodeComponent(cleanId)}',
+      );
+    } on DioException catch (error) {
+      if (error.response?.statusCode == 404) {
+        return;
+      }
+      throw _failure(error);
+    }
+  }
 
   @override
   Future<AiChatReply> sendMessage(String message, {String? sessionId}) async {

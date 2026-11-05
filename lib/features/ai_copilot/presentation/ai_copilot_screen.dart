@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/router/app_router.dart';
@@ -7,6 +10,18 @@ import '../../../core/widgets/app_content.dart';
 import '../../../core/widgets/design_asset.dart';
 import '../data/api_ai_repository.dart';
 import '../domain/ai_repository.dart';
+
+class _ChatMessage {
+  _ChatMessage({
+    required this.text,
+    required this.isUser,
+    this.isStreaming = false,
+  });
+
+  String text;
+  final bool isUser;
+  bool isStreaming;
+}
 
 class AiCopilotScreen extends StatefulWidget {
   const AiCopilotScreen({super.key, this.repository});
@@ -20,12 +35,13 @@ class _AiCopilotScreenState extends State<AiCopilotScreen> {
   late final IAiRepository _repository;
   final _controller = TextEditingController();
   final _scrollController = ScrollController();
-  final List<({String text, bool isUser})> _messages = [];
+  final List<_ChatMessage> _messages = [];
   String? _sessionId;
   String? _error;
   String? _failedQuestion;
   bool _waiting = false;
   int _requestId = 0;
+  StreamSubscription<AiChatChunk>? _streamSubscription;
 
   static const _prompts = [
     (
@@ -49,6 +65,13 @@ class _AiCopilotScreenState extends State<AiCopilotScreen> {
     ),
   ];
 
+  static const _quickFollowUps = [
+    'Gợi ý việc làm khác',
+    'Mẹo đàm phán lương',
+    'Kỹ năng cần bổ sung',
+    'Chuẩn bị phỏng vấn',
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -58,6 +81,7 @@ class _AiCopilotScreenState extends State<AiCopilotScreen> {
   @override
   void dispose() {
     _requestId++;
+    _streamSubscription?.cancel();
     _repository.cancelCurrentRequest();
     _controller.dispose();
     _scrollController.dispose();
@@ -85,31 +109,68 @@ class _AiCopilotScreenState extends State<AiCopilotScreen> {
     if (text.isEmpty || _waiting) return;
     final requestId = ++_requestId;
     _controller.clear();
+
+    final botMessage = _ChatMessage(text: '', isUser: false, isStreaming: true);
+
     setState(() {
-      if (!retry) _messages.add((text: text, isUser: true));
+      if (!retry) {
+        _messages.add(_ChatMessage(text: text, isUser: true));
+      }
+      _messages.add(botMessage);
       _waiting = true;
       _error = null;
       _failedQuestion = null;
     });
     _scrollToBottom();
+
+    final completer = Completer<void>();
     try {
-      final reply = await _repository.sendMessage(text, sessionId: _sessionId);
-      if (!mounted || requestId != _requestId) return;
-      setState(() {
-        _sessionId = reply.sessionId;
-        _messages.add((text: reply.response, isUser: false));
-      });
+      final stream = _repository.streamChat(text, sessionId: _sessionId);
+      _streamSubscription = stream.listen(
+        (chunk) {
+          if (!mounted || requestId != _requestId) return;
+          setState(() {
+            if (chunk.sessionId != null && chunk.sessionId!.isNotEmpty) {
+              _sessionId = chunk.sessionId;
+            }
+            if (chunk.delta.isNotEmpty) {
+              botMessage.text += chunk.delta;
+            }
+            if (chunk.done) {
+              botMessage.isStreaming = false;
+            }
+          });
+        },
+        onError: (err) {
+          if (!completer.isCompleted) completer.completeError(err);
+        },
+        onDone: () {
+          if (!completer.isCompleted) completer.complete();
+        },
+        cancelOnError: true,
+      );
+
+      await completer.future;
     } catch (error) {
       if (!mounted || requestId != _requestId) return;
       setState(() {
+        botMessage.isStreaming = false;
+        if (botMessage.text.trim().isEmpty) {
+          _messages.remove(botMessage);
+        }
         _error = error is AiFailure
             ? error.message
             : 'Không thể nhận phản hồi AI. Vui lòng thử lại.';
         _failedQuestion = text;
       });
     } finally {
+      _streamSubscription?.cancel();
+      _streamSubscription = null;
       if (mounted && requestId == _requestId) {
-        setState(() => _waiting = false);
+        setState(() {
+          botMessage.isStreaming = false;
+          _waiting = false;
+        });
         _scrollToBottom();
       }
     }
@@ -117,12 +178,60 @@ class _AiCopilotScreenState extends State<AiCopilotScreen> {
 
   void _cancel() {
     _repository.cancelCurrentRequest();
+    _streamSubscription?.cancel();
+    _streamSubscription = null;
     _requestId++;
     setState(() {
       _waiting = false;
       _error = 'Đã dừng yêu cầu.';
-      _failedQuestion = _messages.last.text;
+      if (_messages.isNotEmpty && !_messages.last.isUser) {
+        _messages.last.isStreaming = false;
+        if (_messages.last.text.trim().isEmpty) {
+          _messages.removeLast();
+        }
+      }
+      _failedQuestion = _messages.isNotEmpty && _messages.last.isUser
+          ? _messages.last.text
+          : (_messages.length >= 2
+                ? _messages[_messages.length - 2].text
+                : null);
     });
+  }
+
+  Future<void> _startNewSession() async {
+    if (_waiting) return;
+    final sid = _sessionId;
+    setState(() {
+      _messages.clear();
+      _sessionId = null;
+      _error = null;
+      _failedQuestion = null;
+    });
+    if (sid != null) {
+      try {
+        await _repository.clearSession(sid);
+      } catch (_) {
+        // Ignore background clear failure
+      }
+    }
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Đã bắt đầu phiên hội thoại mới.'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
+  void _copyToClipboard(String text) {
+    Clipboard.setData(ClipboardData(text: text));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Đã sao chép phản hồi vào bộ nhớ tạm.'),
+        duration: Duration(seconds: 2),
+      ),
+    );
   }
 
   @override
@@ -171,12 +280,7 @@ class _AiCopilotScreenState extends State<AiCopilotScreen> {
                       if (value == 'score') {
                         context.push(AppRoutes.resumeScoring);
                       } else {
-                        setState(() {
-                          _messages.clear();
-                          _sessionId = null;
-                          _error = null;
-                          _failedQuestion = null;
-                        });
+                        _startNewSession();
                       }
                     },
                     enabled: !_waiting,
@@ -230,6 +334,7 @@ class _AiCopilotScreenState extends State<AiCopilotScreen> {
                 ),
               ),
             ),
+          if (_messages.isNotEmpty && !_waiting) _quickFollowUpStrip(),
           _composer(),
         ],
       ),
@@ -375,6 +480,7 @@ class _AiCopilotScreenState extends State<AiCopilotScreen> {
   Widget _conversation() => Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
+      if (_messages.length >= 20) _contextWindowNotice(),
       for (final message in _messages)
         Align(
           alignment: message.isUser
@@ -397,11 +503,11 @@ class _AiCopilotScreenState extends State<AiCopilotScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 if (!message.isUser) ...[
-                  const Row(
+                  Row(
                     children: [
-                      _AiSymbol(size: 30),
-                      SizedBox(width: 9),
-                      Expanded(
+                      const _AiSymbol(size: 30),
+                      const SizedBox(width: 9),
+                      const Expanded(
                         child: Text(
                           'Trợ lý việc làm AI',
                           style: TextStyle(
@@ -410,21 +516,28 @@ class _AiCopilotScreenState extends State<AiCopilotScreen> {
                           ),
                         ),
                       ),
+                      if (!message.isStreaming && message.text.isNotEmpty)
+                        IconButton(
+                          tooltip: 'Sao chép',
+                          icon: const Icon(
+                            Icons.copy_outlined,
+                            size: 16,
+                            color: AppColors.textSecondary,
+                          ),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(
+                            minWidth: 24,
+                            minHeight: 24,
+                          ),
+                          onPressed: () => _copyToClipboard(message.text),
+                        ),
                     ],
                   ),
                   const SizedBox(height: 12),
                 ],
-                SelectableText(
-                  message.text,
-                  style: TextStyle(
-                    fontSize: 12,
-                    height: 1.5,
-                    color: message.isUser
-                        ? Colors.white
-                        : AppColors.textPrimary,
-                  ),
-                ),
+                _renderMessageText(message),
                 if (!message.isUser) ...[
+                  _renderJobRecommendations(message.text),
                   const SizedBox(height: 8),
                   const Text(
                     'Nội dung AI chỉ mang tính tham khảo.',
@@ -454,6 +567,155 @@ class _AiCopilotScreenState extends State<AiCopilotScreen> {
           ],
         ),
     ],
+  );
+
+  Widget _renderMessageText(_ChatMessage message) {
+    final text = message.text;
+    final isStreaming = message.isStreaming;
+
+    return SelectableText.rich(
+      TextSpan(
+        children: [
+          TextSpan(text: text),
+          if (isStreaming)
+            const TextSpan(
+              text: ' ▊',
+              style: TextStyle(
+                color: AppColors.primary,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+        ],
+      ),
+      style: TextStyle(
+        fontSize: 12,
+        height: 1.5,
+        color: message.isUser ? Colors.white : AppColors.textPrimary,
+      ),
+    );
+  }
+
+  Widget _renderJobRecommendations(String text) {
+    final hasJobRecommendation =
+        text.contains('/jobs/') ||
+        text.contains('việc làm') ||
+        text.contains('công việc') ||
+        text.contains('ứng tuyển');
+
+    if (!hasJobRecommendation || text.length < 25) {
+      return const SizedBox.shrink();
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 6,
+        children: [
+          ActionChip(
+            avatar: const Icon(
+              Icons.search,
+              size: 14,
+              color: AppColors.primary,
+            ),
+            label: const Text(
+              'Tìm việc liên quan',
+              style: TextStyle(
+                fontSize: 11,
+                color: AppColors.primary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            backgroundColor: Colors.white,
+            side: const BorderSide(color: Color(0xFFCBDDF7)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            onPressed: () => context.push(AppRoutes.search),
+          ),
+          ActionChip(
+            avatar: const Icon(
+              Icons.document_scanner_outlined,
+              size: 14,
+              color: AppColors.primary,
+            ),
+            label: const Text(
+              'Chấm điểm CV',
+              style: TextStyle(
+                fontSize: 11,
+                color: AppColors.primary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            backgroundColor: Colors.white,
+            side: const BorderSide(color: Color(0xFFCBDDF7)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            onPressed: () => context.push(AppRoutes.resumeScoring),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _contextWindowNotice() => Container(
+    margin: const EdgeInsets.only(bottom: 16),
+    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+    decoration: BoxDecoration(
+      color: const Color(0xFFFFF8E1),
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(color: const Color(0xFFFFE082)),
+    ),
+    child: Row(
+      children: [
+        const Icon(Icons.info_outline, size: 18, color: Color(0xFFF57F17)),
+        const SizedBox(width: 8),
+        const Expanded(
+          child: Text(
+            'Hội thoại đã dài (đạt 20 tin nhắn). Hãy bắt đầu phiên mới để có phản hồi nhận biết ngữ cảnh chính xác nhất.',
+            style: TextStyle(
+              fontSize: 11,
+              color: Color(0xFF5D4037),
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+        TextButton(
+          onPressed: _startNewSession,
+          child: const Text(
+            'Bắt đầu lại',
+            style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+          ),
+        ),
+      ],
+    ),
+  );
+
+  Widget _quickFollowUpStrip() => Container(
+    height: 38,
+    margin: const EdgeInsets.only(bottom: 6),
+    child: ListView.separated(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      itemCount: _quickFollowUps.length,
+      separatorBuilder: (_, _) => const SizedBox(width: 8),
+      itemBuilder: (context, index) {
+        final prompt = _quickFollowUps[index];
+        return ActionChip(
+          label: Text(
+            prompt,
+            style: const TextStyle(fontSize: 11, color: AppColors.textPrimary),
+          ),
+          backgroundColor: const Color(0xFFF2F7FF),
+          side: const BorderSide(color: Color(0xFFE3EDFA)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          onPressed: () => _send(prompt),
+        );
+      },
+    ),
   );
 
   Widget _composer() => Container(

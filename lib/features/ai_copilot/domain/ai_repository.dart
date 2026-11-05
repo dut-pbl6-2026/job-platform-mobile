@@ -11,6 +11,20 @@ final class AiChatReply {
   );
 }
 
+final class AiChatChunk {
+  const AiChatChunk({required this.delta, this.sessionId, this.done = false});
+  final String delta;
+  final String? sessionId;
+  final bool done;
+
+  AiChatChunk copyWith({String? delta, String? sessionId, bool? done}) =>
+      AiChatChunk(
+        delta: delta ?? this.delta,
+        sessionId: sessionId ?? this.sessionId,
+        done: done ?? this.done,
+      );
+}
+
 final class ResumeFeedback {
   const ResumeFeedback({
     required this.score,
@@ -130,6 +144,8 @@ final class AiFailure implements Exception {
 /// Gateway contracts from SRS 5.2.3 and 5.3.3 (AI-01, SCORE-01).
 abstract interface class IAiRepository {
   Future<AiChatReply> sendMessage(String message, {String? sessionId});
+  Stream<AiChatChunk> streamChat(String message, {String? sessionId});
+  Future<void> clearSession(String sessionId);
   Future<ResumeFeedback> scoreResume(AiCvInput cv, {required String jobId});
   void cancelCurrentRequest();
 }
