@@ -1,3 +1,4 @@
+import '../../../ai_copilot/presentation/resume_scoring_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_theme.dart';
@@ -283,11 +284,28 @@ class JobDetailContent extends StatelessWidget {
 
   /// AI Smart Resume Scoring Banner (SCORE-01, master-plan.md:312, PBL6-10)
   Widget _buildAiResumeMatchBanner(BuildContext context) {
+    void navigateToScoring() {
+      final targetUri = Uri(
+        path: '/resume-scoring',
+        queryParameters: {'jobId': job.id, 'title': job.title},
+      );
+      if (GoRouter.maybeOf(context) != null) {
+        context.push(targetUri.toString());
+      } else {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) =>
+                ResumeScoringScreen(jobId: job.id, targetJobTitle: job.title),
+          ),
+        );
+      }
+    }
+
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFFEBF5FF), Color(0xFFF0FDF4)],
+          colors: [Color(0xFFEFF6FF), Color(0xFFF0FDF4)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -304,86 +322,108 @@ class JobDetailContent extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
+          key: const Key('job_detail_ai_scoring_banner'),
           borderRadius: BorderRadius.circular(16),
-          onTap: () {
-            if (GoRouter.maybeOf(context) != null) {
-              context.push('?jobId=&title=');
-            }
-          },
+          onTap: navigateToScoring,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF2563EB), Color(0xFF0085FF)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
+                Row(
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF2563EB), Color(0xFF0085FF)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(
+                        Icons.auto_awesome_rounded,
+                        color: Colors.white,
+                        size: 20,
+                      ),
                     ),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(
-                    Icons.auto_awesome_rounded,
-                    color: Colors.white,
-                    size: 22,
-                  ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'Chấm điểm CV với việc này',
-                            style: TextStyle(
-                              fontSize: 14.5,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF0F172A),
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF2563EB),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: const Text(
-                              'AI',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
+                          Row(
+                            children: [
+                              const Expanded(
+                                child: Text(
+                                  'Chấm điểm CV với vị trí này',
+                                  style: TextStyle(
+                                    fontSize: 14.5,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF0F172A),
+                                  ),
+                                ),
                               ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF2563EB),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: const Text(
+                                  'AI',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 3),
+                          const Text(
+                            'Phân tích kỹ năng, kinh nghiệm & gợi ý tối ưu CV',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Color(0xFF475569),
+                              height: 1.3,
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 3),
-                      const Text(
-                        'Phân tích kỹ năng & nhận gợi ý cải thiện CV ngay',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Color(0xFF475569),
-                          height: 1.3,
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 8),
-                const Icon(
-                  Icons.arrow_forward_ios_rounded,
-                  size: 14,
-                  color: AppColors.primary,
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    key: const Key('job_detail_score_resume_button'),
+                    onPressed: navigateToScoring,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: const Color(0xFF2563EB),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      elevation: 0,
+                    ),
+                    icon: const Icon(Icons.upload_file_rounded, size: 18),
+                    label: const Text(
+                      'Tải CV & Chấm điểm ngay',
+                      style: TextStyle(
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
                 ),
               ],
             ),

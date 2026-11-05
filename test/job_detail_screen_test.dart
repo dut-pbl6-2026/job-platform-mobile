@@ -103,4 +103,37 @@ void main() {
     );
     expect(find.text('Quay lại danh sách'), findsOneWidget);
   });
+
+  testWidgets(
+    'JobDetailScreen taps AI scoring banner and opens ResumeScoringScreen',
+    (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.lightTheme,
+          home: JobDetailScreen(jobId: 'job-1', jobRepository: mockRepo),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const Key('job_detail_ai_scoring_banner')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const Key('job_detail_score_resume_button')),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.byKey(const Key('job_detail_score_resume_button')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Mức độ phù hợp CV'), findsOneWidget);
+      expect(find.byKey(const Key('scoring_choose_cv')), findsOneWidget);
+      expect(
+        find.text('Senior Flutter Developer (Cross-Platform)'),
+        findsOneWidget,
+      );
+    },
+  );
 }
