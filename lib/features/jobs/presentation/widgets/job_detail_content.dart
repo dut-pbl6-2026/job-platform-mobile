@@ -1,6 +1,8 @@
-import '../../../ai_copilot/presentation/resume_scoring_screen.dart';
+import '../../../../core/services/file_picker_service.dart';
+import '../../../ai_copilot/domain/ai_repository.dart';
+import 'job_detail_ai_scoring_card.dart';
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
+
 import '../../../../core/theme/app_theme.dart';
 import '../../domain/models/job_model.dart';
 
@@ -8,7 +10,17 @@ import '../../domain/models/job_model.dart';
 class JobDetailContent extends StatelessWidget {
   final JobModel job;
 
-  const JobDetailContent({super.key, required this.job});
+  final IAiRepository? aiRepository;
+  final ICvPickerService? cvPickerService;
+  final VoidCallback? onApplyPressed;
+
+  const JobDetailContent({
+    super.key,
+    required this.job,
+    this.aiRepository,
+    this.cvPickerService,
+    this.onApplyPressed,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -18,7 +30,12 @@ class JobDetailContent extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // AI Smart Resume Scoring Banner (SCORE-01, master-plan.md:312, PBL6-10)
-          _buildAiResumeMatchBanner(context),
+          JobDetailAiScoringCard(
+            job: job,
+            aiRepository: aiRepository,
+            cvPickerService: cvPickerService,
+            onApplyPressed: onApplyPressed,
+          ),
 
           const SizedBox(height: 16),
 
@@ -278,157 +295,6 @@ class JobDetailContent extends StatelessWidget {
             ],
           ),
         ],
-      ),
-    );
-  }
-
-  /// AI Smart Resume Scoring Banner (SCORE-01, master-plan.md:312, PBL6-10)
-  Widget _buildAiResumeMatchBanner(BuildContext context) {
-    void navigateToScoring() {
-      final targetUri = Uri(
-        path: '/resume-scoring',
-        queryParameters: {'jobId': job.id, 'title': job.title},
-      );
-      if (GoRouter.maybeOf(context) != null) {
-        context.push(targetUri.toString());
-      } else {
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) =>
-                ResumeScoringScreen(jobId: job.id, targetJobTitle: job.title),
-          ),
-        );
-      }
-    }
-
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFFEFF6FF), Color(0xFFF0FDF4)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFBFDBFE)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          key: const Key('job_detail_ai_scoring_banner'),
-          borderRadius: BorderRadius.circular(16),
-          onTap: navigateToScoring,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF2563EB), Color(0xFF0085FF)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Icon(
-                        Icons.auto_awesome_rounded,
-                        color: Colors.white,
-                        size: 20,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              const Expanded(
-                                child: Text(
-                                  'Chấm điểm CV với vị trí này',
-                                  style: TextStyle(
-                                    fontSize: 14.5,
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFF0F172A),
-                                  ),
-                                ),
-                              ),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 6,
-                                  vertical: 2,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF2563EB),
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: const Text(
-                                  'AI',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 3),
-                          const Text(
-                            'Phân tích kỹ năng, kinh nghiệm & gợi ý tối ưu CV',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Color(0xFF475569),
-                              height: 1.3,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton.icon(
-                    key: const Key('job_detail_score_resume_button'),
-                    onPressed: navigateToScoring,
-                    style: FilledButton.styleFrom(
-                      backgroundColor: const Color(0xFF2563EB),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 10),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      elevation: 0,
-                    ),
-                    icon: const Icon(Icons.upload_file_rounded, size: 18),
-                    label: const Text(
-                      'Tải CV & Chấm điểm ngay',
-                      style: TextStyle(
-                        fontSize: 13.5,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
       ),
     );
   }
