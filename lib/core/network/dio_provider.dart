@@ -5,12 +5,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:job_platform_mobile/core/session/auth_session.dart';
 import 'package:job_platform_mobile/features/auth/domain/models/auth_result.dart';
 
-const _baseUrl = String.fromEnvironment(
-  'FLUTTER_API_URL',
-  defaultValue: 'http://10.0.2.2:5000', // Android emulator -> host gateway
-);
+import 'api_config.dart';
+import 'gateway_circuit_breaker.dart';
 
-/// Singleton Dio with Queued AuthInterceptor (401 → refresh → retry, concurrency-safe).
+/// Singleton Dio with:
+/// 1. Platform-aware Gateway base URL ([ApiConfig.defaultBaseUrl])
+/// 2. SLA-compliant timeouts (connect: 3s, receive: 5s, send: 5s)
+/// 3. Gateway Circuit Breaker (CLOSED / OPEN / HALF_OPEN with fast-fail)
+/// 4. Queued AuthInterceptor (401 -> refresh -> retry, concurrency-safe).
 class DioProvider {
   DioProvider._();
   static final DioProvider _instance = DioProvider._();
@@ -19,15 +21,54 @@ class DioProvider {
   late final Dio dio = _createDio();
 
   Dio _createDio() {
+    final baseUrl = ApiConfig.defaultBaseUrl;
     final d = Dio(
       BaseOptions(
-        baseUrl: _baseUrl,
-        connectTimeout: const Duration(seconds: 10),
-        receiveTimeout: const Duration(seconds: 10),
+        baseUrl: baseUrl,
+        connectTimeout: const Duration(seconds: 3),
+        receiveTimeout: const Duration(seconds: 5),
+        sendTimeout: const Duration(seconds: 5),
         headers: {'Content-Type': 'application/json'},
       ),
     );
 
+    // 1. Gateway Circuit Breaker Interceptor (Fast-fail when Gateway is offline)
+    d.interceptors.add(
+      InterceptorsWrapper(
+        onRequest: (options, handler) {
+          final isBypass = options.extra['bypass_circuit_breaker'] == true;
+          if (!isBypass && !GatewayCircuitBreaker.instance.canExecute()) {
+            return handler.reject(
+              DioException(
+                requestOptions: options,
+                type: DioExceptionType.connectionError,
+                error: const GatewayCircuitBreakerException(
+                  'Gateway is offline (Circuit Breaker OPEN). Fast-failing network call.',
+                ),
+              ),
+            );
+          }
+          return handler.next(options);
+        },
+        onResponse: (response, handler) {
+          GatewayCircuitBreaker.instance.recordSuccess();
+          return handler.next(response);
+        },
+        onError: (err, handler) {
+          if (GatewayCircuitBreaker.instance.isGatewayConnectionFailure(err)) {
+            GatewayCircuitBreaker.instance.recordFailure();
+          } else if (err.response != null) {
+            // An HTTP error response (even 4xx/5xx) proves the Gateway/Service is reachable
+            GatewayCircuitBreaker.instance.recordSuccess();
+          } else if (err.type == DioExceptionType.cancel) {
+            GatewayCircuitBreaker.instance.recordProbeAborted();
+          }
+          return handler.next(err);
+        },
+      ),
+    );
+
+    // 2. Queued Auth & Token Refresh Interceptor
     d.interceptors.add(
       QueuedInterceptorsWrapper(
         onRequest: (options, handler) {
@@ -87,9 +128,10 @@ class DioProvider {
           try {
             final res = await Dio(
               BaseOptions(
-                baseUrl: _baseUrl,
-                connectTimeout: const Duration(seconds: 10),
-                receiveTimeout: const Duration(seconds: 10),
+                baseUrl: baseUrl,
+                connectTimeout: const Duration(seconds: 3),
+                receiveTimeout: const Duration(seconds: 5),
+                sendTimeout: const Duration(seconds: 5),
                 headers: {'Content-Type': 'application/json'},
               ),
             ).post('/api/auth/refresh', data: {'refreshToken': refreshToken});
