@@ -702,32 +702,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                       _buildDivider(),
                       ProfileMenuItem(
-                        icon: Icons.receipt_long_outlined,
-                        iconColor: AppColors.primary,
-                        title: 'Điều kiện giao dịch chung',
-                        onTap: () => _showInformationDialog(
-                          'Điều kiện giao dịch chung',
-                          'Quy định chung về các giao dịch điện tử trên nền tảng.',
-                        ),
-                      ),
-                      _buildDivider(),
-                      ProfileMenuItem(
                         icon: Icons.payments_outlined,
                         iconColor: AppColors.primary,
                         title: 'Giá dịch vụ & Cách thanh toán',
                         onTap: () => _showInformationDialog(
                           'Giá dịch vụ & Cách thanh toán',
                           'Bảng giá các gói tài khoản cao cấp và phương thức thanh toán an toàn.',
-                        ),
-                      ),
-                      _buildDivider(),
-                      ProfileMenuItem(
-                        icon: Icons.local_shipping_outlined,
-                        iconColor: AppColors.primary,
-                        title: 'Thông tin về vận chuyển',
-                        onTap: () => _showInformationDialog(
-                          'Thông tin về vận chuyển',
-                          'Thông tin liên quan đến giao nhận các ấn phẩm hoặc quà tặng lưu niệm.',
                         ),
                       ),
                       _buildDivider(),

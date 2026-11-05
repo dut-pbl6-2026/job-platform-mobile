@@ -88,6 +88,8 @@ void main() {
       expect(find.text('Về TopCV'), findsNothing);
       expect(find.text('Điều khoản dịch vụ'), findsOneWidget);
       expect(find.text('Chính sách quyền riêng tư'), findsOneWidget);
+      expect(find.text('Điều kiện giao dịch chung'), findsNothing);
+      expect(find.text('Thông tin về vận chuyển'), findsNothing);
       expect(find.text('Trợ giúp'), findsOneWidget);
       expect(find.text('Đánh giá ứng dụng'), findsOneWidget);
       expect(find.text('Kiểm tra bản cập nhật mới'), findsOneWidget);
