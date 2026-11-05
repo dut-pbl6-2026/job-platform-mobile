@@ -113,57 +113,10 @@ class ApiAiRepository implements IAiRepository {
     }
     final breakdown = data['breakdown'];
     final skills = breakdown is Map ? breakdown['skills'] : data['skills'];
-    final experience = breakdown is Map ? breakdown['experience'] : null;
-    final education = breakdown is Map ? breakdown['education'] : null;
-
-    final skillsScore = skills is Map && skills['score'] is num
-        ? (skills['score'] as num).toDouble()
-        : null;
-
-    final experienceScore = experience is Map && experience['score'] is num
-        ? (experience['score'] as num).toDouble()
-        : null;
-    final experienceYears = experience is Map && experience['years'] is num
-        ? (experience['years'] as num)
-        : null;
-    final requiredExpYears =
-        experience is Map && experience['required_years'] is num
-        ? (experience['required_years'] as num)
-        : null;
-    final experienceRelevance =
-        experience is Map && experience['relevance'] is String
-        ? experience['relevance'] as String
-        : null;
-
-    final educationScore = education is Map && education['score'] is num
-        ? (education['score'] as num).toDouble()
-        : null;
-    final educationDegree = education is Map && education['degree'] is String
-        ? education['degree'] as String
-        : null;
-    final requiredEduDegree =
-        education is Map && education['required_degree'] is String
-        ? education['required_degree'] as String
-        : null;
-    final educationRelevance =
-        education is Map && education['relevance'] is String
-        ? education['relevance'] as String
-        : null;
-
     return ResumeFeedback(
       score: score.toDouble(),
       matchingSkills: _strings(skills is Map ? skills['matching'] : null),
       missingSkills: _strings(skills is Map ? skills['missing'] : null),
-      extraSkills: _strings(skills is Map ? skills['extra'] : null),
-      skillsScore: skillsScore,
-      experienceScore: experienceScore,
-      experienceYears: experienceYears,
-      requiredExperienceYears: requiredExpYears,
-      experienceRelevance: experienceRelevance,
-      educationScore: educationScore,
-      educationDegree: educationDegree,
-      requiredEducationDegree: requiredEduDegree,
-      educationRelevance: educationRelevance,
       suggestions: _strings(data['suggestions']),
     );
   }
