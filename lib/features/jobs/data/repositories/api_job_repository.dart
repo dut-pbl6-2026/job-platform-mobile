@@ -5,7 +5,9 @@ import '../../../../core/network/dio_provider.dart';
 import '../../../../core/services/hive_cache_service.dart';
 import '../../domain/models/job_filter_params.dart';
 import '../../domain/models/job_model.dart';
+import '../../domain/models/recommended_job_model.dart';
 import '../../domain/repositories/job_repository.dart';
+
 import 'mock_job_repository.dart';
 
 /// Remote API Implementation of [IJobRepository] communicating exclusively
@@ -256,5 +258,135 @@ class ApiJobRepository implements IJobRepository {
       debugPrint('[ApiJobRepository] Gateway suggest fallback: $e');
     }
     return _fallbackMockRepository.getSearchSuggestions(query);
+  }
+
+  @override
+  Future<List<RecommendedJob>> getRecommendedJobs({
+    int limit = 10,
+    bool refresh = false,
+  }) async {
+    try {
+      final response = await _dio.get(
+        '/api/jobs/recommended',
+        queryParameters: {
+          'limit': limit.toString(),
+          if (refresh) 'refresh': 'true',
+        },
+        options: Options(
+          sendTimeout: const Duration(seconds: 5),
+          receiveTimeout: const Duration(seconds: 5),
+          headers: {'Accept': 'application/json'},
+        ),
+      );
+
+      if (response.statusCode == 200 && response.data != null) {
+        final dynamic raw = response.data is String
+            ? jsonDecode(response.data as String)
+            : response.data;
+
+        final Map<String, dynamic> data;
+        if (raw is Map<String, dynamic>) {
+          data = raw;
+        } else if (raw is Map) {
+          data = Map<String, dynamic>.from(raw);
+        } else if (raw is List) {
+          return raw
+              .map(
+                (item) => RecommendedJob.fromJson(
+                  item is Map<String, dynamic>
+                      ? item
+                      : Map<String, dynamic>.from(item as Map),
+                ),
+              )
+              .toList();
+        } else {
+          data = {};
+        }
+
+        final targetData =
+            (data['data'] is Map
+                ? data['data'] as Map<String, dynamic>
+                : null) ??
+            data;
+
+        final itemsList =
+            targetData['items'] as List<dynamic>? ??
+            targetData['jobs'] as List<dynamic>? ??
+            [];
+
+        final reasonsMapRaw = targetData['reasons'];
+        final Map<String, String> reasonsMap = {};
+        if (reasonsMapRaw is Map) {
+          for (final entry in reasonsMapRaw.entries) {
+            reasonsMap[entry.key.toString()] = entry.value.toString();
+          }
+        }
+
+        final List<RecommendedJob> recommendedJobs = [];
+        for (var i = 0; i < itemsList.length; i++) {
+          final item = itemsList[i];
+          if (item is Map) {
+            final map = Map<String, dynamic>.from(item);
+            final jobId =
+                map['id']?.toString() ??
+                (map['job'] is Map
+                    ? (map['job'] as Map)['id']?.toString()
+                    : null) ??
+                '';
+            final reasonFromMap = reasonsMap[jobId];
+            recommendedJobs.add(
+              RecommendedJob.fromJson(
+                map,
+                defaultReason: reasonFromMap,
+                defaultScore: 95 - (i * 4).clamp(0, 30),
+              ),
+            );
+          }
+        }
+
+        if (recommendedJobs.isNotEmpty) {
+          return recommendedJobs;
+        }
+      }
+    } catch (e) {
+      debugPrint('[ApiJobRepository] Gateway getRecommendedJobs fallback: $e');
+    }
+
+    // Graceful fallback to Mock repository (cold start or offline Gateway)
+    return _fallbackMockRepository.getRecommendedJobs(
+      limit: limit,
+      refresh: refresh,
+    );
+  }
+
+  @override
+  Future<RecommendationExplanation?> explainRecommendation(String jobId) async {
+    try {
+      final response = await _dio.get(
+        '/api/jobs/recommended/explain',
+        queryParameters: {'job_id': jobId},
+        options: Options(
+          sendTimeout: const Duration(seconds: 5),
+          receiveTimeout: const Duration(seconds: 5),
+          headers: {'Accept': 'application/json'},
+        ),
+      );
+
+      if (response.statusCode == 200 && response.data != null) {
+        final dynamic raw = response.data is String
+            ? jsonDecode(response.data as String)
+            : response.data;
+        if (raw is Map) {
+          return RecommendationExplanation.fromJson(
+            Map<String, dynamic>.from(raw),
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint(
+        '[ApiJobRepository] Gateway explainRecommendation fallback: $e',
+      );
+    }
+    return _fallbackMockRepository.explainRecommendation(jobId);
   }
 }

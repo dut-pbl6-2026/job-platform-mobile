@@ -20,10 +20,13 @@ import '../auth/domain/repositories/auth_repository.dart';
 import '../jobs/data/repositories/api_job_repository.dart';
 import '../jobs/domain/models/job_filter_params.dart';
 import '../jobs/domain/models/job_model.dart';
+import '../jobs/domain/models/recommended_job_model.dart';
 import '../jobs/domain/repositories/job_repository.dart';
 import '../jobs/presentation/widgets/job_filter_bottom_sheet.dart';
 import '../jobs/presentation/widgets/job_shimmer_loading.dart';
 import '../jobs/presentation/widgets/job_card.dart';
+import '../jobs/presentation/widgets/recommended_jobs_section.dart';
+
 import '../notifications/data/repositories/api_notification_repository.dart';
 import '../notifications/domain/repositories/notification_repository.dart';
 
@@ -62,6 +65,10 @@ class _HomeScreenState extends State<HomeScreen> {
   int _currentPage = 0;
   bool _hasNextPage = false;
 
+  List<RecommendedJob> _recommendedJobs = [];
+  bool _isLoadingRecommendations = true;
+  String? _recommendationsError;
+
   JobFilterParams _filterParams = const JobFilterParams(pageSize: 10, page: 0);
   String _selectedPill = 'Tất cả';
 
@@ -77,6 +84,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _notificationRepository =
         widget.notificationRepository ?? ApiNotificationRepository();
     _fetchJobs();
+    _fetchRecommendations();
     _loadUnreadCount();
 
     _notifSub = PushNotificationService.instance.onNotificationReceived.listen((
@@ -103,6 +111,48 @@ class _HomeScreenState extends State<HomeScreen> {
         setState(() => _unreadNotificationsCount = count);
       }
     } catch (_) {}
+  }
+
+  Future<void> _fetchRecommendations({bool refresh = false}) async {
+    final user = AuthSession.instance.currentUser;
+    if (user?.role == UserRole.recruiter) {
+      if (mounted) {
+        setState(() {
+          _isLoadingRecommendations = false;
+          _recommendedJobs = [];
+        });
+      }
+      return;
+    }
+
+    if (mounted) {
+      setState(() {
+        _isLoadingRecommendations = true;
+        _recommendationsError = null;
+      });
+    }
+
+    try {
+      final items = await _jobRepository.getRecommendedJobs(
+        limit: 10,
+        refresh: refresh,
+      );
+      if (mounted) {
+        setState(() {
+          _recommendedJobs = items;
+          _isLoadingRecommendations = false;
+          _recommendationsError = null;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _isLoadingRecommendations = false;
+          _recommendationsError =
+              'Không thể tải việc làm gợi ý. Vui lòng thử lại.';
+        });
+      }
+    }
   }
 
   Future<void> _fetchJobs({bool isResetPage = true}) async {
@@ -269,6 +319,13 @@ class _HomeScreenState extends State<HomeScreen> {
                   item.id == job.id ? item.copyWith(isSaved: saved) : item,
             )
             .toList();
+        _recommendedJobs = _recommendedJobs
+            .map(
+              (item) => item.job.id == job.id
+                  ? item.copyWith(job: item.job.copyWith(isSaved: saved))
+                  : item,
+            )
+            .toList();
       });
     } catch (_) {
       if (!mounted) return;
@@ -295,6 +352,7 @@ class _HomeScreenState extends State<HomeScreen> {
             GatewayCircuitBreaker.instance.reset();
             await Future.wait([
               _fetchJobs(isResetPage: true),
+              _fetchRecommendations(refresh: true),
               _loadUnreadCount(),
             ]);
           },
@@ -312,6 +370,21 @@ class _HomeScreenState extends State<HomeScreen> {
                   _buildAiMatchBanner(),
                   const SizedBox(height: 10),
                   _buildQuickShortcuts(isRecruiter),
+                  if (!isRecruiter &&
+                      !_isFilterActive &&
+                      _recommendedJobs.isNotEmpty) ...[
+                    const SizedBox(height: 14),
+                    RecommendedJobsSection(
+                      recommendations: _recommendedJobs,
+                      isLoading: _isLoadingRecommendations,
+                      errorMessage: _recommendationsError,
+                      savingIds: _savingIds,
+                      onRefresh: () => _fetchRecommendations(refresh: true),
+                      onJobTap: (rec) =>
+                          context.push('${AppRoutes.jobs}/${rec.job.id}'),
+                      onBookmarkToggle: (job) => _toggleBookmark(job),
+                    ),
+                  ],
                   const SizedBox(height: 9),
                   Row(
                     children: [
@@ -322,7 +395,9 @@ class _HomeScreenState extends State<HomeScreen> {
                             Text(
                               _isFilterActive
                                   ? 'Kết quả tìm kiếm'
-                                  : 'Việc làm đề xuất',
+                                  : (_recommendedJobs.isNotEmpty
+                                        ? 'Tất cả việc làm'
+                                        : 'Việc làm đề xuất'),
                               style: const TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w700,
@@ -348,6 +423,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                     ],
                   ),
+
                   const SizedBox(height: 12),
                   _buildJobsList(),
                   const SizedBox(height: 28),
