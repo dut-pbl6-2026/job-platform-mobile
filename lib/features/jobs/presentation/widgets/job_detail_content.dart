@@ -1,4 +1,8 @@
+import '../../../../core/services/file_picker_service.dart';
+import '../../../ai_copilot/domain/ai_repository.dart';
+import 'job_detail_ai_scoring_card.dart';
 import 'package:flutter/material.dart';
+
 import '../../../../core/theme/app_theme.dart';
 import '../../domain/models/job_model.dart';
 
@@ -6,7 +10,17 @@ import '../../domain/models/job_model.dart';
 class JobDetailContent extends StatelessWidget {
   final JobModel job;
 
-  const JobDetailContent({super.key, required this.job});
+  final IAiRepository? aiRepository;
+  final ICvPickerService? cvPickerService;
+  final VoidCallback? onApplyPressed;
+
+  const JobDetailContent({
+    super.key,
+    required this.job,
+    this.aiRepository,
+    this.cvPickerService,
+    this.onApplyPressed,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -15,6 +29,16 @@ class JobDetailContent extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // AI Smart Resume Scoring Banner (SCORE-01, master-plan.md:312, PBL6-10)
+          JobDetailAiScoringCard(
+            job: job,
+            aiRepository: aiRepository,
+            cvPickerService: cvPickerService,
+            onApplyPressed: onApplyPressed,
+          ),
+
+          const SizedBox(height: 16),
+
           // 1. Job Description Section
           _buildSectionCard(
             context,

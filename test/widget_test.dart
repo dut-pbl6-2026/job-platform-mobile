@@ -27,11 +27,15 @@ void main() {
     await tester.pumpWidget(const MaterialApp(home: RegisterScreen()));
 
     // Initial state check
-    expect(find.text('Tạo tài khoản mới'), findsOneWidget);
+    expect(find.text('Tạo tài khoản'), findsOneWidget);
     expect(find.text('Ứng viên'), findsOneWidget);
     expect(find.text('Nhà tuyển dụng'), findsOneWidget);
 
+    await tester.tap(find.byKey(const Key('register_role_user')));
+    await tester.pumpAndSettle();
+
     // Try submitting without filling any field
+    await tester.ensureVisible(find.text('Đăng ký Ứng viên'));
     await tester.tap(find.text('Đăng ký Ứng viên'));
     await tester.pump();
 

@@ -23,6 +23,7 @@ class JobFilterParams {
   final num? salaryMin;
   final num? salaryMax;
   final String currency; // 'VND', 'JPY'
+  final bool includeNegotiable;
   final bool onlySaved;
   final int page;
   final int pageSize;
@@ -45,6 +46,7 @@ class JobFilterParams {
     this.salaryMin,
     this.salaryMax,
     this.currency = 'VND',
+    this.includeNegotiable = true,
     this.onlySaved = false,
     this.page = 0,
     this.pageSize = 10,
@@ -69,6 +71,7 @@ class JobFilterParams {
         (salaryRangeId != null && salaryRangeId!.trim().isNotEmpty) ||
         salaryMin != null ||
         salaryMax != null ||
+        !includeNegotiable ||
         onlySaved;
   }
 
@@ -97,7 +100,8 @@ class JobFilterParams {
     if (skills.isNotEmpty) count++;
     if ((salaryRangeId != null && salaryRangeId!.trim().isNotEmpty) ||
         salaryMin != null ||
-        salaryMax != null) {
+        salaryMax != null ||
+        !includeNegotiable) {
       count++;
     }
     if (onlySaved) count++;
@@ -136,6 +140,7 @@ class JobFilterParams {
     num? salaryMax,
     bool clearSalaryMax = false,
     String? currency,
+    bool? includeNegotiable,
     bool? onlySaved,
     int? page,
     int? pageSize,
@@ -170,6 +175,7 @@ class JobFilterParams {
       salaryMin: clearSalaryMin ? null : (salaryMin ?? this.salaryMin),
       salaryMax: clearSalaryMax ? null : (salaryMax ?? this.salaryMax),
       currency: currency ?? this.currency,
+      includeNegotiable: includeNegotiable ?? this.includeNegotiable,
       onlySaved: onlySaved ?? this.onlySaved,
       page: page ?? this.page,
       pageSize: pageSize ?? this.pageSize,

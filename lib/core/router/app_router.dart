@@ -4,22 +4,30 @@ import 'package:go_router/go_router.dart';
 
 import '../session/auth_session.dart';
 import '../../features/auth/domain/models/user_model.dart';
+import '../../features/ai_copilot/presentation/ai_copilot_screen.dart';
+import '../../features/ai_copilot/presentation/resume_scoring_screen.dart';
+import '../../features/applications/presentation/application_detail_screen.dart';
+import '../../features/applications/presentation/application_history_screen.dart';
+import '../../features/applications/presentation/apply_job_screen.dart';
 import '../../features/auth/login_screen.dart';
 import '../../features/auth/presentation/forgot_password_screen.dart';
 import '../../features/auth/presentation/reset_password_screen.dart';
 import '../../features/auth/register_screen.dart';
+import '../../features/connections/presentation/connections_screen.dart';
 import '../../features/cv/presentation/create_cv_screen.dart';
 import '../../features/home/home_screen.dart';
 import '../../features/home/main_navigation_screen.dart';
 import '../../features/jobs/presentation/job_detail_screen.dart';
 import '../../features/jobs/presentation/job_list_screen.dart';
+import '../../features/jobs/presentation/saved_jobs_screen.dart';
 import '../../features/jobs/presentation/search_screen.dart';
-import '../../features/applications/presentation/application_detail_screen.dart';
-import '../../features/applications/presentation/application_history_screen.dart';
-import '../../features/applications/presentation/apply_job_screen.dart';
 import '../../features/notifications/presentation/notification_screen.dart';
 import '../../features/profile/presentation/profile_detail_screen.dart';
 import '../../features/profile/presentation/profile_screen.dart';
+import '../../features/recruiter/presentation/candidate_applications_screen.dart';
+import '../../features/recruiter/presentation/post_job_screen.dart';
+import '../../features/recruiter/presentation/recruiter_dashboard_screen.dart';
+import '../../features/recruiter/presentation/recruiter_jobs_screen.dart';
 import '../../features/splash/splash_screen.dart';
 
 /// Route names constants
@@ -42,7 +50,14 @@ class AppRoutes {
   static const String createCv = '/create-cv';
   static const String forgotPassword = '/forgot-password';
   static const String resetPassword = '/reset-password';
+  static const String connections = '/connections';
+  static const String savedJobs = '/saved-jobs';
+  static const String aiCopilot = '/ai-copilot';
+  static const String resumeScoring = '/resume-scoring';
+  static const String recruiterDashboard = '/recruiter/dashboard';
   static const String recruiterJobs = '/recruiter/jobs';
+  static const String recruiterPostJob = '/recruiter/jobs/create';
+  static const String recruiterCandidates = '/recruiter/candidates';
 
   /// Public routes that do not require authentication.
   static const List<String> publicRoutes = [
@@ -57,7 +72,7 @@ class AppRoutes {
 }
 
 /// GoRouter configuration for Navigation Structure
-/// Includes role-based route guards and reactive session listener (MOB-01-01, MOB-01-07, AUTH-01-03, AUTH-01-06).
+/// Includes auth guard redirect and reactive session listener (MOB-01).
 class AppRouter {
   AppRouter._();
 
@@ -167,22 +182,94 @@ class AppRouter {
       ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
-        path: AppRoutes.createCv,
-        name: 'create-cv',
-        builder: (context, state) => const CreateCvScreen(),
+        path: AppRoutes.search,
+        name: 'search',
+        builder: (context, state) {
+          final query = state.uri.queryParameters['q'];
+          return SearchScreen(initialQuery: query);
+        },
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: AppRoutes.savedJobs,
+        name: 'saved-jobs',
+        builder: (context, state) => const SavedJobsScreen(),
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: AppRoutes.aiCopilot,
+        name: 'ai-copilot',
+        builder: (context, state) => const AiCopilotScreen(),
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: AppRoutes.resumeScoring,
+        name: 'resume-scoring',
+        builder: (context, state) => ResumeScoringScreen(
+          jobId: state.uri.queryParameters['jobId'],
+          targetJobTitle: state.uri.queryParameters['title'],
+        ),
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: AppRoutes.recruiterDashboard,
+        name: 'recruiter-dashboard',
+        builder: (context, state) => const RecruiterDashboardScreen(),
       ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
         path: AppRoutes.recruiterJobs,
         name: 'recruiter-jobs',
-        builder: (context, state) => const JobListScreen(),
+        builder: (context, state) => const RecruiterJobsScreen(),
       ),
-      StatefulShellRoute.indexedStack(
-        builder: (context, state, navigationShell) {
-          return MainNavigationScreen(navigationShell: navigationShell);
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: AppRoutes.recruiterPostJob,
+        name: 'recruiter-post-job',
+        builder: (context, state) => const PostJobScreen(),
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: AppRoutes.recruiterCandidates,
+        name: 'recruiter-candidates',
+        builder: (context, state) {
+          final queryJobId = state.uri.queryParameters['jobId'];
+          final extraJobId = state.extra is String
+              ? state.extra as String
+              : (state.extra is Map
+                    ? (state.extra as Map)['jobId']?.toString()
+                    : null);
+          final jobId = queryJobId ?? extraJobId;
+          return CandidateApplicationsScreen(jobId: jobId);
         },
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: AppRoutes.applications,
+        name: 'applications',
+        builder: (context, state) => const ApplicationHistoryScreen(),
+        routes: [
+          GoRoute(
+            parentNavigatorKey: _rootNavigatorKey,
+            path: ':id',
+            name: 'application-detail',
+            builder: (context, state) {
+              final appId = state.pathParameters['id'] ?? '';
+              return ApplicationDetailScreen(applicationId: appId);
+            },
+          ),
+        ],
+      ),
+      StatefulShellRoute(
+        navigatorContainerBuilder: (context, navigationShell, children) {
+          return MainNavigationScreen(
+            navigationShell: navigationShell,
+            children: children,
+          );
+        },
+        builder: (context, state, navigationShell) => navigationShell,
         branches: [
-          // Branch 0: Home (Candidate, Recruiter, Admin)
+          // Branch 0: Trang chủ (#2073:870)
           StatefulShellBranch(
             routes: [
               GoRoute(
@@ -192,41 +279,7 @@ class AppRouter {
               ),
             ],
           ),
-          // Branch 1: Search (Candidate, Recruiter, Admin)
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: AppRoutes.search,
-                name: 'search',
-                builder: (context, state) {
-                  final query = state.uri.queryParameters['q'];
-                  return SearchScreen(initialQuery: query);
-                },
-              ),
-            ],
-          ),
-          // Branch 2: Applications (Candidate only)
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: AppRoutes.applications,
-                name: 'applications',
-                builder: (context, state) => const ApplicationHistoryScreen(),
-                routes: [
-                  GoRoute(
-                    parentNavigatorKey: _rootNavigatorKey,
-                    path: ':id',
-                    name: 'application-detail',
-                    builder: (context, state) {
-                      final appId = state.pathParameters['id'] ?? '';
-                      return ApplicationDetailScreen(applicationId: appId);
-                    },
-                  ),
-                ],
-              ),
-            ],
-          ),
-          // Branch 3: Jobs (Recruiter bottom nav tab)
+          // Branch 1: Việc làm (#2073:876)
           StatefulShellBranch(
             routes: [
               GoRoute(
@@ -264,7 +317,27 @@ class AppRouter {
               ),
             ],
           ),
-          // Branch 4: Profile (Candidate, Recruiter, Admin)
+          // Branch 2: Tạo CV (#2073:879)
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: AppRoutes.createCv,
+                name: 'create-cv',
+                builder: (context, state) => const CreateCvScreen(),
+              ),
+            ],
+          ),
+          // Branch 3: NTD kết nối (#2073:885)
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: AppRoutes.connections,
+                name: 'connections',
+                builder: (context, state) => const ConnectionsScreen(),
+              ),
+            ],
+          ),
+          // Branch 4: Hồ sơ (#2073:888)
           StatefulShellBranch(
             routes: [
               GoRoute(

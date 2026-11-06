@@ -431,6 +431,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         color: AppColors.primary,
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.only(bottom: 96),
           child: Column(
             children: [
               // Header Stack with blue curved background & floating user card
@@ -481,7 +482,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ProfileMenuItem(
                         icon: Icons.laptop_chromebook_rounded,
                         iconColor: AppColors.primary,
-                        title: 'Trạng thái tìm việc',
+                        title: 'Sẵn sàng nhận việc ngay',
                         helpText:
                             'Bật trạng thái này để thông báo cho Nhà tuyển dụng biết bạn đang sẵn sàng đón nhận cơ hội việc làm mới.',
                         showChevron: false,
@@ -543,6 +544,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           'Quản lý danh sách các bức thư xin việc (Cover Letter) đã lưu để đính kèm nhanh chóng khi ứng tuyển việc làm.',
                         ),
                       ),
+                      _buildDivider(),
+                      ProfileMenuItem(
+                        icon: Icons.auto_awesome_rounded,
+                        iconColor: AppColors.primary,
+                        title: 'Chấm điểm CV thông minh (AI)',
+                        onTap: () => context.push(AppRoutes.resumeScoring),
+                      ),
                     ]),
 
                     // Section 3: Quản lý tìm việc
@@ -559,10 +567,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         icon: Icons.favorite_border_rounded,
                         iconColor: AppColors.primary,
                         title: 'Việc làm đã lưu',
-                        onTap: () => _showInformationDialog(
-                          'Việc làm đã lưu',
-                          'Xem lại các công việc bạn đã đánh dấu yêu thích để dễ dàng theo dõi và ứng tuyển bất cứ lúc nào.',
-                        ),
+                        onTap: () => context.push(AppRoutes.savedJobs),
                       ),
                       _buildDivider(),
                       ProfileMenuItem(
@@ -593,10 +598,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         icon: Icons.person_add_alt_outlined,
                         iconColor: AppColors.primary,
                         title: 'NTD muốn kết nối với bạn',
-                        onTap: () => _showInformationDialog(
-                          'NTD muốn kết nối với bạn',
-                          'Hiện tại bạn không có lời mời kết nối nào đang chờ xử lý.',
-                        ),
+                        onTap: () => context.push(AppRoutes.connections),
                       ),
                       _buildDivider(),
                       ProfileMenuItem(
@@ -707,32 +709,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                       _buildDivider(),
                       ProfileMenuItem(
-                        icon: Icons.receipt_long_outlined,
-                        iconColor: AppColors.primary,
-                        title: 'Điều kiện giao dịch chung',
-                        onTap: () => _showInformationDialog(
-                          'Điều kiện giao dịch chung',
-                          'Quy định chung về các giao dịch điện tử trên nền tảng.',
-                        ),
-                      ),
-                      _buildDivider(),
-                      ProfileMenuItem(
                         icon: Icons.payments_outlined,
                         iconColor: AppColors.primary,
                         title: 'Giá dịch vụ & Cách thanh toán',
                         onTap: () => _showInformationDialog(
                           'Giá dịch vụ & Cách thanh toán',
                           'Bảng giá các gói tài khoản cao cấp và phương thức thanh toán an toàn.',
-                        ),
-                      ),
-                      _buildDivider(),
-                      ProfileMenuItem(
-                        icon: Icons.local_shipping_outlined,
-                        iconColor: AppColors.primary,
-                        title: 'Thông tin về vận chuyển',
-                        onTap: () => _showInformationDialog(
-                          'Thông tin về vận chuyển',
-                          'Thông tin liên quan đến giao nhận các ấn phẩm hoặc quà tặng lưu niệm.',
                         ),
                       ),
                       _buildDivider(),

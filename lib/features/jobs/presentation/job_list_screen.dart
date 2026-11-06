@@ -8,6 +8,8 @@ import '../domain/models/job_filter_params.dart';
 import '../domain/models/job_model.dart';
 import '../domain/repositories/job_repository.dart';
 import 'widgets/job_card.dart';
+import '../../../core/widgets/fade_slide_transition.dart';
+import '../../../core/widgets/pressable_card.dart';
 import 'widgets/job_filter_bottom_sheet.dart';
 import 'widgets/job_search_bar.dart';
 import 'widgets/job_shimmer_loading.dart';
@@ -308,7 +310,7 @@ class _JobListScreenState extends State<JobListScreen> {
     ];
 
     return SizedBox(
-      height: 34,
+      height: 36,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         itemCount: chips.length,
@@ -317,27 +319,44 @@ class _JobListScreenState extends State<JobListScreen> {
           final chip = chips[index];
           final isSelected = _selectedQuickChip == chip;
 
-          return ChoiceChip(
-            label: Text(
-              chip,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                color: isSelected ? Colors.white : AppColors.textPrimary,
+          return Semantics(
+            button: true,
+            selected: isSelected,
+            child: GestureDetector(
+              onTap: () => _handleQuickChipTap(chip),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                curve: Curves.easeInOut,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 7,
+                ),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? AppColors.primary
+                      : AppColors.surfaceVariant,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: isSelected ? AppColors.primary : AppColors.border,
+                    width: 1,
+                  ),
+                ),
+                child: Center(
+                  child: AnimatedDefaultTextStyle(
+                    duration: const Duration(milliseconds: 200),
+                    curve: Curves.easeInOut,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: isSelected
+                          ? FontWeight.w600
+                          : FontWeight.w400,
+                      color: isSelected ? Colors.white : AppColors.textPrimary,
+                    ),
+                    child: Text(chip),
+                  ),
+                ),
               ),
             ),
-            selected: isSelected,
-            selectedColor: AppColors.primary,
-            backgroundColor: AppColors.surfaceVariant,
-            side: BorderSide(
-              color: isSelected ? AppColors.primary : AppColors.border,
-              width: 1,
-            ),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-            ),
-            showCheckmark: false,
-            onSelected: (_) => _handleQuickChipTap(chip),
           );
         },
       ),
@@ -448,7 +467,12 @@ class _JobListScreenState extends State<JobListScreen> {
       color: AppColors.primary,
       child: ListView.separated(
         controller: _scrollController,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: const EdgeInsets.only(
+          left: 16,
+          right: 16,
+          top: 12,
+          bottom: 96,
+        ),
         itemCount: _jobs.length + (_hasNextPage ? 2 : 1),
         separatorBuilder: (context, index) => const SizedBox(height: 12),
         itemBuilder: (context, index) {
@@ -507,10 +531,16 @@ class _JobListScreenState extends State<JobListScreen> {
           }
 
           final job = _jobs[jobIndex];
-          return JobCard(
-            job: job,
-            onTap: () => _navigateToDetail(job),
-            onBookmarkToggle: () => _handleBookmarkToggle(job),
+          return FadeSlideTransition(
+            index: jobIndex,
+            child: PressableCard(
+              onTap: () => _navigateToDetail(job),
+              child: JobCard(
+                job: job,
+                onTap: () => _navigateToDetail(job),
+                onBookmarkToggle: () => _handleBookmarkToggle(job),
+              ),
+            ),
           );
         },
       ),
@@ -520,7 +550,12 @@ class _JobListScreenState extends State<JobListScreen> {
   Widget _buildEmptyState() {
     return Center(
       child: SingleChildScrollView(
-        padding: const EdgeInsets.all(32),
+        padding: const EdgeInsets.only(
+          left: 32,
+          right: 32,
+          top: 32,
+          bottom: 96,
+        ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [

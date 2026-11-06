@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../../../../core/session/auth_session.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../auth/domain/models/user_model.dart';
@@ -46,28 +47,36 @@ class JobDetailBottomBar extends StatelessWidget {
       ),
       child: Row(
         children: [
-          // 1. Bookmark / Save Button
-          InkWell(
-            onTap: onBookmarkToggle,
-            borderRadius: BorderRadius.circular(14),
-            child: Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: isSaved
-                    ? AppColors.primary.withValues(alpha: 0.1)
-                    : AppColors.surfaceVariant,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                  color: isSaved ? AppColors.primary : AppColors.border,
-                ),
-              ),
-              child: Icon(
-                isSaved
-                    ? Icons.bookmark_rounded
-                    : Icons.bookmark_border_rounded,
+          // 1. Bookmark / Save Button (Figma #55:3979)
+          OutlinedButton.icon(
+            onPressed: onBookmarkToggle,
+            icon: Icon(
+              isSaved ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
+              color: isSaved ? AppColors.primary : AppColors.textSecondary,
+              size: 20,
+            ),
+            label: Text(
+              isSaved ? 'Đã lưu' : 'Lưu tin',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
                 color: isSaved ? AppColors.primary : AppColors.textSecondary,
-                size: 22,
+              ),
+            ),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: isSaved
+                  ? AppColors.primary
+                  : AppColors.textSecondary,
+              backgroundColor: isSaved
+                  ? AppColors.primary.withValues(alpha: 0.08)
+                  : Colors.white,
+              side: BorderSide(
+                color: isSaved ? AppColors.primary : AppColors.border,
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              minimumSize: const Size(0, 46),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
               ),
             ),
           ),
@@ -77,13 +86,13 @@ class JobDetailBottomBar extends StatelessWidget {
           // 2. Share Button
           InkWell(
             onTap: onShare,
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(24),
             child: Container(
-              width: 48,
-              height: 48,
+              width: 44,
+              height: 44,
               decoration: BoxDecoration(
                 color: AppColors.surfaceVariant,
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(24),
                 border: Border.all(color: AppColors.border),
               ),
               child: const Icon(
@@ -94,9 +103,9 @@ class JobDetailBottomBar extends StatelessWidget {
             ),
           ),
 
-          const SizedBox(width: 12),
+          const SizedBox(width: 10),
 
-          // 3. Dynamic Role-Based Primary Action CTA
+          // 3. Dynamic Role-Based Primary Action CTA (Figma #55:3973)
           Expanded(
             child: ElevatedButton(
               onPressed: onPrimaryAction,
@@ -106,9 +115,10 @@ class JobDetailBottomBar extends StatelessWidget {
                     : isAdmin
                     ? AppColors.warning
                     : AppColors.primary,
-                minimumSize: const Size(double.infinity, 48),
+                minimumSize: const Size(double.infinity, 46),
+                elevation: 0,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(24),
                 ),
               ),
               child: Row(
@@ -131,7 +141,7 @@ class JobDetailBottomBar extends StatelessWidget {
                         ? 'Kiểm duyệt tin'
                         : 'Ứng tuyển ngay',
                     style: const TextStyle(
-                      fontSize: 15,
+                      fontSize: 14.5,
                       fontWeight: FontWeight.w700,
                       color: Colors.white,
                     ),

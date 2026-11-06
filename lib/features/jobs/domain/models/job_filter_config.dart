@@ -451,10 +451,7 @@ class JobFilterData {
   static const List<FilterOption> workplaceTypes = [
     FilterOption(id: 'on_site', label: 'Tại văn phòng (On-site)'),
     FilterOption(id: 'hybrid', label: 'Kết hợp (Hybrid)'),
-    FilterOption(
-      id: 'remote',
-      label: 'Làm việc từ xa (Remote / Work from home)',
-    ),
+    FilterOption(id: 'remote', label: 'Từ xa (Remote)'),
   ];
 
   static const List<SalaryRangeConfig> salaryRanges = [

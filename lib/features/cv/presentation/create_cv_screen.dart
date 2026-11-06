@@ -3,6 +3,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/fade_slide_transition.dart';
+import '../../../core/widgets/pressable_card.dart';
 
 /// Commercial Create CV Screen
 /// Allows candidate to browse modern ATS templates and prepare professional CVs
@@ -78,7 +80,12 @@ class _CreateCvScreenState extends State<CreateCvScreen> {
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.only(
+            left: 16,
+            right: 16,
+            top: 16,
+            bottom: 96,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -211,34 +218,48 @@ class _CreateCvScreenState extends State<CreateCvScreen> {
                   itemBuilder: (context, index) {
                     final cat = _categories[index];
                     final isSelected = _selectedCategory == cat;
-                    return ChoiceChip(
-                      label: Text(
-                        cat,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: isSelected
-                              ? FontWeight.bold
-                              : FontWeight.normal,
-                          color: isSelected
-                              ? Colors.white
-                              : AppColors.textPrimary,
+                    return Semantics(
+                      button: true,
+                      selected: isSelected,
+                      child: GestureDetector(
+                        onTap: () => setState(() => _selectedCategory = cat),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          curve: Curves.easeInOut,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? AppColors.primary
+                                : AppColors.surface,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: isSelected
+                                  ? AppColors.primary
+                                  : AppColors.border,
+                              width: 1,
+                            ),
+                          ),
+                          child: Center(
+                            child: AnimatedDefaultTextStyle(
+                              duration: const Duration(milliseconds: 200),
+                              curve: Curves.easeInOut,
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: isSelected
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                                color: isSelected
+                                    ? Colors.white
+                                    : AppColors.textPrimary,
+                              ),
+                              child: Text(cat),
+                            ),
+                          ),
                         ),
                       ),
-                      selected: isSelected,
-                      selectedColor: AppColors.primary,
-                      backgroundColor: AppColors.surface,
-                      showCheckmark: false,
-                      side: BorderSide(
-                        color: isSelected
-                            ? AppColors.primary
-                            : AppColors.border,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      onSelected: (_) {
-                        setState(() => _selectedCategory = cat);
-                      },
                     );
                   },
                 ),
@@ -256,6 +277,7 @@ class _CreateCvScreenState extends State<CreateCvScreen> {
               const SizedBox(height: 12),
 
               ListView.separated(
+                key: ValueKey<String>(_selectedCategory),
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 itemCount: filteredTemplates.length,
@@ -263,7 +285,10 @@ class _CreateCvScreenState extends State<CreateCvScreen> {
                     const SizedBox(height: 12),
                 itemBuilder: (context, index) {
                   final t = filteredTemplates[index];
-                  return _buildTemplateCard(t);
+                  return FadeSlideTransition(
+                    index: index,
+                    child: PressableCard(child: _buildTemplateCard(t)),
+                  );
                 },
               ),
               const SizedBox(height: 20),
@@ -442,25 +467,215 @@ class _CreateCvScreenState extends State<CreateCvScreen> {
             ),
           ),
 
-          // Use Template Action
-          IconButton(
-            icon: const Icon(
-              Icons.chevron_right_rounded,
-              color: AppColors.primary,
+          // Use Template Action (Figma #2068:817)
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              minimumSize: const Size(0, 36),
+              elevation: 0,
             ),
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    'Mẫu "${template['name']}" sẽ mở trong trình soạn thảo Sprint tiếp theo',
-                  ),
-                  duration: const Duration(seconds: 2),
-                ),
-              );
-            },
+            onPressed: () => _openCvForm(template),
+            child: const Text(
+              'Chọn mẫu',
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+            ),
           ),
         ],
       ),
+    );
+  }
+
+  void _openCvForm(Map<String, dynamic> template) {
+    final nameController = TextEditingController(text: 'Khoa Phạm');
+    final positionController = TextEditingController(text: 'UI/UX Designer');
+    final emailPhoneController = TextEditingController(
+      text: 'khoapham@example.com · 0905 123 456',
+    );
+    final summaryController = TextEditingController(
+      text:
+          'Nhà thiết kế sản phẩm số với 2+ năm kinh nghiệm trong lĩnh vực UI/UX, Design System và Mobile App.',
+    );
+    final skillsController = TextEditingController(
+      text: 'Figma, UI Design, Wireframing, Auto Layout, User Flows',
+    );
+    final expController = TextEditingController(
+      text:
+          'UI/UX Designer tại Badoo Inc. (2024 - Hiện tại)\nJunior Product Designer tại TechLab (2022 - 2024)',
+    );
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.88,
+          maxChildSize: 0.95,
+          minChildSize: 0.5,
+          expand: false,
+          builder: (context, scrollController) {
+            return Padding(
+              padding: EdgeInsets.fromLTRB(
+                20,
+                16,
+                20,
+                MediaQuery.of(context).viewInsets.bottom + 20,
+              ),
+              child: SingleChildScrollView(
+                controller: scrollController,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: AppColors.border,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Điền thông tin CV',
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Mẫu: ${template['name']} · Chuẩn ATS',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close_rounded),
+                          onPressed: () => Navigator.pop(ctx),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    const Divider(height: 1),
+                    const SizedBox(height: 16),
+
+                    _buildFormInput('Họ và tên', nameController),
+                    const SizedBox(height: 12),
+                    _buildFormInput('Vị trí ứng tuyển', positionController),
+                    const SizedBox(height: 12),
+                    _buildFormInput(
+                      'Email & Số điện thoại',
+                      emailPhoneController,
+                    ),
+                    const SizedBox(height: 12),
+                    _buildFormInput(
+                      'Giới thiệu bản thân',
+                      summaryController,
+                      maxLines: 3,
+                    ),
+                    const SizedBox(height: 12),
+                    _buildFormInput(
+                      'Kỹ năng nổi bật',
+                      skillsController,
+                      maxLines: 2,
+                    ),
+                    const SizedBox(height: 12),
+                    _buildFormInput(
+                      'Kinh nghiệm làm việc & Học vấn',
+                      expController,
+                      maxLines: 3,
+                    ),
+                    const SizedBox(height: 20),
+
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        minimumSize: const Size(double.infinity, 48),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              'Đã hoàn thiện CV theo mẫu "${template['name']}" thành công!',
+                            ),
+                            backgroundColor: AppColors.success,
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      },
+                      child: const Text(
+                        'Xem trước & Lưu CV',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildFormInput(
+    String label,
+    TextEditingController controller, {
+    int maxLines = 1,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.bold,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 6),
+        TextField(
+          controller: controller,
+          maxLines: maxLines,
+          decoration: InputDecoration(
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: 12,
+            ),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+        ),
+      ],
     );
   }
 }

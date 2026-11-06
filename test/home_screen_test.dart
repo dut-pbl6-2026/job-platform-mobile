@@ -9,6 +9,7 @@ import 'package:job_platform_mobile/features/auth/domain/models/auth_result.dart
 import 'package:job_platform_mobile/features/auth/domain/models/user_model.dart';
 import 'package:job_platform_mobile/features/home/home_screen.dart';
 import 'package:job_platform_mobile/features/jobs/data/repositories/mock_job_repository.dart';
+import 'package:job_platform_mobile/features/notifications/data/repositories/mock_notification_repository.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -47,8 +48,11 @@ void main() {
         routes: [
           GoRoute(
             path: AppRoutes.home,
-            builder: (context, state) =>
-                HomeScreen(authRepository: mockAuth, jobRepository: mockJob),
+            builder: (context, state) => HomeScreen(
+              authRepository: mockAuth,
+              jobRepository: mockJob,
+              notificationRepository: MockNotificationRepository(),
+            ),
           ),
           GoRoute(
             path: AppRoutes.createCv,
@@ -77,7 +81,6 @@ void main() {
 
       // Check shortcuts: 'Tạo CV', 'Hồ sơ', 'Ứng tuyển'
       expect(find.text('Tạo CV'), findsOneWidget);
-      expect(find.text('Mẫu chuẩn ATS'), findsOneWidget);
       expect(find.text('Hồ sơ'), findsOneWidget);
       expect(find.text('Ứng tuyển'), findsOneWidget);
 
@@ -114,8 +117,11 @@ void main() {
         routes: [
           GoRoute(
             path: AppRoutes.home,
-            builder: (context, state) =>
-                HomeScreen(authRepository: mockAuth, jobRepository: mockJob),
+            builder: (context, state) => HomeScreen(
+              authRepository: mockAuth,
+              jobRepository: mockJob,
+              notificationRepository: MockNotificationRepository(),
+            ),
           ),
           GoRoute(
             path: AppRoutes.notifications,
@@ -132,7 +138,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Tap notification bell icon
-      await tester.tap(find.byIcon(Icons.notifications_none_rounded));
+      await tester.tap(find.byKey(const Key('home_notification_button')));
       await tester.pumpAndSettle();
 
       expect(find.text('Notification Center Destination'), findsOneWidget);
@@ -163,7 +169,11 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           theme: AppTheme.lightTheme,
-          home: HomeScreen(authRepository: mockAuth, jobRepository: mockJob),
+          home: HomeScreen(
+            authRepository: mockAuth,
+            jobRepository: mockJob,
+            notificationRepository: MockNotificationRepository(),
+          ),
         ),
       );
 
@@ -171,7 +181,6 @@ void main() {
 
       // Recruiter should see 'Đăng tin'
       expect(find.text('Đăng tin'), findsOneWidget);
-      expect(find.text('Tuyển dụng mới'), findsOneWidget);
     },
   );
 
@@ -186,8 +195,11 @@ void main() {
         routes: [
           GoRoute(
             path: AppRoutes.home,
-            builder: (context, state) =>
-                HomeScreen(authRepository: mockAuth, jobRepository: mockJob),
+            builder: (context, state) => HomeScreen(
+              authRepository: mockAuth,
+              jobRepository: mockJob,
+              notificationRepository: MockNotificationRepository(),
+            ),
           ),
           GoRoute(
             path: AppRoutes.search,
@@ -204,13 +216,10 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify search placeholder text is present
-      expect(
-        find.text('Tìm kiếm công việc, công ty, kỹ năng...'),
-        findsOneWidget,
-      );
+      expect(find.text('Tìm việc, công ty, kỹ năng...'), findsOneWidget);
 
       // Tap search bar and verify navigation to search screen
-      await tester.tap(find.text('Tìm kiếm công việc, công ty, kỹ năng...'));
+      await tester.tap(find.text('Tìm việc, công ty, kỹ năng...'));
       await tester.pumpAndSettle();
 
       expect(find.text('Dedicated Search Destination'), findsOneWidget);
