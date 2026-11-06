@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/session/auth_session.dart';
 import '../../../core/theme/app_theme.dart';
 import '../data/repositories/api_recruiter_repository.dart';
 import '../domain/models/recruiter_models.dart';
@@ -87,6 +88,9 @@ class _PostJobScreenState extends State<PostJobScreen> {
     try {
       final params = PostJobParams(
         title: _titleController.text.trim(),
+        companyId:
+            AuthSession.instance.currentUser?.companyId ??
+            AuthSession.instance.companyId,
         location: _locationController.text.trim(),
         employmentType: _employmentType,
         experienceLevel: _experienceLevel,

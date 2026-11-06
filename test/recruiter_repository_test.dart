@@ -66,36 +66,73 @@ void main() {
     });
   });
 
-  group('ApiRecruiterRepository Tests with Dio fallback', () {
-    test('falls back gracefully to Mock when offline', () async {
+  group('ApiRecruiterRepository Tests with Gateway and Error Handling', () {
+    test(
+      'reads fall back gracefully to Mock when offline but writes surface errors',
+      () async {
+        final dio = Dio(
+          BaseOptions(
+            baseUrl: 'http://127.0.0.1:59999', // unreachable port
+            connectTimeout: const Duration(milliseconds: 100),
+            receiveTimeout: const Duration(milliseconds: 100),
+          ),
+        );
+
+        final repo = ApiRecruiterRepository(dio: dio);
+
+        // Reads fall back gracefully
+        final jobs = await repo.getMyJobs();
+        expect(jobs.isNotEmpty, isTrue);
+        expect(repo.isMock, isTrue);
+
+        final candidates = await repo.getCandidateApplications(
+          jobId: 'some-job',
+        );
+        expect(candidates.isNotEmpty, isTrue);
+
+        final stats = await repo.getDashboardStats();
+        expect(stats.activeJobsCount, greaterThan(0));
+
+        // Writes surface errors instead of faking success
+        expect(
+          () => repo.postJob(
+            const PostJobParams(
+              title: 'Test Job',
+              location: 'Hà Nội',
+              companyId: '00000000-0000-0000-0000-000000000001',
+              description: 'Mô tả công việc kiểm thử',
+            ),
+          ),
+          throwsA(isA<Exception>()),
+        );
+
+        expect(
+          () => repo.updateCandidateStatus('cand_1', 'Được nhận'),
+          throwsA(isA<Exception>()),
+        );
+      },
+    );
+
+    test('postJob rejects when recruiter companyId cannot be resolved', () {
       final dio = Dio(
         BaseOptions(
-          baseUrl: 'http://127.0.0.1:59999', // unreachable port
+          baseUrl: 'http://127.0.0.1:59999',
           connectTimeout: const Duration(milliseconds: 100),
           receiveTimeout: const Duration(milliseconds: 100),
         ),
       );
-
       final repo = ApiRecruiterRepository(dio: dio);
 
-      final jobs = await repo.getMyJobs();
-      expect(jobs.isNotEmpty, isTrue);
-      expect(repo.isMock, isTrue);
-
-      final candidates = await repo.getCandidateApplications(jobId: 'some-job');
-      expect(candidates.isNotEmpty, isTrue);
-
-      final stats = await repo.getDashboardStats();
-      expect(stats.activeJobsCount, greaterThan(0));
-
-      final jobId = await repo.postJob(
-        const PostJobParams(
-          title: 'Test Job',
-          location: 'Hà Nội',
-          description: 'Mô tả công việc kiểm thử',
+      expect(
+        () => repo.postJob(
+          const PostJobParams(
+            title: 'No Company Job',
+            location: 'TP.HCM',
+            description: 'Mô tả',
+          ),
         ),
+        throwsA(isA<Exception>()),
       );
-      expect(jobId.isNotEmpty, isTrue);
     });
   });
 }

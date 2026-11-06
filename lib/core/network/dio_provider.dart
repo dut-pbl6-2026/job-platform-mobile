@@ -60,7 +60,15 @@ class DioProvider {
           } else if (err.response != null) {
             // An HTTP error response (even 4xx/5xx) proves the Gateway/Service is reachable
             GatewayCircuitBreaker.instance.recordSuccess();
-          } else if (err.type == DioExceptionType.cancel) {
+          } else if (err.type == DioExceptionType.sendTimeout ||
+              err.type == DioExceptionType.receiveTimeout) {
+            // In HALF_OPEN probe state, a timeout indicates the gateway probe failed
+            if (GatewayCircuitBreaker.instance.state == CircuitState.halfOpen) {
+              GatewayCircuitBreaker.instance.recordFailure();
+            } else {
+              GatewayCircuitBreaker.instance.recordProbeAborted();
+            }
+          } else {
             GatewayCircuitBreaker.instance.recordProbeAborted();
           }
           return handler.next(err);

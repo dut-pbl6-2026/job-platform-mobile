@@ -95,6 +95,8 @@ void main() {
     () async {
       final dio = gateway((options, handler) {
         expect(options.path, '/api/ai/score-resume');
+        expect(options.sendTimeout, const Duration(seconds: 60));
+        expect(options.receiveTimeout, const Duration(seconds: 60));
         final form = options.data as FormData;
         expect(form.fields.single.key, 'job_id');
         expect(form.fields.single.value, 'actual-job');

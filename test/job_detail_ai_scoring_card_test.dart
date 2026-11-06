@@ -186,6 +186,44 @@ void main() {
   });
 
   testWidgets(
+    'JobDetailAiScoringCard rejects .doc files immediately without calling AI service',
+    (tester) async {
+      final docPicker = MockCvPickerService(
+        predefinedFile: const SelectedCvFile(
+          name: 'my_resume.doc',
+          path: '/tmp/my_resume.doc',
+          size: 1024,
+        ),
+      );
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.lightTheme,
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: JobDetailAiScoringCard(
+                job: sampleJob,
+                aiRepository: aiRepo,
+                cvPickerService: docPicker,
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.byKey(const Key('job_detail_score_resume_button')));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text(
+          'Vui lòng chọn CV định dạng PDF hoặc DOCX (dung lượng tối đa 5 MB).',
+        ),
+        findsOneWidget,
+      );
+      expect(aiRepo.scoreResumeCalls, equals(0));
+    },
+  );
+
+  testWidgets(
     'JobDetailAiScoringCard responsive layout at 345px width with 1.5x font scale',
     (tester) async {
       tester.view.physicalSize = const Size(345 * 2, 800 * 2);

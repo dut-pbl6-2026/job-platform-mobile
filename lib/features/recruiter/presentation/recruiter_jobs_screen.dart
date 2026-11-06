@@ -61,8 +61,8 @@ class _RecruiterJobsScreenState extends State<RecruiterJobsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final openCount = _jobs.where((j) => j.status == 'Đang mở').length;
-    final pendingCount = _jobs.where((j) => j.status == 'Chờ duyệt').length;
+    final openCount = _jobs.where((j) => j.isOpen).length;
+    final pendingCount = _jobs.where((j) => j.isPending).length;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -226,8 +226,8 @@ class _RecruiterJobsScreenState extends State<RecruiterJobsScreen> {
                     const SizedBox(height: 12),
 
                     ..._jobs.map((job) {
-                      final isOpen = job.status == 'Đang mở';
-                      final isPending = job.status == 'Chờ duyệt';
+                      final isOpen = job.isOpen;
+                      final isPending = job.isPending;
 
                       return Container(
                         margin: const EdgeInsets.only(bottom: 14),
@@ -314,7 +314,7 @@ class _RecruiterJobsScreenState extends State<RecruiterJobsScreen> {
                                 Expanded(
                                   child: OutlinedButton(
                                     onPressed: () => context.push(
-                                      AppRoutes.recruiterCandidates,
+                                      '${AppRoutes.recruiterCandidates}?jobId=${job.id}',
                                     ),
                                     style: OutlinedButton.styleFrom(
                                       side: const BorderSide(

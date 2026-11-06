@@ -40,6 +40,7 @@ class UserModel {
   final String name;
   final String email;
   final UserRole? role;
+  final String? companyId;
   final String? avatarUrl;
   final DateTime createdAt;
 
@@ -48,6 +49,7 @@ class UserModel {
     required this.name,
     required this.email,
     this.role,
+    this.companyId,
     this.avatarUrl,
     required this.createdAt,
   });
@@ -58,6 +60,7 @@ class UserModel {
       name: json['fullName'] as String? ?? json['name'] as String? ?? '',
       email: json['email'] as String? ?? '',
       role: UserRole.tryParse(json['role'] as String?),
+      companyId: json['companyId'] as String? ?? json['company_id'] as String?,
       avatarUrl: json['avatarUrl'] as String?,
       createdAt: json['createdAt'] != null
           ? DateTime.parse(json['createdAt'] as String)
@@ -71,6 +74,7 @@ class UserModel {
       'name': name,
       'email': email,
       'role': role?.value,
+      'companyId': companyId,
       'avatarUrl': avatarUrl,
       'createdAt': createdAt.toIso8601String(),
     };
@@ -81,6 +85,7 @@ class UserModel {
     String? name,
     String? email,
     UserRole? role,
+    String? companyId,
     String? avatarUrl,
     DateTime? createdAt,
   }) {
@@ -89,6 +94,7 @@ class UserModel {
       name: name ?? this.name,
       email: email ?? this.email,
       role: role ?? this.role,
+      companyId: companyId ?? this.companyId,
       avatarUrl: avatarUrl ?? this.avatarUrl,
       createdAt: createdAt ?? this.createdAt,
     );
