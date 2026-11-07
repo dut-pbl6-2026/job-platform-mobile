@@ -66,3 +66,6 @@ template-prompt.md
 diff.txt
 PR_REVIEW_COMMENT.md
 PR_REVIEW_REPORT.md
+# Node / Playwright Automation
+node_modules/
+test-results/
