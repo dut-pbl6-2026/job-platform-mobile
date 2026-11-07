@@ -87,6 +87,7 @@ class ApiAiRepository implements IAiRepository {
         cancelToken: token,
         options: Options(
           contentType: 'multipart/form-data',
+          sendTimeout: const Duration(seconds: 60),
           receiveTimeout: const Duration(seconds: 60),
         ),
       );
@@ -132,6 +133,16 @@ class ApiAiRepository implements IAiRepository {
   AiFailure _failure(DioException error) {
     if (CancelToken.isCancel(error)) {
       return const AiFailure('Đã dừng yêu cầu.', cancelled: true);
+    }
+    if (error.type == DioExceptionType.sendTimeout) {
+      return const AiFailure(
+        'Quá thời gian tải lên CV. Vui lòng kiểm tra kết nối mạng và thử lại.',
+      );
+    }
+    if (error.type == DioExceptionType.receiveTimeout) {
+      return const AiFailure(
+        'Dịch vụ AI phản hồi quá lâu. Vui lòng thử lại sau.',
+      );
     }
     final message = switch (error.response?.statusCode) {
       400 || 422 => 'Không thể xử lý yêu cầu. Kiểm tra câu hỏi hoặc file CV.',

@@ -32,6 +32,12 @@ class ApiNotificationRepository implements INotificationRepository {
         );
       }
     } on DioException catch (e) {
+      if (e.response != null) {
+        debugPrint(
+          'Device token registration through Gateway failed with status: ${e.response?.statusCode}',
+        );
+        return;
+      }
       debugPrint('Device token registration through Gateway failed: $e');
       // Record in local fallback so app remains functional in dev/offline
       await _fallbackMockRepository.registerDeviceToken(
@@ -48,6 +54,12 @@ class ApiNotificationRepository implements INotificationRepository {
     try {
       await _dio.delete('/api/notifications/devices/$token');
     } on DioException catch (e) {
+      if (e.response != null) {
+        debugPrint(
+          'Device token unregistration failed with status: ${e.response?.statusCode}',
+        );
+        return;
+      }
       debugPrint('Device token unregistration failed: $e');
       await _fallbackMockRepository.unregisterDeviceToken(token);
     } catch (e) {
@@ -97,6 +109,12 @@ class ApiNotificationRepository implements INotificationRepository {
         unreadOnly: unreadOnly,
       );
     } on DioException catch (e) {
+      if (e.response != null) {
+        debugPrint(
+          'Fetch notifications via Gateway error: ${e.response?.statusCode}',
+        );
+        return [];
+      }
       debugPrint(
         'Fetch notifications via Gateway error: $e, falling back to mock.',
       );
@@ -117,11 +135,17 @@ class ApiNotificationRepository implements INotificationRepository {
 
   @override
   Future<void> markAsRead(String id) async {
-    await _fallbackMockRepository.markAsRead(id);
     try {
       await _dio.put('/api/notifications/$id/read');
     } on DioException catch (e) {
-      debugPrint('Mark notification read via Gateway error: $e');
+      if (e.response != null) {
+        debugPrint(
+          'Mark notification read via Gateway error (${e.response?.statusCode}): $e',
+        );
+        return;
+      }
+      debugPrint('Gateway offline, updating mock notification state: $e');
+      await _fallbackMockRepository.markAsRead(id);
     } catch (e) {
       debugPrint('Unexpected error marking notification read: $e');
     }
@@ -129,11 +153,17 @@ class ApiNotificationRepository implements INotificationRepository {
 
   @override
   Future<void> markAllAsRead() async {
-    await _fallbackMockRepository.markAllAsRead();
     try {
       await _dio.put('/api/notifications/read-all');
     } on DioException catch (e) {
-      debugPrint('Mark all notifications read via Gateway error: $e');
+      if (e.response != null) {
+        debugPrint(
+          'Mark all notifications read via Gateway error (${e.response?.statusCode}): $e',
+        );
+        return;
+      }
+      debugPrint('Gateway offline, updating mock all notifications state: $e');
+      await _fallbackMockRepository.markAllAsRead();
     } catch (e) {
       debugPrint('Unexpected error marking all notifications read: $e');
     }
@@ -153,6 +183,12 @@ class ApiNotificationRepository implements INotificationRepository {
       }
       return await _fallbackMockRepository.getUnreadCount();
     } on DioException catch (e) {
+      if (e.response != null) {
+        debugPrint(
+          'Get unread count via Gateway error (${e.response?.statusCode}): $e',
+        );
+        return 0;
+      }
       debugPrint('Get unread count via Gateway error: $e');
       return await _fallbackMockRepository.getUnreadCount();
     } catch (e) {

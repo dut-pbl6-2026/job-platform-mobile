@@ -1,3 +1,4 @@
+import '../../core/network/gateway_circuit_breaker.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -290,7 +291,13 @@ class _HomeScreenState extends State<HomeScreen> {
       body: SafeArea(
         bottom: false,
         child: RefreshIndicator(
-          onRefresh: () => _fetchJobs(isResetPage: true),
+          onRefresh: () async {
+            GatewayCircuitBreaker.instance.reset();
+            await Future.wait([
+              _fetchJobs(isResetPage: true),
+              _loadUnreadCount(),
+            ]);
+          },
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.only(bottom: 96),

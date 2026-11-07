@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 
 import '../../../../core/network/dio_provider.dart';
+import '../../../../core/session/auth_session.dart';
 import '../../domain/models/recruiter_models.dart';
 import '../../domain/repositories/recruiter_repository.dart';
 import 'mock_recruiter_repository.dart';
@@ -14,17 +15,7 @@ class ApiRecruiterRepository implements IRecruiterRepository {
   final MockRecruiterRepository _fallbackMock = MockRecruiterRepository();
   bool _isMock = false;
 
-  ApiRecruiterRepository({Dio? dio})
-    : _dio =
-          dio ??
-          Dio(
-            BaseOptions(
-              baseUrl: DioProvider.instance.dio.options.baseUrl,
-              connectTimeout: const Duration(seconds: 2),
-              receiveTimeout: const Duration(seconds: 2),
-              headers: {'Content-Type': 'application/json'},
-            ),
-          );
+  ApiRecruiterRepository({Dio? dio}) : _dio = dio ?? DioProvider.instance.dio;
 
   @override
   bool get isMock => _isMock;
@@ -36,29 +27,30 @@ class ApiRecruiterRepository implements IRecruiterRepository {
   }) async {
     try {
       if (jobId != null && jobId.isNotEmpty) {
-        final queryParams = <String, dynamic>{
-          if (status != null && status.isNotEmpty)
-            'status': _mapStatusToBackend(status),
-        };
-
-        final response = await _dio.get(
-          '/api/applications/job/$jobId',
-          queryParameters: queryParams,
-        );
-
-        if (response.statusCode == 200 && response.data != null) {
-          final data = response.data;
-          final List items = data is Map
-              ? (data['items'] as List? ?? [])
-              : (data as List);
+        return await _fetchApplicationsForJob(jobId, status: status);
+      } else {
+        // When no jobId is specified (e.g. from Recruiter Dashboard),
+        // fetch applications across all jobs posted by this recruiter.
+        final jobs = await getMyJobs();
+        final allCandidates = <CandidateApplication>[];
+        for (final job in jobs) {
+          if (job.id.isNotEmpty) {
+            try {
+              final apps = await _fetchApplicationsForJob(
+                job.id,
+                status: status,
+              );
+              allCandidates.addAll(apps);
+            } catch (e) {
+              debugPrint(
+                '[ApiRecruiterRepository] Error fetching applications for job ${job.id}: $e',
+              );
+            }
+          }
+        }
+        if (allCandidates.isNotEmpty || !_isMock) {
           _isMock = false;
-          return items
-              .map(
-                (item) => CandidateApplication.fromJson(
-                  Map<String, dynamic>.from(item as Map),
-                ),
-              )
-              .toList();
+          return allCandidates;
         }
       }
     } on DioException catch (e) {
@@ -73,6 +65,37 @@ class ApiRecruiterRepository implements IRecruiterRepository {
 
     _isMock = true;
     return _fallbackMock.getCandidateApplications(jobId: jobId, status: status);
+  }
+
+  Future<List<CandidateApplication>> _fetchApplicationsForJob(
+    String jobId, {
+    String? status,
+  }) async {
+    final queryParams = <String, dynamic>{
+      if (status != null && status.isNotEmpty)
+        'status': _mapStatusToBackend(status),
+    };
+
+    final response = await _dio.get(
+      '/api/applications/job/$jobId',
+      queryParameters: queryParams,
+    );
+
+    if (response.statusCode == 200 && response.data != null) {
+      final data = response.data;
+      final List items = data is Map
+          ? (data['items'] as List? ?? [])
+          : (data as List);
+      _isMock = false;
+      return items
+          .map(
+            (item) => CandidateApplication.fromJson(
+              Map<String, dynamic>.from(item as Map),
+            ),
+          )
+          .toList();
+    }
+    return [];
   }
 
   @override
@@ -94,18 +117,22 @@ class ApiRecruiterRepository implements IRecruiterRepository {
         _isMock = false;
         return true;
       }
+      final errorMsg =
+          _extractErrorMessageFromData(response.data) ??
+          'Cập nhật trạng thái thất bại (${response.statusCode})';
+      throw Exception(errorMsg);
     } on DioException catch (e) {
-      debugPrint(
-        '[ApiRecruiterRepository] Gateway status update offline: ${e.message}, updating in mock.',
-      );
+      final message =
+          _extractErrorMessage(e) ??
+          'Không thể cập nhật trạng thái ứng viên. Vui lòng thử lại.';
+      debugPrint('[ApiRecruiterRepository] Status update failed: ${e.message}');
+      throw Exception(message);
     } catch (e) {
       debugPrint(
         '[ApiRecruiterRepository] Unexpected error updating status: $e',
       );
+      rethrow;
     }
-
-    _isMock = true;
-    return _fallbackMock.updateCandidateStatus(applicationId, newStatus);
   }
 
   @override
@@ -153,17 +180,38 @@ class ApiRecruiterRepository implements IRecruiterRepository {
     try {
       final jobs = await getMyJobs();
       if (!_isMock) {
-        final active = jobs.where((j) => j.status == 'Đang mở').length;
+        final active = jobs.where((j) => j.isOpen).length;
         final totalApps = jobs.fold<int>(
           0,
           (sum, j) => sum + j.applicationsCount,
         );
         final totalViews = jobs.fold<int>(0, (sum, j) => sum + j.viewsCount);
+
+        // Compute actual new (pending) and interviewed/shortlisted applications
+        int newApps = totalApps;
+        int shortlistedCount = 0;
+        try {
+          final candidates = await getCandidateApplications();
+          if (candidates.isNotEmpty) {
+            newApps = candidates.where((c) => c.isPending).length;
+            shortlistedCount = candidates
+                .where(
+                  (c) =>
+                      c.isShortlisted ||
+                      c.status == 'Được nhận' ||
+                      c.status.toLowerCase() == 'accepted',
+                )
+                .length;
+          }
+        } catch (_) {
+          // If candidates fetch fails, keep totalApps
+        }
+
         return RecruiterStats(
           activeJobsCount: active,
-          newApplicationsCount: totalApps,
+          newApplicationsCount: newApps,
           viewsCount: totalViews,
-          interviewsCount: (totalApps * 0.2).round(),
+          interviewsCount: shortlistedCount,
         );
       }
     } catch (e) {
@@ -179,26 +227,37 @@ class ApiRecruiterRepository implements IRecruiterRepository {
   @override
   Future<String> postJob(PostJobParams params) async {
     try {
-      // Obtain default company if companyId is missing
+      // Resolve recruiter's own companyId (never take random public company)
       String companyId = params.companyId ?? '';
       if (companyId.isEmpty) {
+        companyId = AuthSession.instance.currentUser?.companyId ?? '';
+      }
+      if (companyId.isEmpty) {
+        final jwtCompId = AuthSession.instance.companyId;
+        if (jwtCompId != null && jwtCompId.isNotEmpty) {
+          companyId = jwtCompId;
+        }
+      }
+      if (companyId.isEmpty) {
+        // Try fetching user profile from /api/profiles/me
         try {
-          final compRes = await _dio.get('/api/companies');
-          if (compRes.statusCode == 200 && compRes.data != null) {
-            final compData = compRes.data;
-            final List items = compData is Map
-                ? (compData['items'] as List? ?? [])
-                : (compData as List);
-            if (items.isNotEmpty) {
-              companyId = items.first['id']?.toString() ?? '';
-            }
+          final profileRes = await _dio.get('/api/profiles/me');
+          if (profileRes.statusCode == 200 && profileRes.data is Map) {
+            final pData = profileRes.data as Map;
+            companyId =
+                pData['companyId']?.toString() ??
+                pData['company_id']?.toString() ??
+                '';
           }
         } catch (_) {
-          // ignore company list failure and proceed with fallback GUID
+          // Profile fetch error
         }
-        if (companyId.isEmpty) {
-          companyId = '00000000-0000-0000-0000-000000000001';
-        }
+      }
+
+      if (companyId.isEmpty) {
+        throw Exception(
+          'Không tìm thấy thông tin doanh nghiệp của nhà tuyển dụng. Vui lòng cập nhật hồ sơ doanh nghiệp trước khi đăng tin.',
+        );
       }
 
       final payload = {
@@ -228,28 +287,46 @@ class ApiRecruiterRepository implements IRecruiterRepository {
         }
         return 'job_created';
       }
-    } on DioException catch (e) {
-      if (e.response != null && e.response?.data != null) {
-        final data = e.response!.data;
-        final message = data is Map
-            ? (data['message'] ?? data['title'] ?? data['detail'])
-            : null;
-        if (message != null) {
-          throw Exception(message.toString());
-        }
-      }
-      debugPrint(
-        '[ApiRecruiterRepository] Gateway post job offline: ${e.message}, submitting to mock.',
-      );
-    } catch (e) {
-      if (e is Exception && !e.toString().contains('DioException')) {
-        rethrow;
-      }
-      debugPrint('[ApiRecruiterRepository] Unexpected error posting job: $e');
-    }
 
-    _isMock = true;
-    return _fallbackMock.postJob(params);
+      final errorMsg =
+          _extractErrorMessageFromData(response.data) ??
+          'Đăng tin tuyển dụng thất bại (${response.statusCode})';
+      throw Exception(errorMsg);
+    } on DioException catch (e) {
+      final message =
+          _extractErrorMessage(e) ??
+          'Không thể kết nối máy chủ để đăng tin. Vui lòng kiểm tra mạng và thử lại.';
+      debugPrint('[ApiRecruiterRepository] Error posting job: ${e.message}');
+      throw Exception(message);
+    } catch (e) {
+      debugPrint('[ApiRecruiterRepository] Unexpected error posting job: $e');
+      rethrow;
+    }
+  }
+
+  String? _extractErrorMessage(DioException e) {
+    if (e.response != null && e.response?.data != null) {
+      return _extractErrorMessageFromData(e.response!.data);
+    }
+    return switch (e.type) {
+      DioExceptionType.connectionTimeout =>
+        'Hết thời gian kết nối tới máy chủ.',
+      DioExceptionType.sendTimeout => 'Hết thời gian gửi dữ liệu tới máy chủ.',
+      DioExceptionType.receiveTimeout =>
+        'Hết thời gian chờ phản hồi từ máy chủ.',
+      DioExceptionType.connectionError =>
+        'Không thể kết nối tới máy chủ (Gateway offline).',
+      _ => null,
+    };
+  }
+
+  String? _extractErrorMessageFromData(dynamic data) {
+    if (data is Map) {
+      return data['message']?.toString() ??
+          data['title']?.toString() ??
+          data['detail']?.toString();
+    }
+    return null;
   }
 
   String _mapStatusToBackend(String uiStatus) {

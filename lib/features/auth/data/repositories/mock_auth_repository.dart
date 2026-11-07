@@ -49,7 +49,7 @@ class MockAuthRepository implements IAuthRepository {
     bool rememberMe = false,
   }) async {
     // Simulate network delay of 2 seconds
-    await Future.delayed(const Duration(seconds: 2));
+    await Future.delayed(const Duration(milliseconds: 300));
 
     // Validate password format per SRS AUTH-01-01
     final passwordRegex = RegExp(r'^(?=.*[A-Z])(?=.*\d).{8,}$');
@@ -109,7 +109,7 @@ class MockAuthRepository implements IAuthRepository {
     required UserRole role,
     String? companyId,
   }) async {
-    await Future.delayed(const Duration(seconds: 2));
+    await Future.delayed(const Duration(milliseconds: 300));
     // Mock allows recruiter without companyId for test compatibility; real ApiAuthRepository enforces per SRS AUTH-01-06
 
     final userId = 'usr_${DateTime.now().millisecondsSinceEpoch}';
