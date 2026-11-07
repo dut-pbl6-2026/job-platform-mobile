@@ -55,6 +55,7 @@ void main() {
       expect(find.text('Profile của tôi'), findsOneWidget);
       expect(find.text('CV của tôi'), findsOneWidget);
       expect(find.text('Cover Letter của tôi'), findsOneWidget);
+      expect(find.text('Chấm điểm CV thông minh (AI)'), findsOneWidget);
 
       // Verify Section 3: Quản lý tìm việc
       expect(find.text('Quản lý tìm việc'), findsOneWidget);

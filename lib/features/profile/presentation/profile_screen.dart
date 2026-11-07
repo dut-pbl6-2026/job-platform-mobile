@@ -544,6 +544,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           'Quản lý danh sách các bức thư xin việc (Cover Letter) đã lưu để đính kèm nhanh chóng khi ứng tuyển việc làm.',
                         ),
                       ),
+                      _buildDivider(),
+                      ProfileMenuItem(
+                        icon: Icons.auto_awesome_rounded,
+                        iconColor: AppColors.primary,
+                        title: 'Chấm điểm CV thông minh (AI)',
+                        onTap: () => context.push(AppRoutes.resumeScoring),
+                      ),
                     ]),
 
                     // Section 3: Quản lý tìm việc

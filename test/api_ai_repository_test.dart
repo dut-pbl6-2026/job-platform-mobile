@@ -174,4 +174,51 @@ void main() {
     expect(result.score, 79.5);
     expect(result.matchingSkills, ['React']);
   });
+  test('SCORE-01 parses full SRS 5.3.4 breakdown structure', () {
+    final result = ApiAiRepository.parseFeedback({
+      'overall_score': 78,
+      'breakdown': {
+        'skills': {
+          'score': 85,
+          'matching': ['React', 'JavaScript', 'TypeScript'],
+          'missing': ['Node.js', 'Docker'],
+          'extra': ['Vue.js'],
+        },
+        'experience': {
+          'score': 75,
+          'years': 3,
+          'required_years': 5,
+          'relevance': 'High',
+        },
+        'education': {
+          'score': 70,
+          'degree': "Bachelor's",
+          'required_degree': "Bachelor's",
+          'relevance': 'Match',
+        },
+      },
+      'suggestions': [
+        'Add Node.js to your skills section',
+        'Highlight Docker experience',
+        'Expand on React project details',
+        'Consider mentioning team leadership experience',
+      ],
+    });
+
+    expect(result.score, 78);
+    expect(result.skillsScore, 85);
+    expect(result.matchingSkills, ['React', 'JavaScript', 'TypeScript']);
+    expect(result.missingSkills, ['Node.js', 'Docker']);
+    expect(result.extraSkills, ['Vue.js']);
+    expect(result.experienceScore, 75);
+    expect(result.experienceYears, 3);
+    expect(result.requiredExperienceYears, 5);
+    expect(result.experienceRelevance, 'High');
+    expect(result.educationScore, 70);
+    expect(result.educationDegree, "Bachelor's");
+    expect(result.requiredEducationDegree, "Bachelor's");
+    expect(result.educationRelevance, 'Match');
+    expect(result.suggestions.length, 4);
+    expect(result.suggestions.first, 'Add Node.js to your skills section');
+  });
 }
