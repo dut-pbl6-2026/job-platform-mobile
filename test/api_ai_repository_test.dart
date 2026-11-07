@@ -168,6 +168,43 @@ void main() {
       final chunks = await repo.streamChat('Tìm việc').toList();
       expect(chunks.any((c) => c.delta == 'Câu trả lời đầy đủ'), isTrue);
       expect(chunks.last.done, isTrue);
+      expect(chunks.where((c) => c.done).length, 1);
+    },
+  );
+
+  test(
+    'AI-01-04 streamChat preserves token whitespace on raw SSE stream lines',
+    () async {
+      final dio = gateway((options, handler) {
+        final controller = StreamController<Uint8List>();
+        final responseBody = ResponseBody(
+          controller.stream,
+          200,
+          headers: {
+            'content-type': ['text/event-stream'],
+          },
+        );
+        handler.resolve(
+          Response(
+            requestOptions: options,
+            statusCode: 200,
+            data: responseBody,
+          ),
+        );
+
+        scheduleMicrotask(() {
+          controller.add(Uint8List.fromList(utf8.encode('data: Xin\n\n')));
+          controller.add(Uint8List.fromList(utf8.encode('data:  chào\n\n')));
+          controller.add(Uint8List.fromList(utf8.encode('data: [DONE]\n\n')));
+          controller.close();
+        });
+      });
+
+      final repo = ApiAiRepository(dio: dio);
+      final chunks = await repo.streamChat('Chào').toList();
+      expect(chunks.map((c) => c.delta).join(), 'Xin chào');
+      expect(chunks.last.done, isTrue);
+      expect(chunks.where((c) => c.done).length, 1);
     },
   );
 

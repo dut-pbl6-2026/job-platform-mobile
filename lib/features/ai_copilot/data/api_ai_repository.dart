@@ -40,6 +40,7 @@ class ApiAiRepository implements IAiRepository {
 
       final data = response.data;
       String? currentSessionId = sessionId;
+      var emittedDone = false;
 
       if (data is ResponseBody) {
         final lineStream = data.stream
@@ -54,8 +55,13 @@ class ApiAiRepository implements IAiRepository {
           }
 
           if (trimmed.startsWith('data:')) {
-            final raw = trimmed.substring(5).trim();
-            if (raw == '[DONE]') {
+            var raw = line.startsWith('data:')
+                ? line.substring(5)
+                : trimmed.substring(5);
+            if (raw.startsWith(' ')) {
+              raw = raw.substring(1);
+            }
+            if (raw.trim() == '[DONE]') {
               yield AiChatChunk(
                 delta: '',
                 sessionId: currentSessionId,
@@ -65,7 +71,7 @@ class ApiAiRepository implements IAiRepository {
             }
 
             try {
-              final decoded = jsonDecode(raw);
+              final decoded = jsonDecode(raw.trim());
               if (decoded is Map) {
                 final delta =
                     decoded['delta'] as String? ??
@@ -77,6 +83,7 @@ class ApiAiRepository implements IAiRepository {
                   currentSessionId = sid;
                 }
                 final isDone = decoded['done'] == true;
+                if (isDone) emittedDone = true;
                 if (delta.isNotEmpty || isDone) {
                   yield AiChatChunk(
                     delta: delta,
@@ -104,6 +111,7 @@ class ApiAiRepository implements IAiRepository {
                   currentSessionId = sid;
                 }
                 final isDone = decoded['done'] == true;
+                if (isDone) emittedDone = true;
                 if (delta.isNotEmpty || isDone) {
                   yield AiChatChunk(
                     delta: delta,
@@ -120,13 +128,24 @@ class ApiAiRepository implements IAiRepository {
       } else if (data is Map) {
         final responseText =
             data['response'] as String? ?? data['delta'] as String? ?? '';
-        final sid = data['sessionId'] as String? ?? currentSessionId;
-        yield AiChatChunk(delta: responseText, sessionId: sid, done: true);
+        final sid = data['sessionId'] as String?;
+        if (sid != null && sid.isNotEmpty) {
+          currentSessionId = sid;
+        }
+        yield AiChatChunk(
+          delta: responseText,
+          sessionId: currentSessionId,
+          done: true,
+        );
+        emittedDone = true;
       } else if (data is String) {
         yield AiChatChunk(delta: data, sessionId: currentSessionId, done: true);
+        emittedDone = true;
       }
 
-      yield AiChatChunk(delta: '', sessionId: currentSessionId, done: true);
+      if (!emittedDone) {
+        yield AiChatChunk(delta: '', sessionId: currentSessionId, done: true);
+      }
     } on DioException catch (error) {
       throw _failure(error);
     } finally {
