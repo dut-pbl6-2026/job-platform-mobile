@@ -444,5 +444,92 @@ void main() {
         expect(find.text('Job Detail Destination: job-1'), findsOneWidget);
       },
     );
+
+    testWidgets(
+      'HomeScreen mounts shimmer and error state properly during recommendations lifecycle',
+      (tester) async {
+        AuthSession.instance.setSession(
+          AuthResult(
+            user: UserModel(
+              id: 'u-1',
+              email: 'cand@test.com',
+              name: 'Candidate Test',
+              role: UserRole.user,
+              createdAt: DateTime.now(),
+            ),
+            token: 'token',
+            refreshToken: 'ref-token',
+            expiresAt: DateTime.now().add(const Duration(days: 1)),
+          ),
+        );
+
+        final mockAuth = MockAuthRepository();
+        final mockJob = MockJobRepository();
+
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: AppTheme.lightTheme,
+            home: HomeScreen(
+              authRepository: mockAuth,
+              jobRepository: mockJob,
+              notificationRepository: MockNotificationRepository(),
+            ),
+          ),
+        );
+
+        // Before pumpAndSettle, while loading:
+        await tester.pump();
+        expect(find.byType(RecommendedJobsShimmer), findsOneWidget);
+
+        await tester.pumpAndSettle();
+        expect(find.byType(RecommendedJobsSection), findsOneWidget);
+      },
+    );
+
+    test('RecommendedJob score parsing handles decimal strings and ratios', () {
+      final jsonDecimalStr = {
+        'job': sampleJob.toJson(),
+        'matchScore': '0.95',
+      };
+      expect(RecommendedJob.fromJson(jsonDecimalStr).matchScore, 95);
+
+      final jsonInt1 = {
+        'job': sampleJob.toJson(),
+        'matchScore': 1,
+      };
+      expect(RecommendedJob.fromJson(jsonInt1).matchScore, 1);
+
+      final jsonDoubleRatio = {
+        'job': sampleJob.toJson(),
+        'score': 0.88,
+      };
+      expect(RecommendedJob.fromJson(jsonDoubleRatio).matchScore, 88);
+    });
+
+    testWidgets('RecommendedJobCard handles whitespace company name safely', (
+      tester,
+    ) async {
+      final blankCompanyJob = sampleJob.copyWith(companyName: '   ');
+      final rec = RecommendedJob(
+        job: blankCompanyJob,
+        reason: 'Test reason',
+        matchScore: 90,
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.lightTheme,
+          home: Scaffold(
+            body: RecommendedJobCard(
+              recommendation: rec,
+              onTap: () {},
+            ),
+          ),
+        ),
+      );
+
+      expect(tester.takeException(), isNull);
+      expect(find.text('C'), findsOneWidget);
+    });
   });
 }

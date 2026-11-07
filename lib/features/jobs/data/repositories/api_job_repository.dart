@@ -352,7 +352,20 @@ class ApiJobRepository implements IJobRepository {
       debugPrint('[ApiJobRepository] Gateway getRecommendedJobs fallback: $e');
     }
 
-    // Graceful fallback to Mock repository (cold start or offline Gateway)
+    // Graceful fallback: check local Hive cache first to preserve real UUID jobs
+    final cached = await HiveCacheService.instance.getCachedJobs();
+    if (cached.isNotEmpty) {
+      return cached.take(limit).map((job) {
+        return RecommendedJob(
+          job: job,
+          reason: 'Phù hợp với kỹ năng và vị trí đã lưu của bạn',
+          matchScore: 88,
+          matchType: 'skills',
+        );
+      }).toList();
+    }
+
+    // Otherwise fallback to Mock repository (cold start or offline Gateway)
     return _fallbackMockRepository.getRecommendedJobs(
       limit: limit,
       refresh: refresh,

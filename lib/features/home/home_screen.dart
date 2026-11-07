@@ -372,7 +372,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   _buildQuickShortcuts(isRecruiter),
                   if (!isRecruiter &&
                       !_isFilterActive &&
-                      _recommendedJobs.isNotEmpty) ...[
+                      (_isLoadingRecommendations ||
+                          _recommendationsError != null ||
+                          _recommendedJobs.isNotEmpty)) ...[
                     const SizedBox(height: 14),
                     RecommendedJobsSection(
                       recommendations: _recommendedJobs,

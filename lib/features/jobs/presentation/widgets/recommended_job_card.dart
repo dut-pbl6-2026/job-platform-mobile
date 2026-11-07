@@ -337,10 +337,32 @@ class RecommendedJobCard extends StatelessWidget {
   }
 
   Widget _buildCompanyAvatar(String companyName, String? logoUrl) {
-    final initials = companyName.isNotEmpty
-        ? companyName.trim().substring(0, 1).toUpperCase()
+    final trimmed = companyName.trim();
+    final initials = trimmed.isNotEmpty
+        ? trimmed.substring(0, 1).toUpperCase()
         : 'C';
 
+    if (logoUrl != null && logoUrl.trim().isNotEmpty) {
+      return Container(
+        width: 36,
+        height: 36,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: AppColors.border),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Image.network(
+          logoUrl,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) =>
+              _buildAvatarFallback(initials),
+        ),
+      );
+    }
+    return _buildAvatarFallback(initials);
+  }
+
+  Widget _buildAvatarFallback(String initials) {
     return Container(
       width: 36,
       height: 36,

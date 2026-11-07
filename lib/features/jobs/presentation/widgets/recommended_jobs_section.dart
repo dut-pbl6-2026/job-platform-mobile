@@ -151,8 +151,12 @@ class _RecommendedJobsSectionState extends State<RecommendedJobsSection>
   }
 
   Widget _buildRecommendationsList() {
+    final textScale = MediaQuery.textScalerOf(context).scale(1.0);
+    final listHeight =
+        textScale > 1.0 ? (260.0 + (textScale - 1.0) * 80.0) : 260.0;
+
     return SizedBox(
-      height: 260,
+      height: listHeight,
       child: ListView.separated(
         key: const Key('recommended_jobs_list'),
         scrollDirection: Axis.horizontal,
@@ -242,12 +246,16 @@ class _RecommendedJobsShimmerState extends State<RecommendedJobsShimmer>
 
   @override
   Widget build(BuildContext context) {
+    final textScale = MediaQuery.textScalerOf(context).scale(1.0);
+    final shimmerHeight =
+        textScale > 1.0 ? (260.0 + (textScale - 1.0) * 80.0) : 260.0;
+
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, child) {
         final opacity = 0.35 + (_controller.value * 0.35);
         return SizedBox(
-          height: 260,
+          height: shimmerHeight,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             physics: const NeverScrollableScrollPhysics(),

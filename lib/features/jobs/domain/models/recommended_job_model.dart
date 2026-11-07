@@ -41,12 +41,19 @@ class RecommendedJob {
 
     final scoreRaw = json['score'] ?? json['matchScore'] ?? defaultScore ?? 85;
     final int score;
-    if (scoreRaw is num) {
-      score = scoreRaw > 1 && scoreRaw <= 100
-          ? scoreRaw.round()
-          : (scoreRaw * 100).round().clamp(0, 100);
+    final num? parsedNum = scoreRaw is num
+        ? scoreRaw
+        : num.tryParse(scoreRaw.toString());
+    if (parsedNum != null) {
+      if (parsedNum > 0.0 &&
+          parsedNum <= 1.0 &&
+          (scoreRaw is double || scoreRaw.toString().contains('.'))) {
+        score = (parsedNum * 100).round().clamp(0, 100);
+      } else {
+        score = parsedNum.round().clamp(0, 100);
+      }
     } else {
-      score = int.tryParse(scoreRaw.toString()) ?? 85;
+      score = 85;
     }
 
     final matchType =
