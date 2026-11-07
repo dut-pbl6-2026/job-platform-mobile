@@ -20,6 +20,14 @@ class _MockAiRepo implements IAiRepository {
   }
 
   @override
+  Stream<AiChatChunk> streamChat(String message, {String? sessionId}) async* {
+    yield const AiChatChunk(delta: 'Mock', sessionId: 's-1', done: true);
+  }
+
+  @override
+  Future<void> clearSession(String sessionId) async {}
+
+  @override
   Future<ResumeFeedback> scoreResume(
     AiCvInput cv, {
     required String jobId,

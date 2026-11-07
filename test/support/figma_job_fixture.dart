@@ -1,6 +1,7 @@
 import 'package:job_platform_mobile/features/jobs/data/repositories/mock_job_repository.dart';
 import 'package:job_platform_mobile/features/jobs/domain/models/job_filter_params.dart';
 import 'package:job_platform_mobile/features/jobs/domain/models/job_model.dart';
+import 'package:job_platform_mobile/features/jobs/domain/models/recommended_job_model.dart';
 import 'package:job_platform_mobile/features/jobs/domain/repositories/job_repository.dart';
 
 /// Figma examples are confined to deterministic rendering tests.
@@ -38,4 +39,10 @@ class FigmaJobFixture extends MockJobRepository {
     size: 10,
     totalPages: 1,
   );
+
+  @override
+  Future<List<RecommendedJob>> getRecommendedJobs({
+    int limit = 10,
+    bool refresh = false,
+  }) async => const [];
 }

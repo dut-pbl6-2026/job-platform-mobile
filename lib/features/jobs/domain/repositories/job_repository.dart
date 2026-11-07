@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import '../models/job_filter_params.dart';
 import '../models/job_model.dart';
+import '../models/recommended_job_model.dart';
 
 /// Paginated list of jobs returned from repository / API Gateway
 @immutable
@@ -24,7 +25,7 @@ class PaginatedJobs {
   bool get isNotEmpty => items.isNotEmpty;
 }
 
-/// Abstract interface for Job Repository (MOB-01-02, JOB-01, SEARCH-01)
+/// Abstract interface for Job Repository (MOB-01-02, JOB-01, SEARCH-01, RECOMMEND-01)
 abstract class IJobRepository {
   /// Fetch a paginated list of jobs based on filters and search query
   Future<PaginatedJobs> getJobs(JobFilterParams params);
@@ -37,4 +38,13 @@ abstract class IJobRepository {
 
   /// Get search auto-complete keyword suggestions
   Future<List<String>> getSearchSuggestions(String query);
+
+  /// Get personalized job recommendations for candidate (SRS RECOMMEND-01, W13)
+  Future<List<RecommendedJob>> getRecommendedJobs({
+    int limit = 10,
+    bool refresh = false,
+  });
+
+  /// Get explanation for why a specific job was recommended (SRS RECOMMEND-01-04)
+  Future<RecommendationExplanation?> explainRecommendation(String jobId);
 }
