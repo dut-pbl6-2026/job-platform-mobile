@@ -487,22 +487,13 @@ void main() {
     );
 
     test('RecommendedJob score parsing handles decimal strings and ratios', () {
-      final jsonDecimalStr = {
-        'job': sampleJob.toJson(),
-        'matchScore': '0.95',
-      };
+      final jsonDecimalStr = {'job': sampleJob.toJson(), 'matchScore': '0.95'};
       expect(RecommendedJob.fromJson(jsonDecimalStr).matchScore, 95);
 
-      final jsonInt1 = {
-        'job': sampleJob.toJson(),
-        'matchScore': 1,
-      };
+      final jsonInt1 = {'job': sampleJob.toJson(), 'matchScore': 1};
       expect(RecommendedJob.fromJson(jsonInt1).matchScore, 1);
 
-      final jsonDoubleRatio = {
-        'job': sampleJob.toJson(),
-        'score': 0.88,
-      };
+      final jsonDoubleRatio = {'job': sampleJob.toJson(), 'score': 0.88};
       expect(RecommendedJob.fromJson(jsonDoubleRatio).matchScore, 88);
     });
 
@@ -520,10 +511,7 @@ void main() {
         MaterialApp(
           theme: AppTheme.lightTheme,
           home: Scaffold(
-            body: RecommendedJobCard(
-              recommendation: rec,
-              onTap: () {},
-            ),
+            body: RecommendedJobCard(recommendation: rec, onTap: () {}),
           ),
         ),
       );

@@ -152,8 +152,9 @@ class _RecommendedJobsSectionState extends State<RecommendedJobsSection>
 
   Widget _buildRecommendationsList() {
     final textScale = MediaQuery.textScalerOf(context).scale(1.0);
-    final listHeight =
-        textScale > 1.0 ? (260.0 + (textScale - 1.0) * 80.0) : 260.0;
+    final listHeight = textScale > 1.0
+        ? (260.0 + (textScale - 1.0) * 80.0)
+        : 260.0;
 
     return SizedBox(
       height: listHeight,
@@ -247,8 +248,9 @@ class _RecommendedJobsShimmerState extends State<RecommendedJobsShimmer>
   @override
   Widget build(BuildContext context) {
     final textScale = MediaQuery.textScalerOf(context).scale(1.0);
-    final shimmerHeight =
-        textScale > 1.0 ? (260.0 + (textScale - 1.0) * 80.0) : 260.0;
+    final shimmerHeight = textScale > 1.0
+        ? (260.0 + (textScale - 1.0) * 80.0)
+        : 260.0;
 
     return AnimatedBuilder(
       animation: _controller,
