@@ -50,6 +50,8 @@ class AuthSession extends ChangeNotifier {
   bool get isRecruiter => resolvedRole == UserRole.recruiter;
   bool get isAdmin => resolvedRole == UserRole.admin;
   bool get hasValidRole => resolvedRole != null;
+  String? get companyId =>
+      _currentUser?.companyId ?? _extractCompanyIdFromJwt(_token);
 
   /// Safely extracts and parses the role claim from a JWT access token.
   static UserRole? _extractRoleFromJwt(String? token) {
@@ -72,6 +74,28 @@ class AuthSession extends ChangeNotifier {
           map['http://schemas.microsoft.com/ws/2008/06/identity/claims/role']
               as String?;
       return UserRole.tryParse(roleStr);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static String? _extractCompanyIdFromJwt(String? token) {
+    if (token == null) return null;
+    final parts = token.split('.');
+    if (parts.length < 2) return null;
+    try {
+      var payloadString = parts[1];
+      while (payloadString.length % 4 != 0) {
+        payloadString += '=';
+      }
+      final normalized = base64Url.normalize(payloadString);
+      final decodedBytes = base64Url.decode(normalized);
+      final decodedString = utf8.decode(decodedBytes);
+      final map = jsonDecode(decodedString) as Map<String, dynamic>;
+
+      final rawCompany =
+          map['companyId'] ?? map['company_id'] ?? map['company'];
+      return rawCompany?.toString();
     } catch (_) {
       return null;
     }

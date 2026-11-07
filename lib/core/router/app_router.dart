@@ -232,7 +232,16 @@ class AppRouter {
         parentNavigatorKey: _rootNavigatorKey,
         path: AppRoutes.recruiterCandidates,
         name: 'recruiter-candidates',
-        builder: (context, state) => const CandidateApplicationsScreen(),
+        builder: (context, state) {
+          final queryJobId = state.uri.queryParameters['jobId'];
+          final extraJobId = state.extra is String
+              ? state.extra as String
+              : (state.extra is Map
+                    ? (state.extra as Map)['jobId']?.toString()
+                    : null);
+          final jobId = queryJobId ?? extraJobId;
+          return CandidateApplicationsScreen(jobId: jobId);
+        },
       ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
