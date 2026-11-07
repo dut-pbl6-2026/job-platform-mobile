@@ -75,7 +75,7 @@ void main() {
 
       expect(find.text('Mức độ phù hợp CV'), findsOneWidget);
       expect(
-        find.text('SCORE-01 · AI Smart Resume Scoring Engine'),
+        find.text('Trợ lý AI phân tích & chấm điểm CV thông minh'),
         findsOneWidget,
       );
       expect(find.text('Đối chiếu CV với việc làm'), findsOneWidget);

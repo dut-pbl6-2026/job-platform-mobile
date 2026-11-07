@@ -162,10 +162,17 @@ class _ResumeScoringScreenState extends State<ResumeScoringScreen> {
   }
 
   Color _getScoreColor(double score) {
-    if (score >= 80) return const Color(0xFF10B981);
-    if (score >= 65) return const Color(0xFF2563EB);
-    if (score >= 50) return const Color(0xFFF59E0B);
-    return const Color(0xFFEF4444);
+    if (score >= 80) return const Color(0xFF047857);
+    if (score >= 65) return const Color(0xFF1D4ED8);
+    if (score >= 50) return const Color(0xFFB45309);
+    return const Color(0xFFB91C1C);
+  }
+
+  Color _getScoreGradientEndColor(double score) {
+    if (score >= 80) return const Color(0xFF065F46);
+    if (score >= 65) return const Color(0xFF1E40AF);
+    if (score >= 50) return const Color(0xFF92400E);
+    return const Color(0xFF991B1B);
   }
 
   String _getScoreLevelText(double score) {
@@ -223,7 +230,7 @@ class _ResumeScoringScreenState extends State<ResumeScoringScreen> {
                         SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            'SCORE-01 · AI Smart Resume Scoring Engine',
+                            'Trợ lý AI phân tích & chấm điểm CV thông minh',
                             style: TextStyle(
                               fontSize: 12.5,
                               fontWeight: FontWeight.w600,
@@ -493,9 +500,7 @@ class _ResumeScoringScreenState extends State<ResumeScoringScreen> {
                         gradient: LinearGradient(
                           colors: [
                             _getScoreColor(feedback.score),
-                            _getScoreColor(
-                              feedback.score,
-                            ).withValues(alpha: 0.85),
+                            _getScoreGradientEndColor(feedback.score),
                           ],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
