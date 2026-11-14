@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
@@ -90,6 +92,156 @@ void main() {
     );
   });
 
+  test(
+    'AI-01-04 streamChat requests SSE stream from Gateway and yields token deltas',
+    () async {
+      final dio = gateway((options, handler) {
+        expect(options.path, '/api/ai/chat');
+        expect(options.responseType, ResponseType.stream);
+        expect(options.data, {
+          'message': 'Gợi ý việc',
+          'sessionId': 's-10',
+          'stream': true,
+          'maxTokens': 512,
+        });
+
+        final controller = StreamController<Uint8List>();
+        final responseBody = ResponseBody(
+          controller.stream,
+          200,
+          headers: {
+            'content-type': ['text/event-stream'],
+          },
+        );
+        handler.resolve(
+          Response(
+            requestOptions: options,
+            statusCode: 200,
+            data: responseBody,
+          ),
+        );
+
+        scheduleMicrotask(() {
+          controller.add(
+            Uint8List.fromList(
+              utf8.encode('data: {"delta": "Chào ", "sessionId": "s-10"}\n\n'),
+            ),
+          );
+          controller.add(
+            Uint8List.fromList(
+              utf8.encode('data: {"delta": "bạn!", "sessionId": "s-10"}\n\n'),
+            ),
+          );
+          controller.add(Uint8List.fromList(utf8.encode('data: [DONE]\n\n')));
+          controller.close();
+        });
+      });
+
+      final repo = ApiAiRepository(dio: dio);
+      final chunks = await repo
+          .streamChat('Gợi ý việc', sessionId: 's-10')
+          .toList();
+      expect(chunks.length, 3);
+      expect(chunks[0].delta, 'Chào ');
+      expect(chunks[0].sessionId, 's-10');
+      expect(chunks[0].done, isFalse);
+      expect(chunks[1].delta, 'bạn!');
+      expect(chunks[1].done, isFalse);
+      expect(chunks[2].done, isTrue);
+    },
+  );
+
+  test(
+    'AI-01-04 streamChat handles non-streaming JSON fallback gracefully',
+    () async {
+      final dio = gateway((options, handler) {
+        handler.resolve(
+          Response(
+            requestOptions: options,
+            statusCode: 200,
+            data: {'response': 'Câu trả lời đầy đủ', 'sessionId': 's-json'},
+          ),
+        );
+      });
+
+      final repo = ApiAiRepository(dio: dio);
+      final chunks = await repo.streamChat('Tìm việc').toList();
+      expect(chunks.any((c) => c.delta == 'Câu trả lời đầy đủ'), isTrue);
+      expect(chunks.last.done, isTrue);
+      expect(chunks.where((c) => c.done).length, 1);
+    },
+  );
+
+  test(
+    'AI-01-04 streamChat preserves token whitespace on raw SSE stream lines',
+    () async {
+      final dio = gateway((options, handler) {
+        final controller = StreamController<Uint8List>();
+        final responseBody = ResponseBody(
+          controller.stream,
+          200,
+          headers: {
+            'content-type': ['text/event-stream'],
+          },
+        );
+        handler.resolve(
+          Response(
+            requestOptions: options,
+            statusCode: 200,
+            data: responseBody,
+          ),
+        );
+
+        scheduleMicrotask(() {
+          controller.add(Uint8List.fromList(utf8.encode('data: Xin\n\n')));
+          controller.add(Uint8List.fromList(utf8.encode('data:  chào\n\n')));
+          controller.add(Uint8List.fromList(utf8.encode('data: [DONE]\n\n')));
+          controller.close();
+        });
+      });
+
+      final repo = ApiAiRepository(dio: dio);
+      final chunks = await repo.streamChat('Chào').toList();
+      expect(chunks.map((c) => c.delta).join(), 'Xin chào');
+      expect(chunks.last.done, isTrue);
+      expect(chunks.where((c) => c.done).length, 1);
+    },
+  );
+
+  test(
+    'AI-01-03 clearSession sends DELETE /api/ai/session/{id} and ignores 404',
+    () async {
+      var deleteCalled = false;
+      final dio = gateway((options, handler) {
+        expect(options.method, 'DELETE');
+        expect(options.path, '/api/ai/session/session-xyz');
+        deleteCalled = true;
+        handler.resolve(
+          Response(
+            requestOptions: options,
+            statusCode: 200,
+            data: {'message': 'Session cleared'},
+          ),
+        );
+      });
+
+      final repo = ApiAiRepository(dio: dio);
+      await repo.clearSession('session-xyz');
+      expect(deleteCalled, isTrue);
+
+      final dio404 = gateway((options, handler) {
+        handler.reject(
+          DioException(
+            requestOptions: options,
+            type: DioExceptionType.badResponse,
+            response: Response(requestOptions: options, statusCode: 404),
+          ),
+        );
+      });
+      final repo404 = ApiAiRepository(dio: dio404);
+      await expectLater(repo404.clearSession('session-expired'), completes);
+    },
+  );
   test(
     'SCORE-01 uploads actual bytes with documented multipart keys',
     () async {

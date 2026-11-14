@@ -67,6 +67,80 @@ void main() {
   );
 
   testWidgets(
+    'AI-01 empty stream response triggers error and does not leave empty assistant bubble',
+    (tester) async {
+      final repo = _EmptyStreamAi();
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.lightTheme,
+          home: AiCopilotScreen(repository: repo),
+        ),
+      );
+      await tester.enterText(find.byKey(const Key('ai_question')), 'Chào');
+      await tester.tap(find.byKey(const Key('ai_send')));
+      await tester.pumpAndSettle();
+      expect(
+        find.text('Phản hồi AI không hợp lệ. Vui lòng thử lại.'),
+        findsOneWidget,
+      );
+      expect(find.text('Nội dung AI chỉ mang tính tham khảo.'), findsNothing);
+      expect(find.text('Chào'), findsOneWidget);
+      expect(find.text('Thử lại'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'AI-01-03 Reset conversation calls clearSession and clears chat history',
+    (tester) async {
+      final repo = FakeAiRepository();
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.lightTheme,
+          home: AiCopilotScreen(repository: repo),
+        ),
+      );
+      // Send a message
+      await tester.enterText(find.byKey(const Key('ai_question')), 'Chào AI');
+      await tester.tap(find.byKey(const Key('ai_send')));
+      await tester.pumpAndSettle();
+      expect(find.text('Chào AI'), findsOneWidget);
+      expect(find.text('Phản hồi kiểm thử từ Gateway.'), findsOneWidget);
+
+      // Tap popup menu in AppBar and choose Hội thoại mới
+      await tester.tap(find.byTooltip('Tùy chọn AI'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Hội thoại mới'));
+      await tester.pumpAndSettle();
+      expect(find.text('Chào bạn 👋'), findsOneWidget);
+      expect(find.text('Chào AI'), findsNothing);
+      expect(repo.lastClearedSessionId, 'session-123');
+    },
+  );
+
+  testWidgets('AI-01-05 Quick prompt and follow-up chips send message', (
+    tester,
+  ) async {
+    final repo = FakeAiRepository();
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.lightTheme,
+        home: AiCopilotScreen(repository: repo),
+      ),
+    );
+    // Tap prompt card
+    await tester.tap(find.text('Cải thiện CV'));
+    await tester.pumpAndSettle();
+    expect(repo.messages.length, 1);
+    expect(repo.messages.first, contains('cải thiện'));
+
+    // Tap follow-up chip
+    await tester.tap(find.text('Gợi ý việc làm khác'));
+    await tester.pumpAndSettle();
+    expect(repo.messages.length, 2);
+    expect(repo.messages.last, 'Gợi ý việc làm khác');
+  });
+
+  testWidgets(
     'SCORE-01 validates selection and displays only returned feedback',
     (tester) async {
       final repo = FakeAiRepository();
@@ -112,5 +186,12 @@ class _PendingAi extends FakeAiRepository {
   Future<AiChatReply> sendMessage(String message, {String? sessionId}) {
     messages.add(message);
     return reply.future;
+  }
+}
+
+class _EmptyStreamAi extends FakeAiRepository {
+  @override
+  Stream<AiChatChunk> streamChat(String message, {String? sessionId}) async* {
+    yield const AiChatChunk(delta: '', done: true);
   }
 }

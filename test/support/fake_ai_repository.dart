@@ -5,6 +5,7 @@ class FakeAiRepository implements IAiRepository {
   String? failure;
   final List<String> messages = [];
   String? lastSessionId;
+  String? lastClearedSessionId;
   int scoreCalls = 0;
   bool cancelled = false;
 
@@ -17,6 +18,24 @@ class FakeAiRepository implements IAiRepository {
       response: 'Phản hồi kiểm thử từ Gateway.',
       sessionId: 'session-123',
     );
+  }
+
+  @override
+  Stream<AiChatChunk> streamChat(String message, {String? sessionId}) async* {
+    final reply = await sendMessage(message, sessionId: sessionId);
+    if (cancelled) return;
+    final words = reply.response.split(' ');
+    for (var i = 0; i < words.length; i++) {
+      if (cancelled) return;
+      final delta = i == 0 ? words[i] : ' ${words[i]}';
+      yield AiChatChunk(delta: delta, sessionId: reply.sessionId);
+    }
+    yield AiChatChunk(delta: '', sessionId: reply.sessionId, done: true);
+  }
+
+  @override
+  Future<void> clearSession(String sessionId) async {
+    lastClearedSessionId = sessionId;
   }
 
   @override
