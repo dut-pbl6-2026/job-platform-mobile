@@ -290,7 +290,9 @@ class PostJobParams {
   final String title;
   final String location;
   final String employmentType;
-  final String experienceLevel;
+
+  /// Canonical backend value (Entry, Mid, Senior, Lead). Required by the form.
+  final String? experienceLevel;
   final String salaryText;
   final double? salaryMin;
   final double? salaryMax;
@@ -305,7 +307,7 @@ class PostJobParams {
     required this.title,
     required this.location,
     this.employmentType = 'Toàn thời gian',
-    this.experienceLevel = 'Junior',
+    this.experienceLevel,
     this.salaryText = '',
     this.salaryMin,
     this.salaryMax,

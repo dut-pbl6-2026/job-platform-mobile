@@ -35,7 +35,8 @@ class _PostJobScreenState extends State<PostJobScreen> {
   final _benefitsController = TextEditingController();
 
   String _employmentType = 'Toàn thời gian';
-  String _experienceLevel = 'Junior';
+  // No default: the backend has no "Junior" level, so the user must pick one.
+  String? _experienceLevel;
   bool _isSubmitting = false;
 
   @override
@@ -248,10 +249,6 @@ class _PostJobScreenState extends State<PostJobScreen> {
                                 value: 'Thực tập',
                                 child: Text('Thực tập'),
                               ),
-                              DropdownMenuItem(
-                                value: 'Từ xa',
-                                child: Text('Từ xa'),
-                              ),
                             ],
                             onChanged: (v) => setState(
                               () => _employmentType = v ?? _employmentType,
@@ -285,22 +282,24 @@ class _PostJobScreenState extends State<PostJobScreen> {
                                 borderRadius: BorderRadius.circular(12),
                               ),
                             ),
+                            validator: (v) =>
+                                v == null ? 'Vui lòng chọn cấp độ' : null,
                             items: const [
                               DropdownMenuItem(
-                                value: 'Intern',
-                                child: Text('Intern'),
+                                value: 'Entry',
+                                child: Text('Entry'),
                               ),
                               DropdownMenuItem(
-                                value: 'Junior',
-                                child: Text('Junior'),
-                              ),
-                              DropdownMenuItem(
-                                value: 'Middle',
-                                child: Text('Middle'),
+                                value: 'Mid',
+                                child: Text('Mid'),
                               ),
                               DropdownMenuItem(
                                 value: 'Senior',
                                 child: Text('Senior'),
+                              ),
+                              DropdownMenuItem(
+                                value: 'Lead',
+                                child: Text('Lead'),
                               ),
                             ],
                             onChanged: (v) => setState(

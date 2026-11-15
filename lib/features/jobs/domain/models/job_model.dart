@@ -20,6 +20,20 @@ enum JobType {
 
   const JobType(this.value, this.displayName);
 
+  /// Canonical `employmentType` value for search-svc (api-conventions §6), or
+  /// null when job-svc has no equivalent (remote, hybrid, freelance, other).
+  /// Callers must omit the filter for null instead of sending a guess.
+  String? get backendValue => switch (this) {
+    JobType.fullTime => 'FullTime',
+    JobType.partTime => 'PartTime',
+    JobType.contract => 'Contract',
+    JobType.internship => 'Internship',
+    JobType.remote ||
+    JobType.hybrid ||
+    JobType.freelance ||
+    JobType.other => null,
+  };
+
   /// Matches case-insensitively and ignores spaces, hyphens and underscores, so
   /// the backend enum spelling "FullTime" maps to [fullTime] like "Full-time".
   /// Unknown or empty values map to [other], never to [fullTime].
@@ -52,6 +66,19 @@ enum ExperienceLevel {
   final String displayName;
 
   const ExperienceLevel(this.value, this.displayName);
+
+  /// Canonical `experienceLevel` value for search-svc (api-conventions §6), or
+  /// null when job-svc has no equivalent. Junior (SRS open decision) and intern
+  /// are not mapped to a guessed level, so callers must omit the filter.
+  String? get backendValue => switch (this) {
+    ExperienceLevel.fresher => 'Entry',
+    ExperienceLevel.middle => 'Mid',
+    ExperienceLevel.senior => 'Senior',
+    ExperienceLevel.lead => 'Lead',
+    ExperienceLevel.intern ||
+    ExperienceLevel.junior ||
+    ExperienceLevel.other => null,
+  };
 
   /// Maps backend values explicitly: "Entry" to [fresher] and "Mid" to
   /// [middle]. "Senior" and "Lead" match by name. Mobile's own spellings are

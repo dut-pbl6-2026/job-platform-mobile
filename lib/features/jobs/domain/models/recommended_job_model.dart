@@ -1,25 +1,28 @@
 import 'package:flutter/foundation.dart';
 import 'job_model.dart';
 
-/// Personalized job recommendation entity (SRS RECOMMEND-01, W13)
+/// Personalized job recommendation entity (SRS RECOMMEND-01, W13).
+///
+/// The backend returns a `strategy` (Collaborative | Content | Popular) and no
+/// score. The client therefore carries no match percentage.
 @immutable
 class RecommendedJob {
   final JobModel job;
   final String reason;
-  final int matchScore;
+
+  /// Recommendation strategy, lowercased ("collaborative", "content",
+  /// "popular") or a legacy mock tag. Null when the source did not provide one.
   final String? matchType;
 
   const RecommendedJob({
     required this.job,
     required this.reason,
-    this.matchScore = 85,
     this.matchType,
   });
 
   factory RecommendedJob.fromJson(
     Map<String, dynamic> json, {
     String? defaultReason,
-    int? defaultScore,
   }) {
     // Tolerant parser: supports both { job: {...}, reason: "..." } and flat job objects
     final JobModel parsedJob;
@@ -39,31 +42,17 @@ class RecommendedJob {
         defaultReason ??
         'Đề xuất phù hợp với hồ sơ và kỹ năng của bạn';
 
-    final scoreRaw = json['score'] ?? json['matchScore'] ?? defaultScore ?? 85;
-    final int score;
-    final num? parsedNum = scoreRaw is num
-        ? scoreRaw
-        : num.tryParse(scoreRaw.toString());
-    if (parsedNum != null) {
-      if (parsedNum > 0.0 &&
-          parsedNum <= 1.0 &&
-          (scoreRaw is double || scoreRaw.toString().contains('.'))) {
-        score = (parsedNum * 100).round().clamp(0, 100);
-      } else {
-        score = parsedNum.round().clamp(0, 100);
-      }
-    } else {
-      score = 85;
-    }
-
-    final matchType =
-        json['matchType'] as String? ?? json['type'] as String? ?? 'skills';
+    // job-svc sends `strategy`; `matchType` / `type` are read for older payloads.
+    final rawType =
+        json['matchType'] as String? ??
+        json['type'] as String? ??
+        json['strategy'] as String?;
+    final matchType = rawType?.trim().toLowerCase();
 
     return RecommendedJob(
       job: parsedJob,
       reason: reason,
-      matchScore: score,
-      matchType: matchType,
+      matchType: (matchType == null || matchType.isEmpty) ? null : matchType,
     );
   }
 
@@ -71,21 +60,14 @@ class RecommendedJob {
     return {
       'job': job.toJson(),
       'reason': reason,
-      'matchScore': matchScore,
       if (matchType != null) 'matchType': matchType,
     };
   }
 
-  RecommendedJob copyWith({
-    JobModel? job,
-    String? reason,
-    int? matchScore,
-    String? matchType,
-  }) {
+  RecommendedJob copyWith({JobModel? job, String? reason, String? matchType}) {
     return RecommendedJob(
       job: job ?? this.job,
       reason: reason ?? this.reason,
-      matchScore: matchScore ?? this.matchScore,
       matchType: matchType ?? this.matchType,
     );
   }
@@ -97,12 +79,10 @@ class RecommendedJob {
           runtimeType == other.runtimeType &&
           job == other.job &&
           reason == other.reason &&
-          matchScore == other.matchScore &&
           matchType == other.matchType;
 
   @override
-  int get hashCode =>
-      job.hashCode ^ reason.hashCode ^ matchScore.hashCode ^ matchType.hashCode;
+  int get hashCode => job.hashCode ^ reason.hashCode ^ matchType.hashCode;
 }
 
 /// Detailed explanation for why a job was recommended (SRS RECOMMEND-01-04)

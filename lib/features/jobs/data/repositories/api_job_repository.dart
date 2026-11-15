@@ -48,11 +48,15 @@ class ApiJobRepository implements IJobRepository {
       if (params.category != null && params.category!.isNotEmpty) {
         queryParams['category'] = params.category!;
       }
-      if (params.jobType != null) {
-        queryParams['jobType'] = params.jobType!.value;
+      // search-svc takes employmentType / experienceLevel with canonical
+      // backend values. Options without a backend value are not sent at all.
+      final employmentType = params.jobType?.backendValue;
+      if (employmentType != null) {
+        queryParams['employmentType'] = employmentType;
       }
-      if (params.experienceLevel != null) {
-        queryParams['experienceLevel'] = params.experienceLevel!.value;
+      final experienceLevel = params.experienceLevel?.backendValue;
+      if (experienceLevel != null) {
+        queryParams['experienceLevel'] = experienceLevel;
       }
       if (params.skills.isNotEmpty) {
         queryParams['skills'] = params.skills.join(',');
@@ -326,11 +330,7 @@ class ApiJobRepository implements IJobRepository {
                 '';
             final reasonFromMap = reasonsMap[jobId];
             recommendedJobs.add(
-              RecommendedJob.fromJson(
-                map,
-                defaultReason: reasonFromMap,
-                defaultScore: 95 - (i * 4).clamp(0, 30),
-              ),
+              RecommendedJob.fromJson(map, defaultReason: reasonFromMap),
             );
           }
         }
@@ -350,8 +350,7 @@ class ApiJobRepository implements IJobRepository {
         return RecommendedJob(
           job: job,
           reason: 'Phù hợp với kỹ năng và vị trí đã lưu của bạn',
-          matchScore: 88,
-          matchType: 'skills',
+          matchType: 'content',
         );
       }).toList();
     }
