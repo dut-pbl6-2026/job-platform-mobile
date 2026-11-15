@@ -8,6 +8,8 @@ import '../../core/theme/app_theme.dart';
 import 'data/repositories/api_auth_repository.dart';
 import 'domain/repositories/auth_repository.dart';
 import 'presentation/widgets/auth_layout.dart';
+import 'presentation/widgets/resend_verification_button.dart';
+import 'register_screen.dart' show registrationPendingVerificationMessage;
 
 /// Login Screen - Email/password form per SRS AUTH-01-02
 /// Features:
@@ -17,9 +19,12 @@ import 'presentation/widgets/auth_layout.dart';
 /// - Login button with 2s mock latency
 /// - Navigation to Register and Home
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key, this.authRepository});
+  const LoginScreen({super.key, this.authRepository, this.verificationEmail});
 
   final IAuthRepository? authRepository;
+
+  /// Set after registration: the address that must be verified before login.
+  final String? verificationEmail;
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -130,6 +135,21 @@ class _LoginScreenState extends State<LoginScreen> {
       children: [
         const AuthBrand(),
         const SizedBox(height: 28),
+        if (widget.verificationEmail != null) ...[
+          Text(
+            registrationPendingVerificationMessage,
+            style: const TextStyle(
+              fontSize: 14,
+              color: AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          ResendVerificationButton(
+            email: widget.verificationEmail!,
+            authRepository: _authRepository,
+          ),
+          const SizedBox(height: 14),
+        ],
         const Center(
           child: Text(
             'Chào mừng trở lại!',

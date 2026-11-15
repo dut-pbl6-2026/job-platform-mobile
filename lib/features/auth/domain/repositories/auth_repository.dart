@@ -24,6 +24,10 @@ abstract class IAuthRepository {
     String? companyId,
   });
 
+  /// Asks for a new verification link. The server answers the same for every
+  /// address; throws [AuthFailure] with `rateLimited` on 429.
+  Future<void> resendVerification({required String email});
+
   /// Forgot password (AUTH-01-07) anti-enumeration always success
   Future<void> forgotPassword({required String email});
 

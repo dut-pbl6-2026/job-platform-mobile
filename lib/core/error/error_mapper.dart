@@ -40,6 +40,13 @@ AuthFailure mapDioToFailure(DioException e) {
       rawMessage: raw,
     );
   }
+  if (code == 429) {
+    return AuthFailure(
+      code: AuthFailure.rateLimited,
+      statusCode: 429,
+      rawMessage: raw,
+    );
+  }
   if (code == 403) {
     return AuthFailure(
       code: AuthFailure.accountLocked,
@@ -92,8 +99,14 @@ AuthFailure mapDioToFailure(DioException e) {
 const String loginCredentialsOrVerifyMessage =
     'Check your credentials or verify your email';
 
+/// Shown when the server answers 429 (too many requests from this IP).
+const String rateLimitedMessage =
+    'Bạn đã yêu cầu quá nhiều lần. Vui lòng thử lại sau.';
+
 String authFailureToMessage(AuthFailure f) {
   switch (f.code) {
+    case AuthFailure.rateLimited:
+      return rateLimitedMessage;
     case AuthFailure.invalidCredentials:
       return loginCredentialsOrVerifyMessage;
     case AuthFailure.emailExists:
