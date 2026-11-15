@@ -13,7 +13,7 @@ abstract class IAuthRepository {
   });
 
   /// Register a new user account with role selection (User / Recruiter)
-  /// companyId required for Recruiter per SRS AUTH-01-06.
+  /// Recruiter requires a valid [inviteCode] (SRS AUTH-01-06, AUTH-01-09); the company comes from the code.
   /// Registration does not sign the user in: the account must be verified
   /// by email first, so no tokens are issued or stored.
   Future<void> register({
@@ -21,7 +21,7 @@ abstract class IAuthRepository {
     required String email,
     required String password,
     required UserRole role,
-    String? companyId,
+    String? inviteCode,
   });
 
   /// Asks for a new verification link. The server answers the same for every

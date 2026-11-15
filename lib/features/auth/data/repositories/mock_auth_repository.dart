@@ -107,10 +107,10 @@ class MockAuthRepository implements IAuthRepository {
     required String email,
     required String password,
     required UserRole role,
-    String? companyId,
+    String? inviteCode,
   }) async {
     await Future.delayed(const Duration(milliseconds: 300));
-    // Mock allows recruiter without companyId for test compatibility; real ApiAuthRepository enforces per SRS AUTH-01-06.
+    // Mock accepts any invite code; real ApiAuthRepository requires one for Recruiter (SRS AUTH-01-06).
     // Like the API, registration issues no session: the account must be verified first.
   }
 

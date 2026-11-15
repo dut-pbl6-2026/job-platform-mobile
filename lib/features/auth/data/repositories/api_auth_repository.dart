@@ -41,7 +41,7 @@ class ApiAuthRepository implements IAuthRepository {
     required String email,
     required String password,
     required UserRole role,
-    String? companyId,
+    String? inviteCode,
   }) async {
     if (!isPasswordStrong(password)) {
       throw const AuthFailure(
@@ -50,12 +50,12 @@ class ApiAuthRepository implements IAuthRepository {
         rawMessage: 'Weak password',
       );
     }
-    if (role == UserRole.recruiter &&
-        (companyId == null || companyId.isEmpty)) {
+    final code = inviteCode?.replaceAll(RegExp(r'[\s-]'), '').toUpperCase();
+    if (role == UserRole.recruiter && (code == null || code.isEmpty)) {
       throw const AuthFailure(
-        code: AuthFailure.invalidCompanyId,
+        code: AuthFailure.invalidInviteCode,
         statusCode: 422,
-        rawMessage: 'companyId required for Recruiter',
+        rawMessage: 'inviteCode required for Recruiter',
       );
     }
     try {
@@ -64,12 +64,19 @@ class ApiAuthRepository implements IAuthRepository {
         'password': password,
         'fullName': name,
         'role': role.value,
-        if (companyId != null && companyId.isNotEmpty) 'companyId': companyId,
+        if (role == UserRole.recruiter) 'inviteCode': code,
       };
       // 202 Accepted with { message }. No user id and no tokens: the caller
       // must not log in or store anything until the email is verified.
       await _dio.post('/api/auth/register', data: payload);
     } on DioException catch (e) {
+      if (e.response?.statusCode == 503) {
+        throw const AuthFailure(
+          code: AuthFailure.inviteUnavailable,
+          statusCode: 503,
+          rawMessage: 'invite code service unavailable',
+        );
+      }
       throw _toFailure(e);
     }
   }
