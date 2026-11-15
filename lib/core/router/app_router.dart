@@ -22,6 +22,7 @@ import '../../features/jobs/presentation/search_screen.dart';
 import '../../features/profile/presentation/profile_detail_screen.dart';
 import '../../features/profile/presentation/profile_screen.dart';
 import '../../features/recruiter/presentation/candidate_applications_screen.dart';
+import '../../features/recruiter/presentation/invite_code_screen.dart';
 import '../../features/recruiter/presentation/post_job_screen.dart';
 import '../../features/recruiter/presentation/recruiter_dashboard_screen.dart';
 import '../../features/recruiter/presentation/recruiter_jobs_screen.dart';
@@ -51,6 +52,7 @@ class AppRoutes {
   static const String recruiterDashboard = '/recruiter/dashboard';
   static const String recruiterJobs = '/recruiter/jobs';
   static const String recruiterPostJob = '/recruiter/jobs/create';
+  static const String recruiterInviteCodes = '/recruiter/invite-codes';
   static const String recruiterCandidates = '/recruiter/candidates';
 
   /// Public routes that do not require authentication.
@@ -219,6 +221,12 @@ class AppRouter {
         path: AppRoutes.recruiterPostJob,
         name: 'recruiter-post-job',
         builder: (context, state) => const PostJobScreen(),
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: AppRoutes.recruiterInviteCodes,
+        name: 'recruiter-invite-codes',
+        builder: (context, state) => const InviteCodeScreen(),
       ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,

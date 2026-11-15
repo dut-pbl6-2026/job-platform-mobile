@@ -300,6 +300,12 @@ class _RecruiterDashboardScreenState extends State<RecruiterDashboardScreen> {
                 onTap: () => context.push(AppRoutes.recruiterCandidates),
               ),
               _buildActionTile(
+                icon: Icons.vpn_key_outlined,
+                title: 'Mã mời đăng ký',
+                subtitle: 'Cấp mã mời để đồng nghiệp đăng ký nhà tuyển dụng',
+                onTap: () => context.push(AppRoutes.recruiterInviteCodes),
+              ),
+              _buildActionTile(
                 icon: Icons.apartment_rounded,
                 title: 'Hồ sơ công ty',
                 subtitle: 'Cập nhật thông tin doanh nghiệp, logo và mô tả',

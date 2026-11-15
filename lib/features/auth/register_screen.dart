@@ -39,7 +39,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-  final _companyIdController = TextEditingController();
+  final _inviteCodeController = TextEditingController();
 
   late final IAuthRepository _authRepository;
   UserRole _selectedRole = UserRole.user;
@@ -103,7 +103,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
-    _companyIdController.dispose();
+    _inviteCodeController.dispose();
     super.dispose();
   }
 
@@ -154,12 +154,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return null;
   }
 
-  /// Validate companyId for recruiter
-  String? _validateCompanyId(String? value) {
-    if (_selectedRole == UserRole.recruiter &&
-        (value == null || value.trim().isEmpty)) {
-      return 'Vui lòng nhập mã công ty';
-    }
+  /// Validate the invite code for recruiter (SRS AUTH-01-09). Dashes and case are ignored.
+  String? _validateInviteCode(String? value) {
+    if (_selectedRole != UserRole.recruiter) return null;
+    final code = (value ?? '').replaceAll(RegExp(r'[\s-]'), '');
+    if (code.isEmpty) return 'Vui lòng nhập mã mời của công ty';
+    if (code.length != 12) return 'Mã mời gồm 12 ký tự, dạng XXXX-XXXX-XXXX';
     return null;
   }
 
@@ -175,9 +175,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
         email: _emailController.text.trim(),
         password: _passwordController.text,
         role: _selectedRole,
-        companyId: _companyIdController.text.trim().isEmpty
+        inviteCode: _inviteCodeController.text.trim().isEmpty
             ? null
-            : _companyIdController.text.trim(),
+            : _inviteCodeController.text.trim(),
       );
 
       if (mounted) {
@@ -448,12 +448,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
           if (_selectedRole == UserRole.recruiter) ...[
             const SizedBox(height: 10),
             AuthField(
-              label: 'Mã công ty',
+              label: 'Mã mời của công ty',
               child: TextFormField(
-                controller: _companyIdController,
+                controller: _inviteCodeController,
                 enabled: !_isLoading,
-                validator: _validateCompanyId,
-                decoration: const InputDecoration(hintText: 'Nhập mã công ty'),
+                textCapitalization: TextCapitalization.characters,
+                validator: _validateInviteCode,
+                decoration: const InputDecoration(hintText: 'XXXX-XXXX-XXXX'),
               ),
             ),
           ],

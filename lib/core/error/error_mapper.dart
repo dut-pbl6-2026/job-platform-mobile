@@ -56,7 +56,7 @@ AuthFailure mapDioToFailure(DioException e) {
   }
   if (code == 422) {
     return AuthFailure(
-      code: AuthFailure.invalidCompanyId,
+      code: AuthFailure.invalidInviteCode,
       statusCode: 422,
       rawMessage: raw,
     );
@@ -113,8 +113,10 @@ String authFailureToMessage(AuthFailure f) {
       return 'Email đã được đăng ký';
     case AuthFailure.accountLocked:
       return 'Tài khoản bị khóa';
-    case AuthFailure.invalidCompanyId:
-      return 'Mã công ty không hợp lệ';
+    case AuthFailure.invalidInviteCode:
+      return 'Mã mời không hợp lệ, đã dùng hoặc đã hết hạn';
+    case AuthFailure.inviteUnavailable:
+      return 'Chưa kiểm tra được mã mời, vui lòng thử lại sau';
     case AuthFailure.weakPassword:
       return 'Mật khẩu phải có ít nhất 8 ký tự, 1 chữ hoa và 1 chữ số';
     case AuthFailure.tokenExpired:

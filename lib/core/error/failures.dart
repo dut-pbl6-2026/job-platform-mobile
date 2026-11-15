@@ -13,7 +13,8 @@ class AuthFailure implements Exception {
   static const invalidCredentials = 'invalid_credentials';
   static const emailExists = 'email_exists';
   static const accountLocked = 'account_locked';
-  static const invalidCompanyId = 'invalid_company_id';
+  static const invalidInviteCode = 'invalid_invite_code';
+  static const inviteUnavailable = 'invite_unavailable';
   static const weakPassword = 'weak_password';
   static const tokenExpired = 'token_expired';
   static const tokenRevoked = 'token_revoked';
