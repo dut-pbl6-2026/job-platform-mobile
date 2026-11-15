@@ -50,6 +50,7 @@ void main() {
       expect(find.text('Vui lòng nhập địa điểm'), findsOneWidget);
       expect(find.text('Vui lòng nhập mức lương'), findsOneWidget);
       expect(find.text('Vui lòng nhập mô tả'), findsOneWidget);
+      expect(find.text('Vui lòng chọn cấp độ'), findsOneWidget);
 
       // Fill in valid data
       final titleField = find.byType(TextFormField).at(0);
@@ -70,6 +71,12 @@ void main() {
         descField,
         'Xây dựng ứng dụng Flutter kiến trúc Clean Architecture.',
       );
+      await tester.pumpAndSettle();
+
+      // Experience level has no default and must be chosen
+      await tester.tap(find.byType(DropdownButtonFormField<String>).last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Mid').last);
       await tester.pumpAndSettle();
 
       // Submit form

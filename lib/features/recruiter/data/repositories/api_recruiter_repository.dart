@@ -364,6 +364,8 @@ class ApiRecruiterRepository implements IRecruiterRepository {
     }
   }
 
+  /// Maps the form's employment label to the canonical job-svc value
+  /// (api-conventions §6). Unknown input throws instead of defaulting.
   String _mapEmploymentTypeToBackend(String type) {
     switch (type.trim().toLowerCase()) {
       case 'toàn thời gian':
@@ -372,25 +374,17 @@ class ApiRecruiterRepository implements IRecruiterRepository {
         return 'PartTime';
       case 'thực tập':
         return 'Internship';
-      case 'từ xa':
-        return 'Remote';
-      default:
-        return 'FullTime';
     }
+    throw Exception('Hình thức làm việc không hợp lệ: $type');
   }
 
-  String _mapExperienceLevelToBackend(String level) {
-    switch (level.trim().toLowerCase()) {
-      case 'intern':
-        return 'Intern';
-      case 'junior':
-        return 'Entry';
-      case 'middle':
-        return 'Mid';
-      case 'senior':
-        return 'Senior';
-      default:
-        return 'Entry';
+  /// Accepts only the canonical job-svc experience levels. Null or unknown
+  /// input throws; the form requires a choice, and no level is guessed.
+  String _mapExperienceLevelToBackend(String? level) {
+    final value = level?.trim();
+    for (final canonical in const ['Entry', 'Mid', 'Senior', 'Lead']) {
+      if (value == canonical) return canonical;
     }
+    throw Exception('Cấp độ kinh nghiệm không hợp lệ: ${level ?? 'chưa chọn'}');
   }
 }

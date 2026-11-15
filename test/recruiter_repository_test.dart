@@ -113,6 +113,69 @@ void main() {
       },
     );
 
+    group('postJob sends canonical backend enum values', () {
+      // Captures the POST /api/jobs body and answers 201 so no request leaves.
+      Future<Map<String, dynamic>> capturePayload(PostJobParams params) async {
+        late Map<String, dynamic> body;
+        final dio = Dio(BaseOptions(baseUrl: 'http://unused.invalid'));
+        dio.interceptors.add(
+          InterceptorsWrapper(
+            onRequest: (options, handler) {
+              body = Map<String, dynamic>.from(options.data as Map);
+              handler.resolve(
+                Response(
+                  requestOptions: options,
+                  statusCode: 201,
+                  data: {'id': 'job-new'},
+                ),
+              );
+            },
+          ),
+        );
+        await ApiRecruiterRepository(dio: dio).postJob(params);
+        return body;
+      }
+
+      PostJobParams build({String? employment, String? experience}) {
+        return PostJobParams(
+          title: 'Flutter Developer',
+          location: 'Hà Nội',
+          companyId: '00000000-0000-0000-0000-000000000001',
+          description: 'Mô tả công việc kiểm thử',
+          employmentType: employment ?? 'Toàn thời gian',
+          experienceLevel: experience,
+        );
+      }
+
+      test('maps form labels to FullTime, PartTime and Internship', () async {
+        final expected = {
+          'Toàn thời gian': 'FullTime',
+          'Bán thời gian': 'PartTime',
+          'Thực tập': 'Internship',
+        };
+        for (final entry in expected.entries) {
+          final body = await capturePayload(
+            build(employment: entry.key, experience: 'Mid'),
+          );
+          expect(body['employmentType'], entry.value);
+        }
+      });
+
+      test('sends the canonical experience level unchanged', () async {
+        for (final level in ['Entry', 'Mid', 'Senior', 'Lead']) {
+          final body = await capturePayload(build(experience: level));
+          expect(body['experienceLevel'], level);
+        }
+      });
+
+      test(
+        'rejects a missing experience level instead of sending Entry',
+        () async {
+          await expectLater(capturePayload(build()), throwsA(isA<Exception>()));
+        },
+      );
+    });
+
     test('postJob rejects when recruiter companyId cannot be resolved', () {
       final dio = Dio(
         BaseOptions(

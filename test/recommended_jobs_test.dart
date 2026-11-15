@@ -114,7 +114,6 @@ void main() {
       final json = {
         'job': sampleJob.toJson(),
         'reason': 'Khớp 95% với kỹ năng Flutter & Dart trong hồ sơ của bạn',
-        'matchScore': 95,
         'matchType': 'skills',
       };
 
@@ -126,7 +125,6 @@ void main() {
         model.reason,
         'Khớp 95% với kỹ năng Flutter & Dart trong hồ sơ của bạn',
       );
-      expect(model.matchScore, 95);
       expect(model.matchType, 'skills');
     });
 
@@ -136,31 +134,29 @@ void main() {
       final model = RecommendedJob.fromJson(
         json,
         defaultReason: 'Gợi ý xu hướng',
-        defaultScore: 88,
       );
 
       expect(model.job.id, 'rec-job-1');
       expect(model.reason, 'Gợi ý xu hướng');
-      expect(model.matchScore, 88);
+      expect(model.matchType, isNull);
     });
 
     test('RecommendedJob toJson and copyWith work as expected', () {
       final original = RecommendedJob(
         job: sampleJob,
         reason: 'Lý do ban đầu',
-        matchScore: 90,
         matchType: 'trending',
       );
 
-      final copy = original.copyWith(reason: 'Lý do cập nhật', matchScore: 94);
+      final copy = original.copyWith(reason: 'Lý do cập nhật');
 
       expect(copy.reason, 'Lý do cập nhật');
-      expect(copy.matchScore, 94);
       expect(copy.matchType, 'trending');
 
       final serialized = copy.toJson();
       expect(serialized['reason'], 'Lý do cập nhật');
-      expect(serialized['matchScore'], 94);
+      expect(serialized['matchType'], 'trending');
+      expect(serialized.containsKey('matchScore'), isFalse);
     });
 
     test('RecommendationExplanation fromJson and toJson work correctly', () {
@@ -191,7 +187,7 @@ void main() {
 
         expect(recommendations.length, 3);
         expect(recommendations.first.reason, contains('Flutter'));
-        expect(recommendations.first.matchScore, 96);
+        expect(recommendations.first.matchType, 'skills');
 
         final explanation = await mockRepo.explainRecommendation('job-1');
         expect(explanation, isNotNull);
@@ -244,7 +240,6 @@ void main() {
       final item = RecommendedJob(
         job: sampleJob,
         reason: 'Khớp 95% với kỹ năng trong hồ sơ của bạn',
-        matchScore: 95,
         matchType: 'skills',
       );
 
@@ -268,7 +263,7 @@ void main() {
       expect(find.text('Senior Flutter Developer'), findsOneWidget);
       expect(find.text('Tech Innovations Corp'), findsOneWidget);
       expect(find.text('Đà Nẵng'), findsOneWidget);
-      expect(find.text('95% Phù hợp'), findsOneWidget);
+      expect(find.text('95% Phù hợp'), findsNothing);
       expect(find.text('Kỹ năng tương thích'), findsOneWidget);
       expect(
         find.text('Khớp 95% với kỹ năng trong hồ sơ của bạn'),
@@ -287,7 +282,6 @@ void main() {
           job: sampleJob,
           reason:
               'Lý do gợi ý rất dài nhằm kiểm tra độ co giãn và khả năng chống tràn bố cục trên màn hình nhỏ',
-          matchScore: 88,
           matchType: 'trending',
         );
 
@@ -383,7 +377,6 @@ void main() {
           RecommendedJob(
             job: sampleJob,
             reason: 'Phù hợp 96% theo kỹ năng',
-            matchScore: 96,
             matchType: 'skills',
           ),
         ];
@@ -519,26 +512,44 @@ void main() {
       },
     );
 
-    test('RecommendedJob score parsing handles decimal strings and ratios', () {
-      final jsonDecimalStr = {'job': sampleJob.toJson(), 'matchScore': '0.95'};
-      expect(RecommendedJob.fromJson(jsonDecimalStr).matchScore, 95);
+    test('RecommendedJob maps backend strategy and ignores any score', () {
+      final collaborative = RecommendedJob.fromJson({
+        'job': sampleJob.toJson(),
+        'strategy': 'Collaborative',
+      });
+      expect(collaborative.matchType, 'collaborative');
 
-      final jsonInt1 = {'job': sampleJob.toJson(), 'matchScore': 1};
-      expect(RecommendedJob.fromJson(jsonInt1).matchScore, 1);
+      final content = RecommendedJob.fromJson({
+        'job': sampleJob.toJson(),
+        'strategy': 'Content',
+      });
+      expect(content.matchType, 'content');
 
-      final jsonDoubleRatio = {'job': sampleJob.toJson(), 'score': 0.88};
-      expect(RecommendedJob.fromJson(jsonDoubleRatio).matchScore, 88);
+      final popular = RecommendedJob.fromJson({
+        'job': sampleJob.toJson(),
+        'strategy': 'Popular',
+      });
+      expect(popular.matchType, 'popular');
+
+      // No strategy means no label: nothing is invented.
+      final none = RecommendedJob.fromJson({'job': sampleJob.toJson()});
+      expect(none.matchType, isNull);
+
+      // A legacy numeric score is no longer read.
+      final withScore = RecommendedJob.fromJson({
+        'job': sampleJob.toJson(),
+        'score': 0.88,
+        'strategy': 'Popular',
+      });
+      expect(withScore.matchType, 'popular');
+      expect(withScore.toJson().containsKey('score'), isFalse);
     });
 
     testWidgets('RecommendedJobCard handles whitespace company name safely', (
       tester,
     ) async {
       final blankCompanyJob = sampleJob.copyWith(companyName: '   ');
-      final rec = RecommendedJob(
-        job: blankCompanyJob,
-        reason: 'Test reason',
-        matchScore: 90,
-      );
+      final rec = RecommendedJob(job: blankCompanyJob, reason: 'Test reason');
 
       await tester.pumpWidget(
         MaterialApp(
@@ -551,6 +562,28 @@ void main() {
 
       expect(tester.takeException(), isNull);
       expect(find.text('C'), findsOneWidget);
+    });
+
+    testWidgets('RecommendedJobCard shows the strategy label and no score', (
+      tester,
+    ) async {
+      final item = RecommendedJob.fromJson({
+        'job': sampleJob.toJson(),
+        'reason': 'Người dùng có hồ sơ tương tự đã ứng tuyển',
+        'strategy': 'Collaborative',
+      });
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.lightTheme,
+          home: Scaffold(
+            body: RecommendedJobCard(recommendation: item, onTap: () {}),
+          ),
+        ),
+      );
+
+      expect(find.text('Người dùng tương tự'), findsOneWidget);
+      expect(find.textContaining('% Phù hợp'), findsNothing);
     });
   });
 }

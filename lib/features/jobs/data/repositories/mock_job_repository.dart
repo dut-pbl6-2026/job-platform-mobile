@@ -526,37 +526,31 @@ class MockJobRepository implements IJobRepository {
       if (jobMap.containsKey('job-1'))
         RecommendedJob(
           job: jobMap['job-1']!,
-          reason:
-              'Phù hợp 96% dựa trên kỹ năng Flutter & Dart trong hồ sơ của bạn',
-          matchScore: 96,
+          reason: 'Phù hợp dựa trên kỹ năng Flutter & Dart trong hồ sơ của bạn',
           matchType: 'skills',
         ),
       if (jobMap.containsKey('job-3'))
         RecommendedJob(
           job: jobMap['job-3']!,
           reason: 'Dựa trên các tìm kiếm AI & Python gần đây của bạn',
-          matchScore: 89,
           matchType: 'search_history',
         ),
       if (jobMap.containsKey('job-2'))
         RecommendedJob(
           job: jobMap['job-2']!,
           reason: 'Công việc xu hướng được nhiều ứng viên quan tâm tuần này',
-          matchScore: 83,
           matchType: 'trending',
         ),
       if (jobMap.containsKey('job-4'))
         RecommendedJob(
           job: jobMap['job-4']!,
           reason: 'Tương tự các việc làm bạn đã lưu gần đây',
-          matchScore: 78,
           matchType: 'saved_jobs',
         ),
       if (jobMap.containsKey('job-5'))
         RecommendedJob(
           job: jobMap['job-5']!,
           reason: 'Phù hợp với vị trí làm việc tại Đà Nẵng của bạn',
-          matchScore: 75,
           matchType: 'location',
         ),
     ];

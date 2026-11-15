@@ -1375,7 +1375,7 @@ class _JobFilterBottomSheetState extends State<JobFilterBottomSheet> {
   JobType? _mapJobTypeFromId(String id) {
     switch (id) {
       case 'internship':
-        return JobType.partTime;
+        return JobType.internship;
       case 'part_time':
         return JobType.partTime;
       case 'full_time':

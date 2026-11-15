@@ -4,7 +4,8 @@ import '../../../../core/utils/format_utils.dart';
 import '../../../../core/widgets/pressable_card.dart';
 import '../../domain/models/recommended_job_model.dart';
 
-/// Commercial-grade Recommended Job Card widget with match score and rationale (RECOMMEND-01, W13)
+/// Recommended job card with the recommendation strategy label and rationale (RECOMMEND-01, W13).
+/// The backend sends no match score, so none is shown.
 class RecommendedJobCard extends StatelessWidget {
   final RecommendedJob recommendation;
   final VoidCallback onTap;
@@ -14,13 +15,6 @@ class RecommendedJobCard extends StatelessWidget {
     required this.recommendation,
     required this.onTap,
   });
-
-  Color _getScoreColor(int score) {
-    if (score >= 85) return const Color(0xFF0D9488); // Teal / Emerald
-    if (score >= 70) return AppColors.primary; // Blue
-    if (score >= 50) return const Color(0xFFD97706); // Amber
-    return AppColors.error;
-  }
 
   IconData _getReasonIcon(String? matchType) {
     switch (matchType?.toLowerCase()) {
@@ -35,6 +29,12 @@ class RecommendedJobCard extends StatelessWidget {
         return Icons.place_rounded;
       case 'saved_jobs':
         return Icons.bookmark_added_rounded;
+      case 'collaborative':
+        return Icons.people_alt_rounded;
+      case 'content':
+        return Icons.category_rounded;
+      case 'popular':
+        return Icons.local_fire_department_rounded;
       default:
         return Icons.auto_awesome_rounded;
     }
@@ -53,6 +53,12 @@ class RecommendedJobCard extends StatelessWidget {
         return 'Gần bạn';
       case 'saved_jobs':
         return 'Tương tự đã lưu';
+      case 'collaborative':
+        return 'Người dùng tương tự';
+      case 'content':
+        return 'Theo lĩnh vực bạn quan tâm';
+      case 'popular':
+        return 'Đang được quan tâm';
       default:
         return 'Đề xuất AI';
     }
@@ -61,7 +67,6 @@ class RecommendedJobCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final job = recommendation.job;
-    final scoreColor = _getScoreColor(recommendation.matchScore);
     final reasonTag = _getReasonTag(recommendation.matchType);
     final reasonIcon = _getReasonIcon(recommendation.matchType);
 
@@ -93,7 +98,7 @@ class RecommendedJobCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Top Row: Match Reason Pill + Match Score Gauge
+              // Top Row: recommendation strategy pill
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -127,33 +132,6 @@ class RecommendedJobCard extends StatelessWidget {
                           ),
                         ],
                       ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  // Match Score Badge
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 3,
-                    ),
-                    decoration: BoxDecoration(
-                      color: scoreColor.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.bolt_rounded, size: 12, color: scoreColor),
-                        const SizedBox(width: 2),
-                        Text(
-                          '${recommendation.matchScore}% Phù hợp',
-                          style: TextStyle(
-                            fontSize: 10.5,
-                            fontWeight: FontWeight.w700,
-                            color: scoreColor,
-                          ),
-                        ),
-                      ],
                     ),
                   ),
                 ],
