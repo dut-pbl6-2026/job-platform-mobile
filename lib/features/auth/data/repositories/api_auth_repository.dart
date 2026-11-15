@@ -36,7 +36,7 @@ class ApiAuthRepository implements IAuthRepository {
   }
 
   @override
-  Future<AuthResult> register({
+  Future<void> register({
     required String name,
     required String email,
     required String password,
@@ -66,11 +66,12 @@ class ApiAuthRepository implements IAuthRepository {
         'role': role.value,
         if (companyId != null && companyId.isNotEmpty) 'companyId': companyId,
       };
+      // 202 Accepted with { message }. No user id and no tokens: the caller
+      // must not log in or store anything until the email is verified.
       await _dio.post('/api/auth/register', data: payload);
     } on DioException catch (e) {
       throw _toFailure(e);
     }
-    return login(email: email, password: password);
   }
 
   @override

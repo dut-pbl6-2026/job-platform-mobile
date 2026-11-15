@@ -10,6 +10,11 @@ import 'domain/models/user_model.dart';
 import 'domain/repositories/auth_repository.dart';
 import 'presentation/widgets/auth_layout.dart';
 
+/// Shown after a successful registration. The user is not signed in until the
+/// verification link in the email is used.
+const String registrationPendingVerificationMessage =
+    'Check your email to verify your account.';
+
 /// Register Screen - Create new candidate or recruiter account
 /// Features:
 /// - Full name input with validation
@@ -165,7 +170,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final result = await _authRepository.register(
+      await _authRepository.register(
         name: _nameController.text.trim(),
         email: _emailController.text.trim(),
         password: _passwordController.text,
@@ -180,9 +185,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              'Đăng ký tài khoản ${result.user.role?.displayName ?? ''} thành công!',
-            ),
+            content: const Text(registrationPendingVerificationMessage),
             backgroundColor: AppColors.success,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
@@ -191,8 +194,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
           ),
         );
 
-        // Navigate to Home screen
-        context.go(AppRoutes.home);
+        // No session is created here; the user signs in after verifying.
+        context.go(AppRoutes.login);
       }
     } catch (e) {
       if (mounted) {

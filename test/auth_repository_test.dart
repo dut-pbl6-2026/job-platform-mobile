@@ -41,19 +41,16 @@ void main() {
       expect(result.user.role, UserRole.recruiter);
     });
 
-    test('register creates new account with selected role and token', () async {
-      final result = await repository.register(
+    test('register completes without signing the user in', () async {
+      await repository.register(
         name: 'Nguyen Van A',
         email: 'nguyenvana@gmail.com',
         password: 'Password123!',
         role: UserRole.recruiter,
       );
 
-      expect(result.token, isNotEmpty);
-      expect(result.user.name, 'Nguyen Van A');
-      expect(result.user.email, 'nguyenvana@gmail.com');
-      expect(result.user.role, UserRole.recruiter);
-      expect(AuthSession.instance.currentUser?.role, UserRole.recruiter);
+      expect(AuthSession.instance.isAuthenticated, isFalse);
+      expect(AuthSession.instance.currentUser, isNull);
     });
 
     test('logout clears session', () async {

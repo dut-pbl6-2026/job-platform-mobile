@@ -1,8 +1,10 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:job_platform_mobile/core/error/error_mapper.dart';
 import 'package:job_platform_mobile/core/error/failures.dart';
 import 'package:job_platform_mobile/core/session/auth_session.dart';
 import 'package:job_platform_mobile/features/auth/data/repositories/api_auth_repository.dart';
@@ -49,6 +51,40 @@ final _user = UserModel(
   role: UserRole.user,
   createdAt: DateTime(2026, 1, 1),
 );
+
+/// Dio adapter that answers every request with one canned status and body,
+/// and records the requests it received.
+class _CannedAdapter implements HttpClientAdapter {
+  _CannedAdapter(this.statusCode, this.body);
+
+  final int statusCode;
+  final Map<String, dynamic> body;
+  final List<RequestOptions> requests = [];
+
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<Uint8List>? requestStream,
+    Future<void>? cancelFuture,
+  ) async {
+    requests.add(options);
+    return ResponseBody.fromString(
+      jsonEncode(body),
+      statusCode,
+      headers: {
+        Headers.contentTypeHeader: [Headers.jsonContentType],
+      },
+    );
+  }
+
+  @override
+  void close({bool force = false}) {}
+}
+
+Dio _dioWith(_CannedAdapter adapter) {
+  return Dio(BaseOptions(baseUrl: 'http://gateway.test'))
+    ..httpClientAdapter = adapter;
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -244,5 +280,80 @@ void main() {
 
       expect(AuthSession.instance.isAuthenticated, isFalse);
     });
+  });
+
+  group('Register response contract (auth-svc PR #44)', () {
+    test(
+      '202 with { message } completes without a user id, tokens or session',
+      () async {
+        final adapter = _CannedAdapter(202, {
+          'message': 'Check your email to verify your account.',
+        });
+        final repo = ApiAuthRepository(dio: _dioWith(adapter));
+
+        await expectLater(
+          repo.register(
+            name: 'Candidate',
+            email: 'candidate@test.com',
+            password: 'Password123',
+            role: UserRole.user,
+          ),
+          completes,
+        );
+
+        expect(AuthSession.instance.isAuthenticated, isFalse);
+        expect(AuthSession.instance.token, isNull);
+        expect(await const FlutterSecureStorage().readAll(), isEmpty);
+        // Only the register call is made; the client never logs in afterwards.
+        expect(adapter.requests.map((r) => r.path), ['/api/auth/register']);
+      },
+    );
+
+    test('409 duplicate email maps to emailExists', () async {
+      final adapter = _CannedAdapter(409, {'detail': 'Email already exists'});
+      final repo = ApiAuthRepository(dio: _dioWith(adapter));
+
+      await expectLater(
+        repo.register(
+          name: 'Candidate',
+          email: 'candidate@test.com',
+          password: 'Password123',
+          role: UserRole.user,
+        ),
+        throwsA(
+          isA<AuthFailure>().having(
+            (f) => f.code,
+            'code',
+            AuthFailure.emailExists,
+          ),
+        ),
+      );
+      expect(AuthSession.instance.isAuthenticated, isFalse);
+    });
+  });
+
+  group('Login 401 copy (wrong password and unverified look the same)', () {
+    test(
+      'a 401 from login shows the neutral credentials-or-verify message',
+      () async {
+        final repo = ApiAuthRepository(
+          dio: _dioWith(_CannedAdapter(401, {'detail': 'Invalid credentials'})),
+        );
+
+        Object? caught;
+        try {
+          await repo.login(email: 'anyone@test.com', password: 'Password123');
+        } catch (e) {
+          caught = e;
+        }
+
+        expect(caught, isA<AuthFailure>());
+        expect(
+          authFailureToMessage(caught! as AuthFailure),
+          loginCredentialsOrVerifyMessage,
+        );
+        expect(AuthSession.instance.isAuthenticated, isFalse);
+      },
+    );
   });
 }

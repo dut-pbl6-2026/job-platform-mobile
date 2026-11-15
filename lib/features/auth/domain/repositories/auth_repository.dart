@@ -13,8 +13,10 @@ abstract class IAuthRepository {
   });
 
   /// Register a new user account with role selection (User / Recruiter)
-  /// companyId required for Recruiter per SRS AUTH-01-06
-  Future<AuthResult> register({
+  /// companyId required for Recruiter per SRS AUTH-01-06.
+  /// Registration does not sign the user in: the account must be verified
+  /// by email first, so no tokens are issued or stored.
+  Future<void> register({
     required String name,
     required String email,
     required String password,
