@@ -1,12 +1,19 @@
 import 'package:flutter/foundation.dart';
 
-/// Employment type enum
+/// Employment type enum. Backend values (job-svc, api-conventions §6) are
+/// FullTime, PartTime, Contract and Internship; the other entries are mobile
+/// UI categories kept for filters and mock data.
 enum JobType {
   fullTime('Full-time', 'Toàn thời gian'),
   partTime('Part-time', 'Bán thời gian'),
+  contract('Contract', 'Hợp đồng'),
+  internship('Internship', 'Thực tập'),
   remote('Remote', 'Từ xa'),
   hybrid('Hybrid', 'Linh hoạt'),
-  freelance('Freelance', 'Tự do');
+  freelance('Freelance', 'Tự do'),
+
+  /// A value the client does not recognise. Never shown as [fullTime].
+  other('Other', 'Khác');
 
   final String value;
   final String displayName;
@@ -15,12 +22,13 @@ enum JobType {
 
   /// Matches case-insensitively and ignores spaces, hyphens and underscores, so
   /// the backend enum spelling "FullTime" maps to [fullTime] like "Full-time".
+  /// Unknown or empty values map to [other], never to [fullTime].
   static JobType fromString(String value) {
     final key = _normalizeKey(value);
     return JobType.values.firstWhere(
       (e) =>
           _normalizeKey(e.value) == key || _normalizeKey(e.displayName) == key,
-      orElse: () => JobType.fullTime,
+      orElse: () => JobType.other,
     );
   }
 
@@ -35,19 +43,31 @@ enum ExperienceLevel {
   junior('Junior', '1 - 2 năm'),
   middle('Middle', '2 - 4 năm'),
   senior('Senior', '5+ năm'),
-  lead('Lead', 'Trưởng nhóm / Quản lý');
+  lead('Lead', 'Trưởng nhóm / Quản lý'),
+
+  /// A value the client does not recognise. Never shown as [junior].
+  other('Other', 'Khác');
 
   final String value;
   final String displayName;
 
   const ExperienceLevel(this.value, this.displayName);
 
+  /// Maps backend values explicitly: "Entry" to [fresher] and "Mid" to
+  /// [middle]. "Senior" and "Lead" match by name. Mobile's own spellings are
+  /// still accepted so cached entries keep their values. Unknown or empty values
+  /// map to [other], never to [junior].
   static ExperienceLevel fromString(String value) {
+    final key = value.trim().toLowerCase();
+    switch (key) {
+      case 'entry':
+        return ExperienceLevel.fresher;
+      case 'mid':
+        return ExperienceLevel.middle;
+    }
     return ExperienceLevel.values.firstWhere(
-      (e) =>
-          e.value.toLowerCase() == value.toLowerCase() ||
-          e.displayName.toLowerCase() == value.toLowerCase(),
-      orElse: () => ExperienceLevel.junior,
+      (e) => e.value.toLowerCase() == key || e.displayName.toLowerCase() == key,
+      orElse: () => ExperienceLevel.other,
     );
   }
 }
@@ -108,7 +128,12 @@ class JobModel {
     return JobModel(
       id: json['id'] as String? ?? '',
       title: json['title'] as String? ?? '',
-      companyName: json['companyName'] as String? ?? '',
+      // Search and job detail return a flat companyName. The recommendations
+      // endpoint returns a nested company: { id, name } instead.
+      companyName:
+          _readString(json, 'companyName') ??
+          _readNestedName(json, 'company') ??
+          '',
       companyLogo: json['companyLogo'] as String?,
       location: json['location'] as String? ?? '',
       salaryMin: json['salaryMin'] as num?,
@@ -116,15 +141,18 @@ class JobModel {
       isSalaryNegotiable: json['isSalaryNegotiable'] as bool? ?? false,
       category:
           _readString(json, 'categoryName') ??
+          _readNestedName(json, 'category') ??
           _readString(json, 'category') ??
           'Khác',
+      // A missing or unknown value becomes JobType.other / ExperienceLevel.other
+      // (not a silent default).
       jobType: JobType.fromString(
         _readString(json, 'employmentType') ??
             _readString(json, 'jobType') ??
-            'Full-time',
+            '',
       ),
       experienceLevel: ExperienceLevel.fromString(
-        json['experienceLevel'] as String? ?? 'Junior',
+        _readString(json, 'experienceLevel') ?? '',
       ),
       skills:
           (json['skills'] as List<dynamic>?)
@@ -151,6 +179,16 @@ class JobModel {
   static String? _readString(Map<String, dynamic> json, String key) {
     final value = json[key];
     if (value is String && value.trim().isNotEmpty) return value;
+    return null;
+  }
+
+  /// Returns the `name` of a nested reference object such as
+  /// `{ "id": "...", "name": "..." }`, or null when absent or blank.
+  static String? _readNestedName(Map<String, dynamic> json, String key) {
+    final value = json[key];
+    if (value is Map) {
+      return _readString(Map<String, dynamic>.from(value), 'name');
+    }
     return null;
   }
 

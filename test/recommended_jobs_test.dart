@@ -44,6 +44,53 @@ class _FakeHttpAdapter implements HttpClientAdapter {
 }
 
 void main() {
+  group('RecommendedJob backend shape (job-svc RecommendedJobDto)', () {
+    Map<String, dynamic> recommendedItem() => {
+      'id': '8c1f2a3b-0000-0000-0000-000000000001',
+      'title': 'Lập trình viên .NET',
+      'companyId': 'a12b3c4d-0000-0000-0000-000000000001',
+      'company': {
+        'id': 'a12b3c4d-0000-0000-0000-000000000001',
+        'name': 'Công ty ABC',
+      },
+      'categoryId': 'c34d5e6f-0000-0000-0000-000000000002',
+      'category': {'id': 'c34d5e6f-0000-0000-0000-000000000002', 'name': 'IT'},
+      'location': 'Đà Nẵng',
+      'salaryMin': 15000000,
+      'salaryMax': 25000000,
+      'salaryCurrency': 'VND',
+      'employmentType': 'Contract',
+      'experienceLevel': 'Mid',
+      'createdAt': '2026-11-02T03:00:00Z',
+      'strategy': 'Collaborative',
+      'reason': 'Người ứng tuyển "Lập trình viên Java" cũng ứng tuyển việc này',
+    };
+
+    test('reads companyName from the nested company object', () {
+      final item = RecommendedJob.fromJson(recommendedItem());
+
+      expect(item.job.companyName, 'Công ty ABC');
+      expect(item.job.category, 'IT');
+      expect(item.job.jobType, JobType.contract);
+      expect(item.job.experienceLevel, ExperienceLevel.middle);
+      expect(item.reason, startsWith('Người ứng tuyển'));
+    });
+
+    test('leaves companyName empty when the company object is null', () {
+      final json = recommendedItem()..['company'] = null;
+      final item = RecommendedJob.fromJson(json);
+
+      expect(item.job.companyName, '');
+    });
+
+    test('prefers a flat companyName over the nested company object', () {
+      final json = recommendedItem()..['companyName'] = 'Flat Name';
+      final item = RecommendedJob.fromJson(json);
+
+      expect(item.job.companyName, 'Flat Name');
+    });
+  });
+
   TestWidgetsFlutterBinding.ensureInitialized();
 
   final sampleJob = JobModel(
