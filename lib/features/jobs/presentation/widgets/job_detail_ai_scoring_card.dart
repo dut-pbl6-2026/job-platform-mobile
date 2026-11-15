@@ -77,9 +77,9 @@ class _JobDetailAiScoringCardState extends State<JobDetailAiScoringCard> {
       }
 
       // Validate format and size (<= 5 MB)
-      if (!file.isValidCvFormat ||
-          file.size <= 0 ||
-          file.size > 5 * 1024 * 1024) {
+      final ext = file.extension;
+      final isSupportedCv = ext == 'pdf' || ext == 'docx';
+      if (!isSupportedCv || file.size <= 0 || file.size > 5 * 1024 * 1024) {
         setState(() {
           _status = _ScoringCardStatus.error;
           _errorMessage =

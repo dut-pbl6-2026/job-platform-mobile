@@ -40,6 +40,7 @@ class ApiAiRepository implements IAiRepository {
 
       final data = response.data;
       String? currentSessionId = sessionId;
+      var emittedDone = false;
 
       if (data is ResponseBody) {
         final lineStream = data.stream
@@ -54,8 +55,13 @@ class ApiAiRepository implements IAiRepository {
           }
 
           if (trimmed.startsWith('data:')) {
-            final raw = trimmed.substring(5).trim();
-            if (raw == '[DONE]') {
+            var raw = line.startsWith('data:')
+                ? line.substring(5)
+                : trimmed.substring(5);
+            if (raw.startsWith(' ')) {
+              raw = raw.substring(1);
+            }
+            if (raw.trim() == '[DONE]') {
               yield AiChatChunk(
                 delta: '',
                 sessionId: currentSessionId,
@@ -65,7 +71,7 @@ class ApiAiRepository implements IAiRepository {
             }
 
             try {
-              final decoded = jsonDecode(raw);
+              final decoded = jsonDecode(raw.trim());
               if (decoded is Map) {
                 final delta =
                     decoded['delta'] as String? ??
@@ -77,6 +83,7 @@ class ApiAiRepository implements IAiRepository {
                   currentSessionId = sid;
                 }
                 final isDone = decoded['done'] == true;
+                if (isDone) emittedDone = true;
                 if (delta.isNotEmpty || isDone) {
                   yield AiChatChunk(
                     delta: delta,
@@ -104,6 +111,7 @@ class ApiAiRepository implements IAiRepository {
                   currentSessionId = sid;
                 }
                 final isDone = decoded['done'] == true;
+                if (isDone) emittedDone = true;
                 if (delta.isNotEmpty || isDone) {
                   yield AiChatChunk(
                     delta: delta,
@@ -120,13 +128,24 @@ class ApiAiRepository implements IAiRepository {
       } else if (data is Map) {
         final responseText =
             data['response'] as String? ?? data['delta'] as String? ?? '';
-        final sid = data['sessionId'] as String? ?? currentSessionId;
-        yield AiChatChunk(delta: responseText, sessionId: sid, done: true);
+        final sid = data['sessionId'] as String?;
+        if (sid != null && sid.isNotEmpty) {
+          currentSessionId = sid;
+        }
+        yield AiChatChunk(
+          delta: responseText,
+          sessionId: currentSessionId,
+          done: true,
+        );
+        emittedDone = true;
       } else if (data is String) {
         yield AiChatChunk(delta: data, sessionId: currentSessionId, done: true);
+        emittedDone = true;
       }
 
-      yield AiChatChunk(delta: '', sessionId: currentSessionId, done: true);
+      if (!emittedDone) {
+        yield AiChatChunk(delta: '', sessionId: currentSessionId, done: true);
+      }
     } on DioException catch (error) {
       throw _failure(error);
     } finally {
@@ -225,6 +244,7 @@ class ApiAiRepository implements IAiRepository {
         cancelToken: token,
         options: Options(
           contentType: 'multipart/form-data',
+          sendTimeout: const Duration(seconds: 60),
           receiveTimeout: const Duration(seconds: 60),
         ),
       );
@@ -317,6 +337,16 @@ class ApiAiRepository implements IAiRepository {
   AiFailure _failure(DioException error) {
     if (CancelToken.isCancel(error)) {
       return const AiFailure('Đã dừng yêu cầu.', cancelled: true);
+    }
+    if (error.type == DioExceptionType.sendTimeout) {
+      return const AiFailure(
+        'Quá thời gian tải lên CV. Vui lòng kiểm tra kết nối mạng và thử lại.',
+      );
+    }
+    if (error.type == DioExceptionType.receiveTimeout) {
+      return const AiFailure(
+        'Dịch vụ AI phản hồi quá lâu. Vui lòng thử lại sau.',
+      );
     }
     final message = switch (error.response?.statusCode) {
       400 || 422 => 'Không thể xử lý yêu cầu. Kiểm tra câu hỏi hoặc file CV.',

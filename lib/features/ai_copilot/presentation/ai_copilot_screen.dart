@@ -115,6 +115,10 @@ class _AiCopilotScreenState extends State<AiCopilotScreen> {
     setState(() {
       if (!retry) {
         _messages.add(_ChatMessage(text: text, isUser: true));
+      } else {
+        if (_messages.isNotEmpty && !_messages.last.isUser) {
+          _messages.removeLast();
+        }
       }
       _messages.add(botMessage);
       _waiting = true;
@@ -135,6 +139,7 @@ class _AiCopilotScreenState extends State<AiCopilotScreen> {
             }
             if (chunk.delta.isNotEmpty) {
               botMessage.text += chunk.delta;
+              _scrollToBottom();
             }
             if (chunk.done) {
               botMessage.isStreaming = false;
@@ -151,6 +156,9 @@ class _AiCopilotScreenState extends State<AiCopilotScreen> {
       );
 
       await completer.future;
+      if (botMessage.text.trim().isEmpty) {
+        throw const AiFailure('Phản hồi AI không hợp lệ. Vui lòng thử lại.');
+      }
     } catch (error) {
       if (!mounted || requestId != _requestId) return;
       setState(() {
@@ -190,11 +198,13 @@ class _AiCopilotScreenState extends State<AiCopilotScreen> {
           _messages.removeLast();
         }
       }
-      _failedQuestion = _messages.isNotEmpty && _messages.last.isUser
-          ? _messages.last.text
-          : (_messages.length >= 2
-                ? _messages[_messages.length - 2].text
-                : null);
+      _failedQuestion = null;
+      for (var i = _messages.length - 1; i >= 0; i--) {
+        if (_messages[i].isUser) {
+          _failedQuestion = _messages[i].text;
+          break;
+        }
+      }
     });
   }
 
@@ -537,7 +547,8 @@ class _AiCopilotScreenState extends State<AiCopilotScreen> {
                 ],
                 _renderMessageText(message),
                 if (!message.isUser) ...[
-                  _renderJobRecommendations(message.text),
+                  if (!message.isStreaming)
+                    _renderJobRecommendations(message.text),
                   const SizedBox(height: 8),
                   const Text(
                     'Nội dung AI chỉ mang tính tham khảo.',
@@ -682,7 +693,7 @@ class _AiCopilotScreenState extends State<AiCopilotScreen> {
           ),
         ),
         TextButton(
-          onPressed: _startNewSession,
+          onPressed: _waiting ? null : _startNewSession,
           child: const Text(
             'Bắt đầu lại',
             style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),

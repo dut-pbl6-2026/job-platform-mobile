@@ -48,7 +48,15 @@ void main() {
               GatewayCircuitBreaker.instance.recordFailure();
             } else if (err.response != null) {
               GatewayCircuitBreaker.instance.recordSuccess();
-            } else if (err.type == DioExceptionType.cancel) {
+            } else if (err.type == DioExceptionType.sendTimeout ||
+                err.type == DioExceptionType.receiveTimeout) {
+              if (GatewayCircuitBreaker.instance.state ==
+                  CircuitState.halfOpen) {
+                GatewayCircuitBreaker.instance.recordFailure();
+              } else {
+                GatewayCircuitBreaker.instance.recordProbeAborted();
+              }
+            } else {
               GatewayCircuitBreaker.instance.recordProbeAborted();
             }
             return handler.next(err);
@@ -124,6 +132,57 @@ void main() {
 
       expect(breaker.state, CircuitState.closed);
     });
+
+    test(
+      'In HALF_OPEN, probe timeout trips back to OPEN cooldown and does not deadlock',
+      () async {
+        var simulatedTime = DateTime.now();
+        final timedBreaker = GatewayCircuitBreaker(
+          cooldown: const Duration(seconds: 30),
+          clock: () => simulatedTime,
+        );
+        GatewayCircuitBreaker.instance = timedBreaker;
+
+        timedBreaker.recordFailure();
+        simulatedTime = simulatedTime.add(const Duration(seconds: 30));
+        expect(timedBreaker.state, CircuitState.halfOpen);
+
+        // Adapter that throws receive timeout
+        dio.httpClientAdapter = _MockTimeoutAdapter();
+
+        try {
+          await dio.get('/api/jobs');
+        } on DioException {
+          // Ignored
+        }
+
+        // Breaker should have tripped back to OPEN and NOT be stuck in halfOpen
+        expect(timedBreaker.state, CircuitState.open);
+      },
+    );
+
+    test('In HALF_OPEN, probe abort (cancel) resets probe flag', () async {
+      var simulatedTime = DateTime.now();
+      final timedBreaker = GatewayCircuitBreaker(
+        cooldown: const Duration(seconds: 30),
+        clock: () => simulatedTime,
+      );
+      GatewayCircuitBreaker.instance = timedBreaker;
+
+      timedBreaker.recordFailure();
+      simulatedTime = simulatedTime.add(const Duration(seconds: 30));
+      expect(timedBreaker.state, CircuitState.halfOpen);
+
+      final cancelToken = CancelToken()..cancel('Test cancel');
+      try {
+        await dio.get('/api/jobs', cancelToken: cancelToken);
+      } on DioException {
+        // Ignored
+      }
+
+      // Next call should still be admitted as a probe (not stuck in half-open)
+      expect(timedBreaker.canExecute(), isTrue);
+    });
   });
 }
 
@@ -163,6 +222,24 @@ class _MockErrorAdapter implements HttpClientAdapter {
       headers: {
         'content-type': ['application/json'],
       },
+    );
+  }
+
+  @override
+  void close({bool force = false}) {}
+}
+
+class _MockTimeoutAdapter implements HttpClientAdapter {
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<List<int>>? requestStream,
+    Future<void>? cancelFuture,
+  ) async {
+    throw DioException(
+      requestOptions: options,
+      type: DioExceptionType.receiveTimeout,
+      message: 'Receive timeout',
     );
   }
 

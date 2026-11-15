@@ -69,26 +69,40 @@ class _CandidateApplicationsScreenState
 
   Future<void> _updateStatus(int index, String newStatus) async {
     final cand = _candidates[index];
-    final success = await _repository.updateCandidateStatus(cand.id, newStatus);
-    if (!mounted) return;
+    try {
+      final success = await _repository.updateCandidateStatus(
+        cand.id,
+        newStatus,
+      );
+      if (!mounted) return;
 
-    if (success) {
-      setState(() {
-        _candidates[index] = cand.copyWith(status: newStatus);
-      });
+      if (success) {
+        setState(() {
+          _candidates[index] = cand.copyWith(status: newStatus);
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Đã cập nhật trạng thái ứng viên thành: $newStatus'),
+            backgroundColor: AppColors.success,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Không thể cập nhật trạng thái ứng viên. Vui lòng thử lại.',
+            ),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Đã cập nhật trạng thái ứng viên thành: $newStatus'),
-          backgroundColor: AppColors.success,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Không thể cập nhật trạng thái ứng viên. Vui lòng thử lại.',
-          ),
+          content: Text('Không thể cập nhật trạng thái: $e'),
           backgroundColor: AppColors.error,
           behavior: SnackBarBehavior.floating,
         ),

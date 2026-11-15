@@ -61,6 +61,34 @@ class CandidateApplication {
     );
   }
 
+  static String normalizeCandidateStatus(String? raw) {
+    if (raw == null) return 'Chờ xem';
+    switch (raw.trim().toLowerCase()) {
+      case 'pending':
+      case 'chờ xem':
+        return 'Chờ xem';
+      case 'reviewed':
+      case 'đã xem':
+        return 'Đã xem';
+      case 'shortlisted':
+      case 'phù hợp':
+        return 'Phù hợp';
+      case 'accepted':
+      case 'được nhận':
+        return 'Được nhận';
+      case 'rejected':
+      case 'từ chối':
+        return 'Từ chối';
+      default:
+        return raw;
+    }
+  }
+
+  bool get isPending =>
+      status == 'Chờ xem' || status.toLowerCase() == 'pending';
+  bool get isShortlisted =>
+      status == 'Phù hợp' || status.toLowerCase() == 'shortlisted';
+
   factory CandidateApplication.fromJson(Map<String, dynamic> json) {
     return CandidateApplication(
       id: json['id']?.toString() ?? '',
@@ -78,7 +106,7 @@ class CandidateApplication {
           json['jobTitle']?.toString() ??
           'Ứng viên tiềm năng',
       experience: json['experience']?.toString() ?? '',
-      status: json['status']?.toString() ?? 'Chờ xem',
+      status: normalizeCandidateStatus(json['status']?.toString()),
       cvName:
           json['cvName']?.toString() ??
           json['cv_url']?.toString().split('/').last ??
@@ -160,11 +188,36 @@ class RecruiterJob {
     );
   }
 
+  static String normalizeJobStatus(String? raw) {
+    if (raw == null) return 'Đang mở';
+    switch (raw.trim().toLowerCase()) {
+      case 'active':
+      case 'đang mở':
+        return 'Đang mở';
+      case 'draft':
+      case 'pending':
+      case 'chờ duyệt':
+        return 'Chờ duyệt';
+      case 'closed':
+      case 'đã đóng':
+        return 'Đã đóng';
+      default:
+        return raw;
+    }
+  }
+
+  bool get isOpen => status == 'Đang mở' || status.toLowerCase() == 'active';
+  bool get isPending =>
+      status == 'Chờ duyệt' ||
+      status.toLowerCase() == 'draft' ||
+      status.toLowerCase() == 'pending';
+  bool get isClosed => status == 'Đã đóng' || status.toLowerCase() == 'closed';
+
   factory RecruiterJob.fromJson(Map<String, dynamic> json) {
     return RecruiterJob(
       id: json['id']?.toString() ?? '',
       title: json['title']?.toString() ?? '',
-      status: json['status']?.toString() ?? 'Đang mở',
+      status: normalizeJobStatus(json['status']?.toString()),
       applicationsCount:
           (json['applications'] as num?)?.toInt() ??
           (json['applicationsCount'] as num?)?.toInt() ??
