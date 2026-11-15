@@ -13,14 +13,19 @@ enum JobType {
 
   const JobType(this.value, this.displayName);
 
+  /// Matches case-insensitively and ignores spaces, hyphens and underscores, so
+  /// the backend enum spelling "FullTime" maps to [fullTime] like "Full-time".
   static JobType fromString(String value) {
+    final key = _normalizeKey(value);
     return JobType.values.firstWhere(
       (e) =>
-          e.value.toLowerCase() == value.toLowerCase() ||
-          e.displayName.toLowerCase() == value.toLowerCase(),
+          _normalizeKey(e.value) == key || _normalizeKey(e.displayName) == key,
       orElse: () => JobType.fullTime,
     );
   }
+
+  static String _normalizeKey(String value) =>
+      value.toLowerCase().replaceAll(RegExp(r'[\s\-_]'), '');
 }
 
 /// Candidate experience level enum
@@ -94,6 +99,11 @@ class JobModel {
     this.applicationCount = 0,
   });
 
+  /// Parses a job from the search API (`/api/search/jobs` items) or the job
+  /// detail API (`/api/jobs/{id}`). Both use camelCase keys: `employmentType`,
+  /// `createdAt` and `categoryName`. Legacy keys (`jobType`, `postedAt`,
+  /// `category`) are still read as a fallback so entries already stored in the
+  /// Hive cache (written by [toJson]) keep their values.
   factory JobModel.fromJson(Map<String, dynamic> json) {
     return JobModel(
       id: json['id'] as String? ?? '',
@@ -104,8 +114,15 @@ class JobModel {
       salaryMin: json['salaryMin'] as num?,
       salaryMax: json['salaryMax'] as num?,
       isSalaryNegotiable: json['isSalaryNegotiable'] as bool? ?? false,
-      category: json['category'] as String? ?? 'Khác',
-      jobType: JobType.fromString(json['jobType'] as String? ?? 'Full-time'),
+      category:
+          _readString(json, 'categoryName') ??
+          _readString(json, 'category') ??
+          'Khác',
+      jobType: JobType.fromString(
+        _readString(json, 'employmentType') ??
+            _readString(json, 'jobType') ??
+            'Full-time',
+      ),
       experienceLevel: ExperienceLevel.fromString(
         json['experienceLevel'] as String? ?? 'Junior',
       ),
@@ -117,16 +134,29 @@ class JobModel {
       description: json['description'] as String? ?? '',
       requirements: json['requirements'] as String? ?? '',
       benefits: json['benefits'] as String? ?? '',
-      postedAt: json['postedAt'] != null
-          ? DateTime.parse(json['postedAt'] as String)
-          : DateTime.now(),
-      expiresAt: json['expiresAt'] != null
-          ? DateTime.parse(json['expiresAt'] as String)
-          : null,
+      postedAt:
+          _readDate(json, 'createdAt') ??
+          _readDate(json, 'postedAt') ??
+          DateTime.now(),
+      expiresAt: _readDate(json, 'expiresAt'),
       isSaved: json['isSaved'] as bool? ?? false,
       viewCount: json['viewCount'] as int? ?? 0,
       applicationCount: json['applicationCount'] as int? ?? 0,
     );
+  }
+
+  /// Returns [key] only when its value is a non-empty string. Other shapes
+  /// (for example a nested `category` object from the recommendations API)
+  /// are ignored instead of throwing a cast error.
+  static String? _readString(Map<String, dynamic> json, String key) {
+    final value = json[key];
+    if (value is String && value.trim().isNotEmpty) return value;
+    return null;
+  }
+
+  static DateTime? _readDate(Map<String, dynamic> json, String key) {
+    final value = _readString(json, key);
+    return value == null ? null : DateTime.tryParse(value);
   }
 
   Map<String, dynamic> toJson() {
