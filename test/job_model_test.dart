@@ -149,13 +149,13 @@ void main() {
       },
     );
 
-    test('fromJson ignores a nested category object instead of throwing', () {
+    test('fromJson reads the name of a nested category object', () {
       final json = _searchItemJson()
         ..remove('categoryName')
         ..['category'] = {'id': 'cat-1', 'name': 'Công nghệ thông tin'};
       final job = JobModel.fromJson(json);
 
-      expect(job.category, 'Khác');
+      expect(job.category, 'Công nghệ thông tin');
     });
 
     test('fromJson still reads cached entries written with legacy keys', () {
@@ -183,9 +183,81 @@ void main() {
         expect(JobType.fromString('Full-time'), JobType.fullTime);
         expect(JobType.fromString('Toàn thời gian'), JobType.fullTime);
         expect(JobType.fromString('remote'), JobType.remote);
-        expect(JobType.fromString('unknown'), JobType.fullTime);
+        expect(JobType.fromString('unknown'), JobType.other);
+        expect(JobType.fromString(''), JobType.other);
       },
     );
+
+    test('JobType maps backend Contract and Internship with labels', () {
+      expect(JobType.fromString('Contract'), JobType.contract);
+      expect(JobType.fromString('Internship'), JobType.internship);
+      expect(JobType.fromString('Hợp đồng'), JobType.contract);
+      expect(JobType.fromString('Thực tập'), JobType.internship);
+      expect(JobType.contract.displayName, 'Hợp đồng');
+      expect(JobType.internship.displayName, 'Thực tập');
+      expect(JobType.other.displayName, 'Khác');
+    });
+
+    test('ExperienceLevel maps backend Entry and Mid explicitly', () {
+      expect(ExperienceLevel.fromString('Entry'), ExperienceLevel.fresher);
+      expect(ExperienceLevel.fromString('Mid'), ExperienceLevel.middle);
+      expect(ExperienceLevel.fromString('Senior'), ExperienceLevel.senior);
+      expect(ExperienceLevel.fromString('Lead'), ExperienceLevel.lead);
+      // Mobile's own spellings still resolve, so cached entries keep their value.
+      expect(ExperienceLevel.fromString('Fresher'), ExperienceLevel.fresher);
+      expect(ExperienceLevel.fromString('Middle'), ExperienceLevel.middle);
+    });
+
+    test('ExperienceLevel never maps unknown or missing values to junior', () {
+      expect(ExperienceLevel.fromString('Principal'), ExperienceLevel.other);
+      expect(ExperienceLevel.fromString(''), ExperienceLevel.other);
+      expect(ExperienceLevel.fromString('Junior'), ExperienceLevel.junior);
+
+      final json = _jobDetailJson()..remove('experienceLevel');
+      expect(JobModel.fromJson(json).experienceLevel, ExperienceLevel.other);
+    });
+
+    test('fromJson maps the job-svc JobDetailDto shape', () {
+      final job = JobModel.fromJson(_jobDetailJson());
+
+      expect(job.id, 'd2b1c0a4-6f2e-4c1e-9a7b-3f0e8c5d1a21');
+      expect(job.companyName, 'Công ty ABC');
+      expect(job.category, 'IT');
+      expect(job.jobType, JobType.contract);
+      expect(job.experienceLevel, ExperienceLevel.fresher);
+      expect(job.salaryMin, 15000000);
+      expect(job.postedAt.toUtc(), DateTime.utc(2026, 11, 2, 3));
+    });
+
+    test('fromJson maps every backend employment and experience value', () {
+      for (final entry in {
+        'FullTime': JobType.fullTime,
+        'PartTime': JobType.partTime,
+        'Contract': JobType.contract,
+        'Internship': JobType.internship,
+      }.entries) {
+        final json = _jobDetailJson()..['employmentType'] = entry.key;
+        expect(JobModel.fromJson(json).jobType, entry.value, reason: entry.key);
+      }
+      for (final entry in {
+        'Entry': ExperienceLevel.fresher,
+        'Mid': ExperienceLevel.middle,
+        'Senior': ExperienceLevel.senior,
+        'Lead': ExperienceLevel.lead,
+      }.entries) {
+        final json = _jobDetailJson()..['experienceLevel'] = entry.key;
+        expect(
+          JobModel.fromJson(json).experienceLevel,
+          entry.value,
+          reason: entry.key,
+        );
+      }
+    });
+
+    test('fromJson maps an unknown employmentType to other, not fullTime', () {
+      final json = _jobDetailJson()..['employmentType'] = 'Freelance-Contract';
+      expect(JobModel.fromJson(json).jobType, JobType.other);
+    });
 
     test('JobFilterParams calculates active filters properly', () {
       const defaultParams = JobFilterParams();
@@ -232,4 +304,27 @@ Map<String, dynamic> _searchItemJson() => {
   'requirements': 'Yêu cầu...',
   'benefits': 'Quyền lợi...',
   'skills': ['Flutter', 'Dart'],
+};
+
+/// Job detail shape returned by job-svc (`GET /api/jobs/{id}`, JobDetailDto).
+Map<String, dynamic> _jobDetailJson() => {
+  'id': 'd2b1c0a4-6f2e-4c1e-9a7b-3f0e8c5d1a21',
+  'title': 'Lập trình viên .NET',
+  'description': 'Mô tả công việc',
+  'companyId': 'a12b3c4d-0000-0000-0000-000000000001',
+  'companyName': 'Công ty ABC',
+  'location': 'Đà Nẵng',
+  'salaryMin': 15000000,
+  'salaryMax': 25000000,
+  'salaryCurrency': 'VND',
+  'categoryId': 'c34d5e6f-0000-0000-0000-000000000002',
+  'categoryName': 'IT',
+  'requirements': 'Yêu cầu...',
+  'benefits': 'Quyền lợi...',
+  'employmentType': 'Contract',
+  'experienceLevel': 'Entry',
+  'status': 'Active',
+  'viewCount': 4,
+  'createdAt': '2026-11-02T03:00:00Z',
+  'updatedAt': '2026-11-02T03:00:00Z',
 };
