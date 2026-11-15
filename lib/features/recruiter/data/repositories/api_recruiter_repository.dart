@@ -138,10 +138,11 @@ class ApiRecruiterRepository implements IRecruiterRepository {
   @override
   Future<List<RecruiterJob>> getMyJobs({String? status}) async {
     try {
-      final queryParams = <String, dynamic>{
-        if (status != null && status.isNotEmpty)
-          'status': _mapJobStatusToBackend(status),
-      };
+      // A UI status without a job-svc equivalent is omitted, not guessed.
+      final backendStatus = status == null
+          ? null
+          : _mapJobStatusToBackend(status);
+      final queryParams = <String, dynamic>{'status': ?backendStatus};
 
       final response = await _dio.get(
         '/api/jobs/recruiter',
@@ -351,16 +352,19 @@ class ApiRecruiterRepository implements IRecruiterRepository {
     }
   }
 
-  String _mapJobStatusToBackend(String uiStatus) {
+  /// Maps a UI job status to a job-svc `JobStatus` (Pending, Active, Closed,
+  /// Rejected, Deleted). Returns null when job-svc has no equivalent.
+  String? _mapJobStatusToBackend(String uiStatus) {
     switch (uiStatus.trim().toLowerCase()) {
       case 'đang mở':
         return 'Active';
       case 'chờ duyệt':
-        return 'Draft';
+        // job-svc "Pending": awaiting admin approval.
+        return 'Pending';
       case 'đã đóng':
         return 'Closed';
       default:
-        return uiStatus;
+        return null;
     }
   }
 

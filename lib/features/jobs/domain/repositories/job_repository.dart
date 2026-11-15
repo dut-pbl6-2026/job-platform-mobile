@@ -41,7 +41,4 @@ abstract class IJobRepository {
     int limit = 10,
     bool refresh = false,
   });
-
-  /// Get explanation for why a specific job was recommended (SRS RECOMMEND-01-04)
-  Future<RecommendationExplanation?> explainRecommendation(String jobId);
 }

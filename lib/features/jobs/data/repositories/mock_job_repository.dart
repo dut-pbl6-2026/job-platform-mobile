@@ -561,35 +561,4 @@ class MockJobRepository implements IJobRepository {
 
     return recommendations.take(limit).toList();
   }
-
-  @override
-  Future<RecommendationExplanation?> explainRecommendation(String jobId) async {
-    await Future.delayed(const Duration(milliseconds: 100));
-    final explanations = {
-      'job-1': const RecommendationExplanation(
-        jobId: 'job-1',
-        reason:
-            'Hồ sơ của bạn có 3+ năm kinh nghiệm Flutter, thành thạo Bloc, Clean Architecture và REST API trùng khớp hoàn toàn với yêu cầu tuyển dụng.',
-        score: 96,
-      ),
-      'job-3': const RecommendationExplanation(
-        jobId: 'job-3',
-        reason:
-            'Bạn đã tìm kiếm nhiều từ khóa AI, Python và LLM trong tuần qua. Vị trí này phù hợp với định hướng phát triển AI Copilot.',
-        score: 89,
-      ),
-      'job-2': const RecommendationExplanation(
-        jobId: 'job-2',
-        reason:
-            'Đây là công việc có lượt xem và ứng tuyển cao nhất trong tuần tại khu vực TP. Hồ Chí Minh.',
-        score: 83,
-      ),
-    };
-    return explanations[jobId] ??
-        RecommendationExplanation(
-          jobId: jobId,
-          reason: 'Công việc này có các kỹ năng phù hợp với tiêu chí của bạn.',
-          score: 80,
-        );
-  }
 }

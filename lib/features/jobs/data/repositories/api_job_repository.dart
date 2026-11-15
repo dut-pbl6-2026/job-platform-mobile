@@ -61,36 +61,20 @@ class ApiJobRepository implements IJobRepository {
       if (params.skills.isNotEmpty) {
         queryParams['skills'] = params.skills.join(',');
       }
-      if (params.specialization != null &&
-          params.specialization!.trim().isNotEmpty) {
-        queryParams['specialization'] = params.specialization;
-      }
-      if (params.workplaceType != null &&
-          params.workplaceType!.trim().isNotEmpty) {
-        queryParams['workplaceType'] = params.workplaceType;
-      }
-      if (params.country != null && params.country!.trim().isNotEmpty) {
-        queryParams['country'] = params.country;
-      }
-      if (params.internationalRegion != null &&
-          params.internationalRegion!.trim().isNotEmpty) {
-        queryParams['region'] = params.internationalRegion;
-      }
-      if (params.salaryRangeId != null &&
-          params.salaryRangeId!.trim().isNotEmpty) {
-        queryParams['salaryRange'] = params.salaryRangeId;
-      }
-      if (params.currency.isNotEmpty) {
-        queryParams['currency'] = params.currency;
-      }
+      // search-svc has no parameter for specialization, workplaceType, country,
+      // region, salaryRange, currency or includeNegotiable, so those filters are
+      // not sent. They stay in the UI state until the backend supports them.
       if (params.salaryMin != null) {
         queryParams['minSalary'] = params.salaryMin.toString();
       }
       if (params.salaryMax != null) {
         queryParams['maxSalary'] = params.salaryMax.toString();
       }
-      if (params.sortBy.isNotEmpty) {
-        queryParams['sortBy'] = params.sortBy;
+      // search-svc accepts created_at_desc/asc and salary_desc/asc. Mobile's
+      // 'newest' and 'relevance' have no exact match, so they are omitted and
+      // search-svc applies its default ordering.
+      if (params.sortBy == 'salary_desc') {
+        queryParams['sortBy'] = 'salary_desc';
       }
 
       final response = await _dio.get(
@@ -360,36 +344,5 @@ class ApiJobRepository implements IJobRepository {
       limit: limit,
       refresh: refresh,
     );
-  }
-
-  @override
-  Future<RecommendationExplanation?> explainRecommendation(String jobId) async {
-    try {
-      final response = await _dio.get(
-        '/api/jobs/recommended/explain',
-        queryParameters: {'job_id': jobId},
-        options: Options(
-          sendTimeout: const Duration(seconds: 5),
-          receiveTimeout: const Duration(seconds: 5),
-          headers: {'Accept': 'application/json'},
-        ),
-      );
-
-      if (response.statusCode == 200 && response.data != null) {
-        final dynamic raw = response.data is String
-            ? jsonDecode(response.data as String)
-            : response.data;
-        if (raw is Map) {
-          return RecommendationExplanation.fromJson(
-            Map<String, dynamic>.from(raw),
-          );
-        }
-      }
-    } catch (e) {
-      debugPrint(
-        '[ApiJobRepository] Gateway explainRecommendation fallback: $e',
-      );
-    }
-    return _fallbackMockRepository.explainRecommendation(jobId);
   }
 }

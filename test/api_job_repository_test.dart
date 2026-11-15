@@ -114,6 +114,59 @@ void main() {
           );
         }
       });
+
+      test('supported filters use search-svc parameter names', () async {
+        final query = await captureQuery(
+          const JobFilterParams(
+            keyword: 'flutter',
+            location: 'Hà Nội',
+            category: 'IT',
+            skills: ['Dart', 'Flutter'],
+            salaryMin: 10000000,
+            salaryMax: 20000000,
+            sortBy: 'salary_desc',
+          ),
+        );
+        expect(query['q'], 'flutter');
+        expect(query['location'], 'Hà Nội');
+        expect(query['category'], 'IT');
+        expect(query['skills'], 'Dart,Flutter');
+        expect(query['minSalary'], '10000000');
+        expect(query['maxSalary'], '20000000');
+        expect(query['sortBy'], 'salary_desc');
+      });
+
+      test('filters without a search-svc parameter are not sent', () async {
+        final query = await captureQuery(
+          const JobFilterParams(
+            specialization: 'AI',
+            workplaceType: 'remote',
+            country: 'JP',
+            internationalRegion: 'Tokyo',
+            salaryRangeId: '10m_20m',
+            currency: 'JPY',
+            includeNegotiable: false,
+          ),
+        );
+        for (final key in [
+          'specialization',
+          'workplaceType',
+          'country',
+          'region',
+          'salaryRange',
+          'currency',
+          'includeNegotiable',
+        ]) {
+          expect(query.containsKey(key), isFalse, reason: key);
+        }
+      });
+
+      test('sortBy values search-svc does not know are omitted', () async {
+        for (final sort in ['newest', 'relevance']) {
+          final query = await captureQuery(JobFilterParams(sortBy: sort));
+          expect(query.containsKey('sortBy'), isFalse, reason: sort);
+        }
+      });
     });
   });
 }
