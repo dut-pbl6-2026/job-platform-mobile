@@ -55,6 +55,38 @@ AuthFailure mapDioToFailure(DioException e) {
     );
   }
   if (code == 422) {
+    // The backend tags each 422 with a stable errorCode. They mean different
+    // things to the user, so they must not collapse into one message.
+    final errorCode = data is Map ? data['errorCode']?.toString() : null;
+    if (errorCode == 'WORK_EMAIL_REQUIRED') {
+      return AuthFailure(
+        code: AuthFailure.workEmailRequired,
+        statusCode: 422,
+        rawMessage: raw,
+      );
+    }
+    if (errorCode == 'VERIFICATION_TOKEN_INVALID') {
+      return AuthFailure(
+        code: AuthFailure.verificationTokenInvalid,
+        statusCode: 422,
+        rawMessage: raw,
+      );
+    }
+    if (errorCode == 'INVITE_EMAIL_INVALID') {
+      return AuthFailure(
+        code: AuthFailure.invalidInviteCode,
+        statusCode: 422,
+        rawMessage: raw,
+      );
+    }
+    if (errorCode == null && data is Map && data['errors'] is Map) {
+      // ValidationProblem (e.g. password too weak), not an invite-code error.
+      return AuthFailure(
+        code: AuthFailure.requestInvalid,
+        statusCode: 422,
+        rawMessage: raw,
+      );
+    }
     return AuthFailure(
       code: AuthFailure.invalidInviteCode,
       statusCode: 422,
@@ -125,6 +157,14 @@ String authFailureToMessage(AuthFailure f) {
       return 'Phiên đăng nhập đã bị thu hồi, vui lòng đăng nhập lại';
     case AuthFailure.invalidToken:
       return 'Mã xác thực không hợp lệ hoặc đã hết hạn';
+    case AuthFailure.verificationTokenInvalid:
+      return 'Liên kết xác minh không hợp lệ, đã hết hạn hoặc đã được sử dụng.';
+    case AuthFailure.workEmailRequired:
+      return 'Cần dùng email công ty để đăng ký doanh nghiệp.';
+    case AuthFailure.serviceUnavailable:
+      return 'Hệ thống tạm thời không khả dụng. Vui lòng thử lại sau.';
+    case AuthFailure.requestInvalid:
+      return 'Dữ liệu chưa hợp lệ, vui lòng kiểm tra lại.';
     case AuthFailure.networkError:
       return 'Lỗi kết nối mạng, vui lòng thử lại';
     default:

@@ -10,10 +10,13 @@ import '../../features/applications/presentation/application_detail_screen.dart'
 import '../../features/applications/presentation/application_history_screen.dart';
 import '../../features/applications/presentation/apply_job_screen.dart';
 import '../../features/auth/login_screen.dart';
+import '../../features/auth/presentation/company_sign_up_screen.dart';
 import '../../features/auth/presentation/forgot_password_screen.dart';
 import '../../features/auth/presentation/reset_password_screen.dart';
 import '../../features/auth/presentation/verify_email_screen.dart';
 import '../../features/auth/register_screen.dart';
+import '../../features/company/presentation/join_request_status_screen.dart';
+import '../../features/company/presentation/join_requests_screen.dart';
 import '../../features/home/home_screen.dart';
 import '../../features/home/main_navigation_screen.dart';
 import '../../features/jobs/presentation/job_detail_screen.dart';
@@ -35,6 +38,7 @@ class AppRoutes {
   static const String splash = '/';
   static const String login = '/login';
   static const String register = '/register';
+  static const String companySignUp = '/register-company';
   static const String home = '/home';
   static const String jobs = '/jobs';
   static const String search = '/search';
@@ -53,13 +57,18 @@ class AppRoutes {
   static const String recruiterJobs = '/recruiter/jobs';
   static const String recruiterPostJob = '/recruiter/jobs/create';
   static const String recruiterInviteCodes = '/recruiter/invite-codes';
+  static const String recruiterJoinRequests = '/recruiter/join-requests';
   static const String recruiterCandidates = '/recruiter/candidates';
+
+  /// Requester-side status of the signed-in account's join request.
+  static const String myJoinRequest = '/my-join-request';
 
   /// Public routes that do not require authentication.
   static const List<String> publicRoutes = [
     splash,
     login,
     register,
+    companySignUp,
     jobs,
     search,
     forgotPassword,
@@ -104,7 +113,8 @@ class AppRouter {
       // If role is valid, redirect to home. If role is unknown or missing, fail closed (stay on login/deny access).
       if (isAuthenticated &&
           (currentPath == AppRoutes.login ||
-              currentPath == AppRoutes.register)) {
+              currentPath == AppRoutes.register ||
+              currentPath == AppRoutes.companySignUp)) {
         if (resolvedRole != null) {
           return AppRoutes.home;
         } else {
@@ -162,6 +172,11 @@ class AppRouter {
         path: AppRoutes.register,
         name: 'register',
         builder: (context, state) => const RegisterScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.companySignUp,
+        name: 'company-sign-up',
+        builder: (context, state) => const CompanySignUpScreen(),
       ),
       GoRoute(
         path: AppRoutes.forgotPassword,
@@ -227,6 +242,18 @@ class AppRouter {
         path: AppRoutes.recruiterInviteCodes,
         name: 'recruiter-invite-codes',
         builder: (context, state) => const InviteCodeScreen(),
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: AppRoutes.recruiterJoinRequests,
+        name: 'recruiter-join-requests',
+        builder: (context, state) => const JoinRequestsScreen(),
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: AppRoutes.myJoinRequest,
+        name: 'my-join-request',
+        builder: (context, state) => const JoinRequestStatusScreen(),
       ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,

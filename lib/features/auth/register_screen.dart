@@ -178,6 +178,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
         inviteCode: _inviteCodeController.text.trim().isEmpty
             ? null
             : _inviteCodeController.text.trim(),
+        // AUTH-01-15: the invite code only redeems with the address it was
+        // issued to, and that address is the registration email.
+        inviteEmail: _selectedRole == UserRole.recruiter
+            ? _emailController.text.trim()
+            : null,
       );
 
       if (mounted) {
@@ -272,6 +277,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
         ],
         const SizedBox(height: 40),
         _buildLoginLink(),
+        const SizedBox(height: 4),
+        Center(
+          child: TextButton(
+            key: const Key('register_company_signup_link'),
+            onPressed: () => context.push(AppRoutes.companySignUp),
+            child: const Text('Bạn đại diện cho doanh nghiệp? Đăng ký công ty'),
+          ),
+        ),
       ],
     ),
   );
@@ -454,7 +467,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 enabled: !_isLoading,
                 textCapitalization: TextCapitalization.characters,
                 validator: _validateInviteCode,
-                decoration: const InputDecoration(hintText: 'XXXX-XXXX-XXXX'),
+                decoration: const InputDecoration(
+                  hintText: 'XXXX-XXXX-XXXX',
+                  helperText:
+                      'Mã mời chỉ dùng được với đúng email công ty đã cấp ở trên.',
+                  helperMaxLines: 2,
+                ),
               ),
             ),
           ],

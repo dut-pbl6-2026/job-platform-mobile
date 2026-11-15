@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../../core/constants/company_self_serve_strings.dart';
 import '../../../core/session/auth_session.dart';
 import '../../../core/theme/app_theme.dart';
 import '../data/repositories/api_invite_code_repository.dart';
 
-/// Company creator issues single-use recruiter invite codes (SRS AUTH-01-09).
-/// The code is shown once; the server keeps only its hash.
+/// Company creator issues single-use recruiter invite codes bound to one email
+/// address (SRS AUTH-01-09, AUTH-01-15). The code is shown once; the server
+/// keeps only its hash, and only an account registering with the bound address
+/// can redeem it.
 class InviteCodeScreen extends StatefulWidget {
   final ApiInviteCodeRepository? repository;
 
@@ -20,6 +23,9 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
   late final ApiInviteCodeRepository _repository =
       widget.repository ?? ApiInviteCodeRepository();
 
+  final _formKey = GlobalKey<FormState>();
+  final _emailController = TextEditingController();
+
   IssuedInviteCode? _issued;
   String? _error;
   bool _loading = false;
@@ -28,15 +34,35 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
       AuthSession.instance.currentUser?.companyId ??
       AuthSession.instance.companyId;
 
+  @override
+  void dispose() {
+    _emailController.dispose();
+    super.dispose();
+  }
+
+  String? _validateEmail(String? value) {
+    final email = value?.trim() ?? '';
+    if (email.isEmpty) return InviteCodeStrings.emailRequired;
+    final emailRegex = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
+    if (!emailRegex.hasMatch(email)) return InviteCodeStrings.emailInvalid;
+    return null;
+  }
+
   Future<void> _create() async {
     final companyId = _companyId;
     if (companyId == null || companyId.isEmpty) return;
+    if (!_formKey.currentState!.validate()) return;
     setState(() {
       _loading = true;
       _error = null;
+      // The previously issued code is shown once; a new issue replaces it.
+      _issued = null;
     });
     try {
-      final issued = await _repository.createInviteCode(companyId);
+      final issued = await _repository.createInviteCode(
+        companyId: companyId,
+        email: _emailController.text.trim(),
+      );
       if (!mounted) return;
       setState(() => _issued = issued);
     } on InviteCodeException catch (e) {
@@ -52,7 +78,7 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
     if (!mounted) return;
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(const SnackBar(content: Text('Đã sao chép mã mời')));
+    ).showSnackBar(const SnackBar(content: Text(InviteCodeStrings.copied)));
   }
 
   static String _formatDate(DateTime d) {
@@ -70,7 +96,7 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text(
-          'Mã mời đăng ký',
+          InviteCodeStrings.title,
           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
         ),
         centerTitle: true,
@@ -82,19 +108,32 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
           padding: const EdgeInsets.all(16),
           children: [
             const Text(
-              'Cấp mã mời để đồng nghiệp đăng ký nhà tuyển dụng cho công ty. '
-              'Mỗi mã dùng được một lần và hết hạn sau 7 ngày.',
+              InviteCodeStrings.description,
               style: TextStyle(color: AppColors.textPrimary),
             ),
             const SizedBox(height: 16),
-            if (!hasCompany)
-              const _Notice(
-                text:
-                    'Tài khoản của bạn chưa gắn với công ty nên chưa tạo được mã mời.',
-              ),
+            if (!hasCompany) const _Notice(text: InviteCodeStrings.noCompany),
             if (_error != null) _Notice(text: _error!),
-            const SizedBox(height: 8),
+            Form(
+              key: _formKey,
+              child: TextFormField(
+                key: const Key('invite_code_email'),
+                controller: _emailController,
+                keyboardType: TextInputType.emailAddress,
+                textInputAction: TextInputAction.done,
+                enabled: hasCompany && !_loading,
+                validator: _validateEmail,
+                onFieldSubmitted: (_) => _create(),
+                decoration: const InputDecoration(
+                  labelText: InviteCodeStrings.emailLabel,
+                  hintText: InviteCodeStrings.emailHint,
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
             FilledButton(
+              key: const Key('invite_code_submit'),
               onPressed: (!hasCompany || _loading) ? null : _create,
               child: _loading
                   ? const SizedBox(
@@ -102,13 +141,18 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
                       width: 18,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Text('Tạo mã mời'),
+                  : const Text(InviteCodeStrings.submit),
             ),
             if (issued != null) ...[
               const SizedBox(height: 24),
               const Text(
-                'Mã mời mới',
+                InviteCodeStrings.issuedTitle,
                 style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                issued.email,
+                style: const TextStyle(color: AppColors.textPrimary),
               ),
               const SizedBox(height: 8),
               SelectableText(
@@ -122,21 +166,18 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
               ),
               const SizedBox(height: 4),
               Text(
-                'Hết hạn ngày ${_formatDate(issued.expiresAt)}',
+                '${InviteCodeStrings.expiresPrefix} '
+                '${_formatDate(issued.expiresAt)}',
                 style: const TextStyle(color: AppColors.textPrimary),
               ),
               const SizedBox(height: 12),
               OutlinedButton.icon(
                 onPressed: () => _copy(issued.code),
                 icon: const Icon(Icons.copy_rounded, size: 18),
-                label: const Text('Sao chép mã'),
+                label: const Text(InviteCodeStrings.copy),
               ),
               const SizedBox(height: 12),
-              const _Notice(
-                text:
-                    'Mã chỉ hiển thị một lần. Hãy sao chép và gửi cho người cần đăng ký; sau khi rời màn hình bạn không xem lại được mã này.',
-                info: true,
-              ),
+              const _Notice(text: InviteCodeStrings.showOnce, info: true),
             ],
           ],
         ),

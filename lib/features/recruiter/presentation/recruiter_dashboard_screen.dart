@@ -306,6 +306,13 @@ class _RecruiterDashboardScreenState extends State<RecruiterDashboardScreen> {
                 onTap: () => context.push(AppRoutes.recruiterInviteCodes),
               ),
               _buildActionTile(
+                icon: Icons.person_add_alt_1_outlined,
+                title: 'Yêu cầu tham gia công ty',
+                subtitle:
+                    'Duyệt hoặc từ chối người dùng email công ty đăng ký tham gia',
+                onTap: () => context.push(AppRoutes.recruiterJoinRequests),
+              ),
+              _buildActionTile(
                 icon: Icons.apartment_rounded,
                 title: 'Hồ sơ công ty',
                 subtitle: 'Cập nhật thông tin doanh nghiệp, logo và mô tả',

@@ -5,6 +5,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:job_platform_mobile/core/error/error_mapper.dart';
+import 'package:job_platform_mobile/core/error/failures.dart';
 import 'package:job_platform_mobile/features/auth/data/repositories/api_auth_repository.dart';
 import 'package:job_platform_mobile/features/auth/presentation/verify_email_screen.dart';
 
@@ -74,6 +75,16 @@ const _invalidTokenProblem = {
   'detail': 'Invalid or expired token',
 };
 
+/// AUTH-01-11: the merged auth-svc answers `422 VERIFICATION_TOKEN_INVALID`
+/// (it used to be `400`).
+const _invalidTokenProblem422 = {
+  'type': 'about:blank',
+  'title': 'Invalid verification token',
+  'status': 422,
+  'detail': 'The verification link is invalid, expired or already used.',
+  'errorCode': 'VERIFICATION_TOKEN_INVALID',
+};
+
 Future<_ScriptedAdapter> _pumpScreen(
   WidgetTester tester, {
   required String? token,
@@ -116,6 +127,46 @@ void main() {
       expect(find.text(_networkCopy), findsNothing);
       expect(adapter.requests, hasLength(1));
       expect(adapter.requests.single.data, {'token': 'tok-123'});
+    },
+  );
+
+  testWidgets(
+    '422 VERIFICATION_TOKEN_INVALID shows the invalid state, not a retry',
+    (tester) async {
+      await _pumpScreen(
+        tester,
+        token: 'used-token',
+        scripts: {
+          _verifyPath: [const _Reply(422, _invalidTokenProblem422)],
+        },
+      );
+
+      expect(find.text(_invalidCopy), findsOneWidget);
+      expect(find.text('Email'), findsOneWidget);
+      expect(find.text('Thử lại'), findsNothing);
+      expect(find.text(_genericCopy), findsNothing);
+      expect(find.text(_verifiedCopy), findsNothing);
+    },
+  );
+
+  test(
+    '422 maps to the verification-token failure, not an invite error',
+    () async {
+      final dio = Dio(BaseOptions(baseUrl: 'http://gateway.test'))
+        ..httpClientAdapter = _ScriptedAdapter({
+          _verifyPath: [const _Reply(422, _invalidTokenProblem422)],
+        });
+
+      await expectLater(
+        ApiAuthRepository(dio: dio).verifyEmail(token: 'used-token'),
+        throwsA(
+          isA<AuthFailure>().having(
+            (f) => f.code,
+            'code',
+            AuthFailure.verificationTokenInvalid,
+          ),
+        ),
+      );
     },
   );
 
