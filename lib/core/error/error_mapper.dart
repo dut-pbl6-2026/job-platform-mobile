@@ -87,10 +87,15 @@ AuthFailure mapDioToFailure(DioException e) {
   );
 }
 
+/// Login 401 copy. The server returns the same 401 for a wrong password and for
+/// an account that is not verified yet, so the client cannot tell them apart.
+const String loginCredentialsOrVerifyMessage =
+    'Check your credentials or verify your email';
+
 String authFailureToMessage(AuthFailure f) {
   switch (f.code) {
     case AuthFailure.invalidCredentials:
-      return 'Email hoặc mật khẩu không chính xác';
+      return loginCredentialsOrVerifyMessage;
     case AuthFailure.emailExists:
       return 'Email đã được đăng ký';
     case AuthFailure.accountLocked:

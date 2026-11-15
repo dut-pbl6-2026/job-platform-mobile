@@ -102,7 +102,7 @@ class MockAuthRepository implements IAuthRepository {
   }
 
   @override
-  Future<AuthResult> register({
+  Future<void> register({
     required String name,
     required String email,
     required String password,
@@ -110,33 +110,8 @@ class MockAuthRepository implements IAuthRepository {
     String? companyId,
   }) async {
     await Future.delayed(const Duration(milliseconds: 300));
-    // Mock allows recruiter without companyId for test compatibility; real ApiAuthRepository enforces per SRS AUTH-01-06
-
-    final userId = 'usr_${DateTime.now().millisecondsSinceEpoch}';
-    final user = UserModel(
-      id: userId,
-      name: name,
-      email: email,
-      role: role,
-      createdAt: DateTime.now(),
-    );
-
-    final mockToken = _generateMockJwt(
-      userId: userId,
-      email: email,
-      role: role.value,
-    );
-
-    final result = AuthResult(
-      token: mockToken,
-      refreshToken:
-          'mock_refresh_token_${DateTime.now().millisecondsSinceEpoch}',
-      user: user,
-      expiresAt: DateTime.now().add(const Duration(hours: 1)),
-    );
-
-    await _session.setSession(result);
-    return result;
+    // Mock allows recruiter without companyId for test compatibility; real ApiAuthRepository enforces per SRS AUTH-01-06.
+    // Like the API, registration issues no session: the account must be verified first.
   }
 
   @override
