@@ -3,6 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:job_platform_mobile/core/router/app_router.dart';
+import 'package:job_platform_mobile/features/applications/presentation/application_history_screen.dart';
+import 'package:job_platform_mobile/features/home/home_screen.dart';
+import 'package:job_platform_mobile/features/jobs/presentation/search_screen.dart';
+import 'package:job_platform_mobile/features/profile/presentation/profile_screen.dart';
 import 'package:job_platform_mobile/core/session/auth_session.dart';
 import 'package:job_platform_mobile/core/theme/app_theme.dart';
 import 'package:job_platform_mobile/features/auth/domain/models/auth_result.dart';
@@ -498,6 +502,46 @@ void main() {
         expect(AuthSession.instance.isUser, isTrue);
       },
     );
+  });
+
+  group('Candidate destination mapping', () {
+    // Shell branch order from AppRouter's StatefulShellRoute:
+    // 0 = Trang chủ (home), 1 = Việc làm (jobs), 2 = Hồ sơ (profile).
+    final candidate = MainNavigationScreen.getDestinationsForRole(
+      UserRole.user,
+    );
+
+    RoleNavDestination byLabel(String label) =>
+        candidate.firstWhere((d) => d.label == label);
+
+    test('each candidate tab builds the screen it is labelled for', () {
+      expect(byLabel('Trang chủ').screenBuilder(), isA<HomeScreen>());
+      expect(byLabel('Tìm kiếm').screenBuilder(), isA<SearchScreen>());
+      expect(
+        byLabel('Ứng tuyển').screenBuilder(),
+        isA<ApplicationHistoryScreen>(),
+      );
+      expect(byLabel('Hồ sơ').screenBuilder(), isA<ProfileScreen>());
+    });
+
+    test('each candidate tab points at its own route', () {
+      expect(byLabel('Trang chủ').routePath, AppRoutes.home);
+      expect(byLabel('Tìm kiếm').routePath, AppRoutes.search);
+      expect(byLabel('Ứng tuyển').routePath, AppRoutes.applications);
+      expect(byLabel('Hồ sơ').routePath, AppRoutes.profile);
+    });
+
+    test(
+      'Ứng tuyển is not mapped to a shell branch (it used to be branch 2)',
+      () {
+        expect(byLabel('Ứng tuyển').branchIndex, isNull);
+        expect(byLabel('Hồ sơ').branchIndex, 2);
+      },
+    );
+
+    test('Tìm kiếm is not mapped to the Việc làm branch', () {
+      expect(byLabel('Tìm kiếm').branchIndex, isNull);
+    });
   });
 }
 

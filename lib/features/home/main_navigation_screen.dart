@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/router/app_router.dart';
 import '../../core/session/auth_session.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/design_asset.dart';
@@ -17,15 +18,22 @@ class RoleNavDestination {
   final String label;
   final IconData icon;
   final IconData selectedIcon;
-  final int branchIndex;
+
+  /// Shell branch that renders this destination, or null when the screen is a
+  /// top-level route outside the shell (e.g. Search, Application history).
+  final int? branchIndex;
+
+  /// Route used to reach the destination when it is not a shell branch.
+  final String routePath;
   final Widget Function() screenBuilder;
 
   const RoleNavDestination({
     required this.label,
     required this.icon,
     required this.selectedIcon,
-    required this.branchIndex,
+    required this.routePath,
     required this.screenBuilder,
+    this.branchIndex,
   });
 }
 
@@ -58,6 +66,7 @@ class MainNavigationScreen extends StatefulWidget {
             label: 'Trang chủ',
             icon: Icons.home_outlined,
             selectedIcon: Icons.home_rounded,
+            routePath: AppRoutes.home,
             branchIndex: 0,
             screenBuilder: _buildHomeScreen,
           ),
@@ -65,20 +74,21 @@ class MainNavigationScreen extends StatefulWidget {
             label: 'Tìm kiếm',
             icon: Icons.search_outlined,
             selectedIcon: Icons.search_rounded,
-            branchIndex: 1,
+            routePath: AppRoutes.search,
             screenBuilder: _buildSearchScreen,
           ),
           RoleNavDestination(
             label: 'Ứng tuyển',
             icon: Icons.history_edu_outlined,
             selectedIcon: Icons.history_edu_rounded,
-            branchIndex: 2,
+            routePath: AppRoutes.applications,
             screenBuilder: _buildApplicationHistoryScreen,
           ),
           RoleNavDestination(
             label: 'Hồ sơ',
             icon: Icons.person_outline_rounded,
             selectedIcon: Icons.person_rounded,
+            routePath: AppRoutes.profile,
             branchIndex: 2,
             screenBuilder: _buildProfileScreen,
           ),
@@ -90,6 +100,7 @@ class MainNavigationScreen extends StatefulWidget {
             label: 'Trang chủ',
             icon: Icons.home_outlined,
             selectedIcon: Icons.home_rounded,
+            routePath: AppRoutes.home,
             branchIndex: 0,
             screenBuilder: _buildHomeScreen,
           ),
@@ -97,13 +108,14 @@ class MainNavigationScreen extends StatefulWidget {
             label: 'Tìm kiếm',
             icon: Icons.search_outlined,
             selectedIcon: Icons.search_rounded,
-            branchIndex: 1,
+            routePath: AppRoutes.search,
             screenBuilder: _buildSearchScreen,
           ),
           RoleNavDestination(
             label: 'Tin tuyển dụng',
             icon: Icons.work_outline_rounded,
             selectedIcon: Icons.work_rounded,
+            routePath: AppRoutes.jobs,
             branchIndex: 1,
             screenBuilder: _buildJobListScreen,
           ),
@@ -111,6 +123,7 @@ class MainNavigationScreen extends StatefulWidget {
             label: 'Hồ sơ',
             icon: Icons.person_outline_rounded,
             selectedIcon: Icons.person_rounded,
+            routePath: AppRoutes.profile,
             branchIndex: 2,
             screenBuilder: _buildProfileScreen,
           ),
@@ -122,6 +135,7 @@ class MainNavigationScreen extends StatefulWidget {
             label: 'Trang chủ',
             icon: Icons.home_outlined,
             selectedIcon: Icons.home_rounded,
+            routePath: AppRoutes.home,
             branchIndex: 0,
             screenBuilder: _buildHomeScreen,
           ),
@@ -129,13 +143,14 @@ class MainNavigationScreen extends StatefulWidget {
             label: 'Tìm kiếm',
             icon: Icons.search_outlined,
             selectedIcon: Icons.search_rounded,
-            branchIndex: 1,
+            routePath: AppRoutes.search,
             screenBuilder: _buildSearchScreen,
           ),
           RoleNavDestination(
             label: 'Hồ sơ',
             icon: Icons.person_outline_rounded,
             selectedIcon: Icons.person_rounded,
+            routePath: AppRoutes.profile,
             branchIndex: 2,
             screenBuilder: _buildProfileScreen,
           ),
@@ -198,11 +213,15 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     final item = destinations[uiIndex];
 
     if (widget.navigationShell != null) {
-      widget.navigationShell!.goBranch(
-        item.branchIndex,
-        initialLocation:
-            item.branchIndex == widget.navigationShell!.currentIndex,
-      );
+      final branch = item.branchIndex;
+      if (branch != null) {
+        widget.navigationShell!.goBranch(
+          branch,
+          initialLocation: branch == widget.navigationShell!.currentIndex,
+        );
+      } else {
+        context.go(item.routePath);
+      }
     } else {
       setState(() {
         _currentIndex = uiIndex;
