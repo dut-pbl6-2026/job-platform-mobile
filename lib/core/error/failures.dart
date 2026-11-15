@@ -19,5 +19,6 @@ class AuthFailure implements Exception {
   static const tokenRevoked = 'token_revoked';
   static const invalidToken = 'invalid_token';
   static const networkError = 'network_error';
+  static const rateLimited = 'rate_limited';
   static const unknown = 'unknown';
 }

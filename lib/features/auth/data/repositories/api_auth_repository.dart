@@ -75,6 +75,16 @@ class ApiAuthRepository implements IAuthRepository {
   }
 
   @override
+  Future<void> resendVerification({required String email}) async {
+    try {
+      // 202 for every address, so the response body is not read.
+      await _dio.post('/api/auth/resend-verification', data: {'email': email});
+    } on DioException catch (e) {
+      throw _toFailure(e);
+    }
+  }
+
+  @override
   Future<void> forgotPassword({required String email}) async {
     try {
       await _dio.post('/api/auth/forgot-password', data: {'email': email});

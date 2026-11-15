@@ -195,7 +195,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
         );
 
         // No session is created here; the user signs in after verifying.
-        context.go(AppRoutes.login);
+        // The address travels with the navigation so login can offer a new link.
+        context.go(AppRoutes.login, extra: _emailController.text.trim());
       }
     } catch (e) {
       if (mounted) {

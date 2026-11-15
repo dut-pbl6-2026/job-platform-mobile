@@ -147,7 +147,11 @@ class AppRouter {
       GoRoute(
         path: AppRoutes.login,
         name: 'login',
-        builder: (context, state) => const LoginScreen(),
+        builder: (context, state) => LoginScreen(
+          verificationEmail: state.extra is String
+              ? state.extra as String
+              : null,
+        ),
       ),
       GoRoute(
         path: AppRoutes.register,
