@@ -9,7 +9,6 @@ import 'package:job_platform_mobile/features/auth/domain/models/auth_result.dart
 import 'package:job_platform_mobile/features/auth/domain/models/user_model.dart';
 import 'package:job_platform_mobile/features/home/home_screen.dart';
 import 'package:job_platform_mobile/features/jobs/data/repositories/mock_job_repository.dart';
-import 'package:job_platform_mobile/features/notifications/data/repositories/mock_notification_repository.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -21,129 +20,6 @@ void main() {
   tearDown(() {
     AuthSession.instance.clearSession();
   });
-
-  testWidgets(
-    'HomeScreen renders Tạo CV button and navigates on tap for candidate',
-    (tester) async {
-      AuthSession.instance.setSession(
-        AuthResult(
-          user: UserModel(
-            id: 'candidate-1',
-            name: 'Nguyễn Văn A',
-            email: 'candidate@example.com',
-            role: UserRole.user,
-            createdAt: DateTime.now(),
-          ),
-          token: 'test-token',
-          refreshToken: 'test-refresh-token',
-          expiresAt: DateTime.now().add(const Duration(hours: 1)),
-        ),
-      );
-
-      final mockAuth = MockAuthRepository();
-      final mockJob = MockJobRepository();
-
-      final router = GoRouter(
-        initialLocation: AppRoutes.home,
-        routes: [
-          GoRoute(
-            path: AppRoutes.home,
-            builder: (context, state) => HomeScreen(
-              authRepository: mockAuth,
-              jobRepository: mockJob,
-              notificationRepository: MockNotificationRepository(),
-            ),
-          ),
-          GoRoute(
-            path: AppRoutes.createCv,
-            builder: (context, state) =>
-                const Scaffold(body: Text('Create CV Destination')),
-          ),
-          GoRoute(
-            path: AppRoutes.notifications,
-            builder: (context, state) =>
-                const Scaffold(body: Text('Notification Center Destination')),
-          ),
-        ],
-      );
-
-      await tester.pumpWidget(
-        MaterialApp.router(theme: AppTheme.lightTheme, routerConfig: router),
-      );
-
-      await tester.pumpAndSettle();
-
-      // Check header and user info
-      expect(find.text('Nguyễn Văn A'), findsOneWidget);
-
-      // Check filter pills has 'Tất cả'
-      expect(find.text('Tất cả'), findsOneWidget);
-
-      // Check shortcuts: 'Tạo CV', 'Hồ sơ', 'Ứng tuyển'
-      expect(find.text('Tạo CV'), findsOneWidget);
-      expect(find.text('Hồ sơ'), findsOneWidget);
-      expect(find.text('Ứng tuyển'), findsOneWidget);
-
-      // Tap 'Tạo CV' and verify navigation
-      await tester.tap(find.text('Tạo CV'));
-      await tester.pumpAndSettle();
-      expect(find.text('Create CV Destination'), findsOneWidget);
-    },
-  );
-
-  testWidgets(
-    'HomeScreen notification bell navigates to notifications screen',
-    (tester) async {
-      AuthSession.instance.setSession(
-        AuthResult(
-          user: UserModel(
-            id: 'candidate-1',
-            name: 'Nguyễn Văn A',
-            email: 'candidate@example.com',
-            role: UserRole.user,
-            createdAt: DateTime.now(),
-          ),
-          token: 'test-token',
-          refreshToken: 'test-refresh-token',
-          expiresAt: DateTime.now().add(const Duration(hours: 1)),
-        ),
-      );
-
-      final mockAuth = MockAuthRepository();
-      final mockJob = MockJobRepository();
-
-      final router = GoRouter(
-        initialLocation: AppRoutes.home,
-        routes: [
-          GoRoute(
-            path: AppRoutes.home,
-            builder: (context, state) => HomeScreen(
-              authRepository: mockAuth,
-              jobRepository: mockJob,
-              notificationRepository: MockNotificationRepository(),
-            ),
-          ),
-          GoRoute(
-            path: AppRoutes.notifications,
-            builder: (context, state) =>
-                const Scaffold(body: Text('Notification Center Destination')),
-          ),
-        ],
-      );
-
-      await tester.pumpWidget(
-        MaterialApp.router(theme: AppTheme.lightTheme, routerConfig: router),
-      );
-
-      await tester.pumpAndSettle();
-
-      // Tap notification bell icon
-      await tester.tap(find.byKey(const Key('home_notification_button')));
-      await tester.pumpAndSettle();
-
-      expect(find.text('Notification Center Destination'), findsOneWidget);
-    },
-  );
 
   testWidgets(
     'HomeScreen displays Đăng tin button when logged in as recruiter',
@@ -169,11 +45,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           theme: AppTheme.lightTheme,
-          home: HomeScreen(
-            authRepository: mockAuth,
-            jobRepository: mockJob,
-            notificationRepository: MockNotificationRepository(),
-          ),
+          home: HomeScreen(authRepository: mockAuth, jobRepository: mockJob),
         ),
       );
 
@@ -195,11 +67,8 @@ void main() {
         routes: [
           GoRoute(
             path: AppRoutes.home,
-            builder: (context, state) => HomeScreen(
-              authRepository: mockAuth,
-              jobRepository: mockJob,
-              notificationRepository: MockNotificationRepository(),
-            ),
+            builder: (context, state) =>
+                HomeScreen(authRepository: mockAuth, jobRepository: mockJob),
           ),
           GoRoute(
             path: AppRoutes.search,

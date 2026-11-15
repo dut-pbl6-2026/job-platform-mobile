@@ -1,13 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:job_platform_mobile/core/theme/app_theme.dart';
-import 'package:job_platform_mobile/core/widgets/bookmark_button.dart';
 import 'package:job_platform_mobile/core/widgets/fade_slide_transition.dart';
 import 'package:job_platform_mobile/core/widgets/pressable_card.dart';
-import 'package:job_platform_mobile/features/connections/presentation/connections_screen.dart';
 import 'package:job_platform_mobile/features/home/main_navigation_screen.dart';
-import 'package:job_platform_mobile/features/jobs/domain/models/job_model.dart';
-import 'package:job_platform_mobile/features/jobs/presentation/widgets/job_card.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -107,104 +102,6 @@ void main() {
     );
 
     testWidgets(
-      '3. BookmarkButton toggles icon and triggers bounce animation when saved',
-      (tester) async {
-        var isSaved = false;
-
-        await tester.pumpWidget(
-          MaterialApp(
-            home: Scaffold(
-              body: StatefulBuilder(
-                builder: (context, setState) {
-                  return BookmarkButton(
-                    isSaved: isSaved,
-                    onToggle: () {
-                      setState(() => isSaved = !isSaved);
-                    },
-                  );
-                },
-              ),
-            ),
-          ),
-        );
-
-        // Initially unsaved: border icon, grey/hint color
-        expect(find.byIcon(Icons.bookmark_border_rounded), findsOneWidget);
-        expect(find.byIcon(Icons.bookmark_rounded), findsNothing);
-
-        // Tap to save
-        await tester.tap(find.byType(BookmarkButton));
-        await tester.pump();
-
-        // Bounce scale is triggered (> 1.0) and icon changed to filled
-        final scaleWidget = tester.widget<AnimatedScale>(
-          find.descendant(
-            of: find.byType(BookmarkButton),
-            matching: find.byType(AnimatedScale),
-          ),
-        );
-        expect(scaleWidget.scale, greaterThan(1.0));
-        expect(find.byIcon(Icons.bookmark_rounded), findsOneWidget);
-
-        // Settle bounce
-        await tester.pumpAndSettle();
-
-        final settledScale = tester.widget<AnimatedScale>(
-          find.descendant(
-            of: find.byType(BookmarkButton),
-            matching: find.byType(AnimatedScale),
-          ),
-        );
-        expect(settledScale.scale, equals(1.0));
-        expect(find.byIcon(Icons.bookmark_rounded), findsOneWidget);
-      },
-    );
-
-    testWidgets(
-      '4. JobCard renders BookmarkButton with bounce and updates isSaved',
-      (tester) async {
-        final job = JobModel(
-          id: 'test-job',
-          title: 'Senior Flutter Developer',
-          companyName: 'Tech Corp',
-          location: 'Đà Nẵng',
-          salaryMin: 20000000,
-          salaryMax: 30000000,
-          category: 'IT',
-          skills: const ['Flutter', 'Dart'],
-          experienceLevel: ExperienceLevel.middle,
-          jobType: JobType.fullTime,
-          description: 'Mô tả công việc',
-          requirements: 'Yêu cầu công việc',
-          isSaved: false,
-          postedAt: DateTime.now(),
-        );
-
-        var toggleFired = false;
-
-        await tester.pumpWidget(
-          MaterialApp(
-            theme: AppTheme.lightTheme,
-            home: Scaffold(
-              body: JobCard(
-                job: job,
-                onBookmarkToggle: () => toggleFired = true,
-              ),
-            ),
-          ),
-        );
-
-        expect(find.byType(BookmarkButton), findsOneWidget);
-        expect(find.byIcon(Icons.bookmark_border_rounded), findsOneWidget);
-
-        await tester.tap(find.byType(BookmarkButton));
-        await tester.pumpAndSettle();
-
-        expect(toggleFired, isTrue);
-      },
-    );
-
-    testWidgets(
       '5. MainNavigationScreen switches tabs smoothly using AnimatedSwitcher and AnimatedScale in bottom bar',
       (tester) async {
         await tester.pumpWidget(
@@ -242,31 +139,6 @@ void main() {
           find.byType(JobBottomNavigation),
         );
         expect(navBar.selectedIndex, equals(1));
-      },
-    );
-
-    testWidgets(
-      '6. ConnectionsScreen sub-tabs animate color, border, and text smoothly with AnimatedContainer',
-      (tester) async {
-        await tester.pumpWidget(const MaterialApp(home: ConnectionsScreen()));
-        await tester.pumpAndSettle();
-
-        // Find AnimatedContainer inside segmented tab bar
-        expect(find.text('Chờ phản hồi'), findsOneWidget);
-        expect(find.text('Đã phản hồi'), findsOneWidget);
-        expect(find.text('Quá hạn'), findsOneWidget);
-
-        // Verify AnimatedContainer exists for each tab
-        expect(find.byType(AnimatedContainer), findsWidgets);
-
-        // Tap 'Đã phản hồi'
-        await tester.tap(find.text('Đã phản hồi'));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 100));
-        await tester.pumpAndSettle();
-
-        // Content for 'Đã phản hồi' is rendered
-        expect(find.text('FPT Software'), findsOneWidget);
       },
     );
   });

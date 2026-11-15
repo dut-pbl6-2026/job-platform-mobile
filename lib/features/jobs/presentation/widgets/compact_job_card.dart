@@ -4,23 +4,16 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/format_utils.dart';
-import '../../../../core/widgets/bookmark_button.dart';
 import '../../../../core/widgets/design_asset.dart';
 
 import '../../domain/models/job_model.dart';
 
 /// Compact listing from Figma 55:3503 with dynamic job content.
 class CompactJobCard extends StatelessWidget {
-  const CompactJobCard({
-    super.key,
-    required this.job,
-    required this.onTap,
-    this.onBookmarkToggle,
-  });
+  const CompactJobCard({super.key, required this.job, required this.onTap});
 
   final JobModel job;
   final VoidCallback onTap;
-  final VoidCallback? onBookmarkToggle;
 
   @override
   Widget build(BuildContext context) {
@@ -98,15 +91,6 @@ class CompactJobCard extends StatelessWidget {
                       ),
                     ),
                   ],
-                ),
-              ),
-              Positioned(
-                right: 1,
-                top: 0,
-                child: BookmarkButton(
-                  isSaved: job.isSaved,
-                  onToggle: onBookmarkToggle,
-                  size: 20,
                 ),
               ),
               Positioned(

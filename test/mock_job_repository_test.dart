@@ -52,18 +52,6 @@ void main() {
       }
     });
 
-    test('toggleSaveJob flips isSaved status correctly', () async {
-      const jobId = 'job-1';
-      final initialJob = await repository.getJobById(jobId);
-      final initialSaved = initialJob?.isSaved ?? false;
-
-      final newStatus = await repository.toggleSaveJob(jobId);
-      expect(newStatus, !initialSaved);
-
-      final updatedJob = await repository.getJobById(jobId);
-      expect(updatedJob?.isSaved, newStatus);
-    });
-
     test('getSearchSuggestions returns matching suggestions', () async {
       final suggestions = await repository.getSearchSuggestions('Flut');
       expect(suggestions, contains('Flutter Developer'));

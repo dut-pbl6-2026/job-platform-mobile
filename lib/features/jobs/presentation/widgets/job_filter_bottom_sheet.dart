@@ -77,7 +77,6 @@ class _JobFilterBottomSheetState extends State<JobFilterBottomSheet> {
 
   // Skills & Search
   late List<String> _selectedSkills;
-  late bool _onlySaved;
   String _skillSearch = '';
   late final TextEditingController _skillSearchController;
 
@@ -156,7 +155,6 @@ class _JobFilterBottomSheetState extends State<JobFilterBottomSheet> {
     }
 
     _selectedSkills = List<String>.from(widget.currentParams.skills);
-    _onlySaved = widget.currentParams.onlySaved;
   }
 
   @override
@@ -191,7 +189,6 @@ class _JobFilterBottomSheetState extends State<JobFilterBottomSheet> {
     if (_isExpFiltered) count++;
     if (_isSalaryFiltered) count++;
     if (_selectedSkills.isNotEmpty) count += _selectedSkills.length;
-    if (_onlySaved) count++;
     return count;
   }
 
@@ -240,7 +237,6 @@ class _JobFilterBottomSheetState extends State<JobFilterBottomSheet> {
       _includeNegotiable = true;
       _expRange = const RangeValues(0, 10);
       _selectedSkills = [];
-      _onlySaved = false;
       _locationTab = 0;
       _selectedDomesticRegion = 'Tất cả';
       _showAllProvinces = false;
@@ -309,7 +305,6 @@ class _JobFilterBottomSheetState extends State<JobFilterBottomSheet> {
       clearSalaryMax: salaryMax == null,
       includeNegotiable: _includeNegotiable,
       currency: 'VND',
-      onlySaved: _onlySaved,
       page: 0,
     );
 

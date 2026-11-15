@@ -307,7 +307,7 @@ class PushNotificationService {
     if (applicationId != null) {
       return '/applications/$applicationId';
     }
-    return AppRoutes.notifications;
+    return AppRoutes.home;
   }
 
   /// Navigates user to target screen based on notification payload

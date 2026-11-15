@@ -33,9 +33,6 @@ abstract class IJobRepository {
   /// Get detailed job by its unique ID
   Future<JobModel?> getJobById(String id);
 
-  /// Toggle bookmark status of a job (returns new isSaved state)
-  Future<bool> toggleSaveJob(String id);
-
   /// Get search auto-complete keyword suggestions
   Future<List<String>> getSearchSuggestions(String query);
 

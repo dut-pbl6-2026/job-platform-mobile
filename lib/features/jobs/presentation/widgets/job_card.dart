@@ -1,21 +1,14 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/format_utils.dart';
-import '../../../../core/widgets/bookmark_button.dart';
 import '../../domain/models/job_model.dart';
 
 /// Material 3 Job Card component displaying job post details (MOB-01-02)
 class JobCard extends StatelessWidget {
   final JobModel job;
   final VoidCallback? onTap;
-  final VoidCallback? onBookmarkToggle;
 
-  const JobCard({
-    super.key,
-    required this.job,
-    this.onTap,
-    this.onBookmarkToggle,
-  });
+  const JobCard({super.key, required this.job, this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -32,12 +25,7 @@ class JobCard extends StatelessWidget {
       margin: EdgeInsets.zero,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(
-          color: job.isSaved
-              ? AppColors.primary.withValues(alpha: 0.3)
-              : AppColors.border,
-          width: job.isSaved ? 1.5 : 1,
-        ),
+        side: BorderSide(color: AppColors.border, width: 1),
       ),
       child: InkWell(
         onTap: onTap,
@@ -47,7 +35,7 @@ class JobCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Top Row: Company Avatar + Title & Company + Bookmark button
+              // Top Row: Company Avatar + Title & Company
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -95,12 +83,6 @@ class JobCard extends StatelessWidget {
                         ),
                       ],
                     ),
-                  ),
-                  // Bookmark button
-                  BookmarkButton(
-                    isSaved: job.isSaved,
-                    onToggle: onBookmarkToggle,
-                    size: 22,
                   ),
                 ],
               ),

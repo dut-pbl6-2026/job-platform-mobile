@@ -13,15 +13,11 @@ import '../../features/auth/login_screen.dart';
 import '../../features/auth/presentation/forgot_password_screen.dart';
 import '../../features/auth/presentation/reset_password_screen.dart';
 import '../../features/auth/register_screen.dart';
-import '../../features/connections/presentation/connections_screen.dart';
-import '../../features/cv/presentation/create_cv_screen.dart';
 import '../../features/home/home_screen.dart';
 import '../../features/home/main_navigation_screen.dart';
 import '../../features/jobs/presentation/job_detail_screen.dart';
 import '../../features/jobs/presentation/job_list_screen.dart';
-import '../../features/jobs/presentation/saved_jobs_screen.dart';
 import '../../features/jobs/presentation/search_screen.dart';
-import '../../features/notifications/presentation/notification_screen.dart';
 import '../../features/profile/presentation/profile_detail_screen.dart';
 import '../../features/profile/presentation/profile_screen.dart';
 import '../../features/recruiter/presentation/candidate_applications_screen.dart';
@@ -46,12 +42,8 @@ class AppRoutes {
   static const String applicationDetail = '/applications/:id';
   static const String profile = '/profile';
   static const String profileDetail = '/profile/detail';
-  static const String notifications = '/notifications';
-  static const String createCv = '/create-cv';
   static const String forgotPassword = '/forgot-password';
   static const String resetPassword = '/reset-password';
-  static const String connections = '/connections';
-  static const String savedJobs = '/saved-jobs';
   static const String aiCopilot = '/ai-copilot';
   static const String resumeScoring = '/resume-scoring';
   static const String recruiterDashboard = '/recruiter/dashboard';
@@ -92,7 +84,6 @@ class AppRouter {
       final isApplyRoute = currentPath.endsWith('/apply');
       final isRecruiterRoute = currentPath.startsWith('/recruiter');
       final isApplicationRoute = currentPath.startsWith('/applications');
-      final isCreateCvRoute = currentPath == AppRoutes.createCv;
 
       // /jobs and /jobs/:id are public browsing routes, but /jobs/:id/apply requires authentication and candidate role!
       final isPublicRoute =
@@ -125,8 +116,8 @@ class AppRouter {
 
       // 4. Role-based Route Protection:
       // A. Candidate (UserRole.user) only actions:
-      // Recruiters and Admins MUST NOT access applicant-only actions (apply job, applicant history, create CV)
-      if (isApplyRoute || isApplicationRoute || isCreateCvRoute) {
+      // Recruiters and Admins MUST NOT access applicant-only actions (apply job, applicant history)
+      if (isApplyRoute || isApplicationRoute) {
         if (resolvedRole != UserRole.user) {
           if (isApplyRoute) {
             // Redirect back to job detail if trying to apply
@@ -176,24 +167,12 @@ class AppRouter {
       ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
-        path: AppRoutes.notifications,
-        name: 'notifications',
-        builder: (context, state) => const NotificationScreen(),
-      ),
-      GoRoute(
-        parentNavigatorKey: _rootNavigatorKey,
         path: AppRoutes.search,
         name: 'search',
         builder: (context, state) {
           final query = state.uri.queryParameters['q'];
           return SearchScreen(initialQuery: query);
         },
-      ),
-      GoRoute(
-        parentNavigatorKey: _rootNavigatorKey,
-        path: AppRoutes.savedJobs,
-        name: 'saved-jobs',
-        builder: (context, state) => const SavedJobsScreen(),
       ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
@@ -317,27 +296,7 @@ class AppRouter {
               ),
             ],
           ),
-          // Branch 2: Tạo CV (#2073:879)
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: AppRoutes.createCv,
-                name: 'create-cv',
-                builder: (context, state) => const CreateCvScreen(),
-              ),
-            ],
-          ),
-          // Branch 3: NTD kết nối (#2073:885)
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: AppRoutes.connections,
-                name: 'connections',
-                builder: (context, state) => const ConnectionsScreen(),
-              ),
-            ],
-          ),
-          // Branch 4: Hồ sơ (#2073:888)
+          // Branch 2: Hồ sơ (#2073:888)
           StatefulShellBranch(
             routes: [
               GoRoute(

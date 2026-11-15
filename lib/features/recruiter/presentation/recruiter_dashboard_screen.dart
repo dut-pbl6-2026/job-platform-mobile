@@ -80,13 +80,6 @@ class _RecruiterDashboardScreenState extends State<RecruiterDashboardScreen> {
           icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
           onPressed: () => Navigator.of(context).maybePop(),
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_none_rounded),
-            onPressed: () => context.push(AppRoutes.notifications),
-            tooltip: 'Thông báo',
-          ),
-        ],
       ),
       body: SafeArea(
         child: SingleChildScrollView(

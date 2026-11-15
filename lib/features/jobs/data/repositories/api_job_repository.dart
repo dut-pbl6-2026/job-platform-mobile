@@ -169,9 +169,6 @@ class ApiJobRepository implements IJobRepository {
             return filterSkillsLower.any((fs) => jobSkillsLower.contains(fs));
           }).toList();
         }
-        if (params.onlySaved) {
-          filteredCached = filteredCached.where((j) => j.isSaved).toList();
-        }
         return PaginatedJobs(
           items: filteredCached,
           total: filteredCached.length,
@@ -219,12 +216,6 @@ class ApiJobRepository implements IJobRepository {
       }
     }
     return _fallbackMockRepository.getJobById(id);
-  }
-
-  @override
-  Future<bool> toggleSaveJob(String id) {
-    // TODO(PBL6): Connect to bookmark/saved job API once backend service endpoint is implemented.
-    return _fallbackMockRepository.toggleSaveJob(id);
   }
 
   @override

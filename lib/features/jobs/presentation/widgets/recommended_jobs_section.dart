@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../domain/models/job_model.dart';
 import '../../domain/models/recommended_job_model.dart';
 import 'recommended_job_card.dart';
 
@@ -11,8 +10,6 @@ class RecommendedJobsSection extends StatefulWidget {
   final String? errorMessage;
   final Future<void> Function() onRefresh;
   final ValueChanged<RecommendedJob> onJobTap;
-  final ValueChanged<JobModel>? onBookmarkToggle;
-  final Set<String> savingIds;
 
   const RecommendedJobsSection({
     super.key,
@@ -21,8 +18,6 @@ class RecommendedJobsSection extends StatefulWidget {
     this.errorMessage,
     required this.onRefresh,
     required this.onJobTap,
-    this.onBookmarkToggle,
-    this.savingIds = const {},
   });
 
   @override
@@ -166,16 +161,10 @@ class _RecommendedJobsSectionState extends State<RecommendedJobsSection>
         separatorBuilder: (context, index) => const SizedBox(width: 12),
         itemBuilder: (context, index) {
           final item = widget.recommendations[index];
-          final isSaving = widget.savingIds.contains(item.job.id);
-
           return RecommendedJobCard(
             key: Key('recommended_job_${item.job.id}'),
             recommendation: item,
             onTap: () => widget.onJobTap(item),
-            onBookmarkToggle: widget.onBookmarkToggle != null
-                ? () => widget.onBookmarkToggle!(item.job)
-                : null,
-            isBookmarkLoading: isSaving,
           );
         },
       ),

@@ -183,7 +183,6 @@ class _JobListScreenState extends State<JobListScreen> {
           clearLocation: true,
           clearJobType: true,
           clearSalaryMin: true,
-          onlySaved: false,
         );
         break;
       case 'Từ xa (Remote)':
@@ -192,7 +191,6 @@ class _JobListScreenState extends State<JobListScreen> {
           clearCategory: true,
           clearLocation: true,
           clearSalaryMin: true,
-          onlySaved: false,
         );
         break;
       case 'Lương cao (30M+)':
@@ -201,45 +199,11 @@ class _JobListScreenState extends State<JobListScreen> {
           clearCategory: true,
           clearLocation: true,
           clearJobType: true,
-          onlySaved: false,
-        );
-        break;
-      case 'Đã lưu':
-        _filterParams = _filterParams.copyWith(
-          onlySaved: true,
-          clearCategory: true,
-          clearLocation: true,
-          clearJobType: true,
-          clearSalaryMin: true,
         );
         break;
     }
 
     _fetchJobs(isResetPage: true);
-  }
-
-  Future<void> _handleBookmarkToggle(JobModel job) async {
-    final newStatus = await _jobRepository.toggleSaveJob(job.id);
-    if (!mounted) return;
-
-    setState(() {
-      final index = _jobs.indexWhere((j) => j.id == job.id);
-      if (index != -1) {
-        _jobs[index] = _jobs[index].copyWith(isSaved: newStatus);
-      }
-    });
-
-    ScaffoldMessenger.of(context).hideCurrentSnackBar();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          newStatus
-              ? 'Đã lưu tin tuyển dụng: ${job.title}'
-              : 'Đã bỏ lưu tin tuyển dụng',
-        ),
-        duration: const Duration(seconds: 2),
-      ),
-    );
   }
 
   void _navigateToDetail(JobModel job) {
@@ -306,7 +270,6 @@ class _JobListScreenState extends State<JobListScreen> {
       'IT / Phần mềm',
       'Từ xa (Remote)',
       'Lương cao (30M+)',
-      'Đã lưu',
     ];
 
     return SizedBox(
@@ -535,11 +498,7 @@ class _JobListScreenState extends State<JobListScreen> {
             index: jobIndex,
             child: PressableCard(
               onTap: () => _navigateToDetail(job),
-              child: JobCard(
-                job: job,
-                onTap: () => _navigateToDetail(job),
-                onBookmarkToggle: () => _handleBookmarkToggle(job),
-              ),
+              child: JobCard(job: job, onTap: () => _navigateToDetail(job)),
             ),
           );
         },

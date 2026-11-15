@@ -7,8 +7,6 @@ import '../../core/widgets/design_asset.dart';
 import '../../core/widgets/user_avatar.dart';
 import '../applications/presentation/application_history_screen.dart';
 import '../auth/domain/models/user_model.dart';
-import '../connections/presentation/connections_screen.dart';
-import '../cv/presentation/create_cv_screen.dart';
 import '../jobs/presentation/job_list_screen.dart';
 import '../jobs/presentation/search_screen.dart';
 import '../profile/presentation/profile_screen.dart';
@@ -81,7 +79,7 @@ class MainNavigationScreen extends StatefulWidget {
             label: 'Hồ sơ',
             icon: Icons.person_outline_rounded,
             selectedIcon: Icons.person_rounded,
-            branchIndex: 4,
+            branchIndex: 2,
             screenBuilder: _buildProfileScreen,
           ),
         ];
@@ -106,14 +104,14 @@ class MainNavigationScreen extends StatefulWidget {
             label: 'Tin tuyển dụng',
             icon: Icons.work_outline_rounded,
             selectedIcon: Icons.work_rounded,
-            branchIndex: 3,
+            branchIndex: 1,
             screenBuilder: _buildJobListScreen,
           ),
           RoleNavDestination(
             label: 'Hồ sơ',
             icon: Icons.person_outline_rounded,
             selectedIcon: Icons.person_rounded,
-            branchIndex: 4,
+            branchIndex: 2,
             screenBuilder: _buildProfileScreen,
           ),
         ];
@@ -138,7 +136,7 @@ class MainNavigationScreen extends StatefulWidget {
             label: 'Hồ sơ',
             icon: Icons.person_outline_rounded,
             selectedIcon: Icons.person_rounded,
-            branchIndex: 4,
+            branchIndex: 2,
             screenBuilder: _buildProfileScreen,
           ),
         ];
@@ -265,8 +263,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     final screens = [
       widget.homeScreen ?? const HomeScreen(),
       const JobListScreen(),
-      const CreateCvScreen(),
-      const ConnectionsScreen(),
       const ProfileScreen(),
     ];
 
@@ -314,13 +310,7 @@ class JobBottomNavigation extends StatelessWidget {
   final int selectedIndex;
   final ValueChanged<int> onSelected;
 
-  static const _labels = [
-    'Trang chủ',
-    'Việc làm',
-    'Tạo CV',
-    'NTD kết nối',
-    'Hồ sơ',
-  ];
+  static const _labels = ['Trang chủ', 'Việc làm', 'Hồ sơ'];
 
   @override
   Widget build(BuildContext context) {
@@ -465,13 +455,6 @@ class JobBottomNavigation extends StatelessWidget {
     return switch (index) {
       0 => DesignAsset('nav-home', width: 23, height: 23, color: iconColor),
       1 => DesignAsset('nav-jobs', width: 23, height: 23, color: iconColor),
-      2 => Icon(Icons.description_outlined, size: 23, color: iconColor),
-      3 => DesignAsset(
-        'nav-connections',
-        width: 23,
-        height: 23,
-        color: iconColor,
-      ),
       _ => UserAvatar(
         name: user?.name,
         imageUrl: user?.avatarUrl,

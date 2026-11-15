@@ -53,26 +53,22 @@ void main() {
       // Verify Section 2: Hồ sơ của tôi
       expect(find.text('Hồ sơ của tôi'), findsOneWidget);
       expect(find.text('Profile của tôi'), findsOneWidget);
-      expect(find.text('CV của tôi'), findsOneWidget);
       expect(find.text('Cover Letter của tôi'), findsOneWidget);
       expect(find.text('Chấm điểm CV thông minh (AI)'), findsOneWidget);
 
       // Verify Section 3: Quản lý tìm việc
       expect(find.text('Quản lý tìm việc'), findsOneWidget);
       expect(find.text('Việc làm đã ứng tuyển'), findsOneWidget);
-      expect(find.text('Việc làm đã lưu'), findsOneWidget);
       expect(find.text('Cài đặt gợi ý việc làm'), findsOneWidget);
 
       // Verify Section 4: Tương tác với NTD (TopCV Connect removed)
       expect(find.text('Tương tác với NTD'), findsOneWidget);
       expect(find.text('NTD xem hồ sơ'), findsOneWidget);
-      expect(find.text('NTD muốn kết nối với bạn'), findsOneWidget);
       expect(find.text('Công ty đang theo dõi'), findsOneWidget);
       expect(find.text('TopCV Connect'), findsNothing);
 
       // Verify Section 5: Cài đặt thông báo
       expect(find.text('Cài đặt thông báo'), findsOneWidget);
-      expect(find.text('Thông báo việc làm'), findsOneWidget);
       expect(find.text('Cài đặt nhận email'), findsOneWidget);
 
       // Verify Section 6: Bảo mật
