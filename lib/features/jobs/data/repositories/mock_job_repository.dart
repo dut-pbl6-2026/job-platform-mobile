@@ -1,6 +1,7 @@
 import 'dart:async';
 import '../../domain/models/job_filter_params.dart';
 import '../../domain/models/job_model.dart';
+import '../../domain/models/recommended_job_model.dart';
 import '../../domain/repositories/job_repository.dart';
 
 /// Mock implementation of [IJobRepository] with realistic Vietnamese job dataset.
@@ -534,5 +535,102 @@ class MockJobRepository implements IJobRepository {
         .where((s) => s.toLowerCase().contains(cleanQuery))
         .take(5)
         .toList();
+  }
+
+  @override
+  Future<List<RecommendedJob>> getRecommendedJobs({
+    int limit = 10,
+    bool refresh = false,
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 200));
+
+    // Construct realistic recommendations matching candidate skills and trending behavior (SRS RECOMMEND-01-04, RECOMMEND-01-06)
+    final jobMap = {for (final j in _mockJobs) j.id: j};
+
+    final recommendations = <RecommendedJob>[
+      if (jobMap.containsKey('job-1'))
+        RecommendedJob(
+          job: jobMap['job-1']!.copyWith(
+            isSaved: _savedJobIds.contains('job-1'),
+          ),
+          reason:
+              'Phù hợp 96% dựa trên kỹ năng Flutter & Dart trong hồ sơ của bạn',
+          matchScore: 96,
+          matchType: 'skills',
+        ),
+      if (jobMap.containsKey('job-3'))
+        RecommendedJob(
+          job: jobMap['job-3']!.copyWith(
+            isSaved: _savedJobIds.contains('job-3'),
+          ),
+          reason: 'Dựa trên các tìm kiếm AI & Python gần đây của bạn',
+          matchScore: 89,
+          matchType: 'search_history',
+        ),
+      if (jobMap.containsKey('job-2'))
+        RecommendedJob(
+          job: jobMap['job-2']!.copyWith(
+            isSaved: _savedJobIds.contains('job-2'),
+          ),
+          reason: 'Công việc xu hướng được nhiều ứng viên quan tâm tuần này',
+          matchScore: 83,
+          matchType: 'trending',
+        ),
+      if (jobMap.containsKey('job-4'))
+        RecommendedJob(
+          job: jobMap['job-4']!.copyWith(
+            isSaved: _savedJobIds.contains('job-4'),
+          ),
+          reason: 'Tương tự các việc làm bạn đã lưu gần đây',
+          matchScore: 78,
+          matchType: 'saved_jobs',
+        ),
+      if (jobMap.containsKey('job-5'))
+        RecommendedJob(
+          job: jobMap['job-5']!.copyWith(
+            isSaved: _savedJobIds.contains('job-5'),
+          ),
+          reason: 'Phù hợp với vị trí làm việc tại Đà Nẵng của bạn',
+          matchScore: 75,
+          matchType: 'location',
+        ),
+    ];
+
+    if (refresh) {
+      recommendations.shuffle();
+    }
+
+    return recommendations.take(limit).toList();
+  }
+
+  @override
+  Future<RecommendationExplanation?> explainRecommendation(String jobId) async {
+    await Future.delayed(const Duration(milliseconds: 100));
+    final explanations = {
+      'job-1': const RecommendationExplanation(
+        jobId: 'job-1',
+        reason:
+            'Hồ sơ của bạn có 3+ năm kinh nghiệm Flutter, thành thạo Bloc, Clean Architecture và REST API trùng khớp hoàn toàn với yêu cầu tuyển dụng.',
+        score: 96,
+      ),
+      'job-3': const RecommendationExplanation(
+        jobId: 'job-3',
+        reason:
+            'Bạn đã tìm kiếm nhiều từ khóa AI, Python và LLM trong tuần qua. Vị trí này phù hợp với định hướng phát triển AI Copilot.',
+        score: 89,
+      ),
+      'job-2': const RecommendationExplanation(
+        jobId: 'job-2',
+        reason:
+            'Đây là công việc có lượt xem và ứng tuyển cao nhất trong tuần tại khu vực TP. Hồ Chí Minh.',
+        score: 83,
+      ),
+    };
+    return explanations[jobId] ??
+        RecommendationExplanation(
+          jobId: jobId,
+          reason: 'Công việc này có các kỹ năng phù hợp với tiêu chí của bạn.',
+          score: 80,
+        );
   }
 }
