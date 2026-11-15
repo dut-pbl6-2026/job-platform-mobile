@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/router/app_router.dart';
 import '../../core/session/auth_session.dart';
 import '../../core/theme/app_theme.dart';
+import '../auth/data/repositories/api_auth_repository.dart';
 
 /// Splash Screen - Shows app logo with fade-in animation,
 /// then navigates based on authentication state after init.
@@ -50,9 +51,14 @@ class _SplashScreenState extends State<SplashScreen>
     _navigateAfterInit();
   }
 
-  /// Check authentication state and navigate accordingly (MOB-01).
+  /// Restore and validate the stored session, then navigate (MOB-01).
+  /// The minimum splash duration runs alongside restore so routing never
+  /// happens before the session state is known.
   Future<void> _navigateAfterInit() async {
-    await Future.delayed(const Duration(milliseconds: 2500));
+    await Future.wait([
+      _restoreSession(),
+      Future<void>.delayed(const Duration(milliseconds: 2500)),
+    ]);
     if (mounted) {
       final isValidSession =
           AuthSession.instance.isAuthenticated &&
@@ -60,6 +66,11 @@ class _SplashScreenState extends State<SplashScreen>
       final destination = isValidSession ? AppRoutes.home : AppRoutes.login;
       context.go(destination);
     }
+  }
+
+  Future<void> _restoreSession() async {
+    await AuthSession.instance.load();
+    await ApiAuthRepository().validateRestoredSession();
   }
 
   @override

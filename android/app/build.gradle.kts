@@ -5,6 +5,17 @@ plugins {
     id("com.google.gms.google-services")
 }
 
+// Release signing comes from environment variables (CI) or android/key.properties
+// (local, gitignored). Each value is read from the environment first.
+val keystoreProperties = java.util.Properties().apply {
+    val file = rootProject.file("key.properties")
+    if (file.exists()) file.inputStream().use { load(it) }
+}
+
+fun releaseSigningValue(envName: String, propertyName: String): String? =
+    System.getenv(envName)?.takeIf { it.isNotBlank() }
+        ?: keystoreProperties.getProperty(propertyName)?.takeIf { it.isNotBlank() }
+
 android {
     namespace = "com.dutpbl6.job_platform_mobile"
     compileSdk = flutter.compileSdkVersion
@@ -35,11 +46,20 @@ android {
         }
     }
 
+    // Missing values leave the config incomplete, so release packaging fails
+    // instead of falling back to the debug key.
+    signingConfigs {
+        create("release") {
+            storeFile = releaseSigningValue("ANDROID_KEYSTORE_PATH", "storeFile")?.let { rootProject.file(it) }
+            storePassword = releaseSigningValue("ANDROID_KEYSTORE_PASSWORD", "storePassword")
+            keyAlias = releaseSigningValue("ANDROID_KEY_ALIAS", "keyAlias")
+            keyPassword = releaseSigningValue("ANDROID_KEY_PASSWORD", "keyPassword")
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 }
