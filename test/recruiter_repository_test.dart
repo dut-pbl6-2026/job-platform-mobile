@@ -198,4 +198,47 @@ void main() {
       );
     });
   });
+
+  group('ApiRecruiterRepository job status filter', () {
+    // Captures the outgoing /api/jobs/recruiter query and answers with an empty page.
+    Future<Map<String, dynamic>> captureJobsQuery(String? status) async {
+      late Map<String, dynamic> query;
+      final dio = Dio(BaseOptions(baseUrl: 'http://unused.invalid'));
+      dio.interceptors.add(
+        InterceptorsWrapper(
+          onRequest: (options, handler) {
+            query = Map<String, dynamic>.from(options.queryParameters);
+            handler.resolve(
+              Response(
+                requestOptions: options,
+                statusCode: 200,
+                data: {'items': <dynamic>[]},
+              ),
+            );
+          },
+        ),
+      );
+      await ApiRecruiterRepository(dio: dio).getMyJobs(status: status);
+      return query;
+    }
+
+    test('maps each UI status to a job-svc JobStatus value', () async {
+      expect((await captureJobsQuery('Đang mở'))['status'], 'Active');
+      expect((await captureJobsQuery('Chờ duyệt'))['status'], 'Pending');
+      expect((await captureJobsQuery('Đã đóng'))['status'], 'Closed');
+    });
+
+    test('never sends the non-existent Draft status', () async {
+      final query = await captureJobsQuery('Chờ duyệt');
+      expect(query['status'], isNot('Draft'));
+    });
+
+    test('omits status when no status filter is given', () async {
+      expect(await captureJobsQuery(null), isEmpty);
+    });
+
+    test('omits status for a UI value with no backend equivalent', () async {
+      expect((await captureJobsQuery('Nháp')).containsKey('status'), isFalse);
+    });
+  });
 }

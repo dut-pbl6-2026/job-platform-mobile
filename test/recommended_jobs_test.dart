@@ -109,7 +109,7 @@ void main() {
     postedAt: DateTime.now().subtract(const Duration(hours: 1)),
   );
 
-  group('RecommendedJob & RecommendationExplanation Models', () {
+  group('RecommendedJob Models', () {
     test('RecommendedJob deserializes from full JSON envelope correctly', () {
       final json = {
         'job': sampleJob.toJson(),
@@ -158,23 +158,6 @@ void main() {
       expect(serialized['matchType'], 'trending');
       expect(serialized.containsKey('matchScore'), isFalse);
     });
-
-    test('RecommendationExplanation fromJson and toJson work correctly', () {
-      final json = {
-        'job_id': 'job-1',
-        'reason': 'Kỹ năng phù hợp với hồ sơ ứng viên',
-        'score': 92,
-      };
-
-      final expl = RecommendationExplanation.fromJson(json);
-      expect(expl.jobId, 'job-1');
-      expect(expl.reason, 'Kỹ năng phù hợp với hồ sơ ứng viên');
-      expect(expl.score, 92);
-
-      final out = expl.toJson();
-      expect(out['jobId'], 'job-1');
-      expect(out['score'], 92);
-    });
   });
 
   group('Job Repositories Recommendation Integration (RECOMMEND-01)', () {
@@ -188,11 +171,6 @@ void main() {
         expect(recommendations.length, 3);
         expect(recommendations.first.reason, contains('Flutter'));
         expect(recommendations.first.matchType, 'skills');
-
-        final explanation = await mockRepo.explainRecommendation('job-1');
-        expect(explanation, isNotNull);
-        expect(explanation!.jobId, 'job-1');
-        expect(explanation.reason, contains('Flutter'));
       },
     );
 
@@ -207,13 +185,6 @@ void main() {
               'reasons': {'rec-job-1': 'Phù hợp 95% theo kỹ năng của bạn'},
             };
           }
-          if (options.path == '/api/jobs/recommended/explain') {
-            return {
-              'jobId': 'rec-job-1',
-              'reason': 'Giải thích chi tiết về độ phù hợp',
-              'score': 95,
-            };
-          }
           return {};
         });
 
@@ -223,10 +194,6 @@ void main() {
         expect(recs.isNotEmpty, isTrue);
         expect(recs.first.job.id, 'rec-job-1');
         expect(recs.first.reason, 'Phù hợp 95% theo kỹ năng của bạn');
-
-        final expl = await apiRepo.explainRecommendation('rec-job-1');
-        expect(expl, isNotNull);
-        expect(expl!.reason, 'Giải thích chi tiết về độ phù hợp');
       },
     );
   });
