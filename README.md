@@ -1,28 +1,28 @@
 # Job Platform Mobile
 
-Dự án ứng dụng di động đa nền tảng phục vụ nhu cầu tìm kiếm việc làm và tuyển dụng, được xây dựng bằng **Flutter**. Dự án thuộc hệ sinh thái **Vietnam Job Platform** (`pbl6`) của tổ chức [`dut-pbl6-2026`](https://github.com/dut-pbl6-2026).
+A cross-platform mobile application for job search and recruitment, built with **Flutter**. The project belongs to the **Vietnam Job Platform** (`pbl6`) ecosystem of the [`dut-pbl6-2026`](https://github.com/dut-pbl6-2026) organization.
 
 ---
 
-## 📋 Yêu cầu hệ thống
+## 📋 System Requirements
 
-Để chạy dự án này, bạn cần cài đặt và cấu hình các công cụ sau:
+To run this project, you need to install and configure the following tools:
 
-- **Flutter SDK**: Phiên bản ổn định (Stable version).
-- **IDE**: Visual Studio Code hoặc Android Studio với Flutter & Dart plugins.
+- **Flutter SDK**: Stable version.
+- **IDE**: Visual Studio Code or Android Studio with the Flutter & Dart plugins.
 - **Android**:
-  - Android Studio với SDK & Build Tools phù hợp.
-  - JDK 17+ (Lưu ý: Không commit các đường dẫn local như cấu hình riêng trong `gradle.properties` vào Git).
-  - Khuyến nghị môi trường kiểm thử: Android 12+ (API 31+).
+  - Android Studio with a matching SDK & Build Tools.
+  - JDK 17+ (Note: do not commit local paths, such as the custom configuration in `gradle.properties`, to Git).
+  - Recommended test environment: Android 12+ (API 31+).
 - **iOS**:
-  - macOS với Xcode phiên bản mới nhất.
-  - Yêu cầu iOS Deployment Target **16.0+**.
+  - macOS with the latest Xcode version.
+  - Requires iOS Deployment Target **16.0+**.
 
 ---
 
-## 🚀 Hướng dẫn bắt đầu
+## 🚀 Getting Started
 
-### 1. Cài đặt dự án
+### 1. Project Setup
 
 ```bash
 # Clone repository
@@ -35,13 +35,13 @@ cd job-platform-mobile
 flutter pub get
 ```
 
-### 2. Cấu hình môi trường
+### 2. Environment Configuration
 
-- Đảm bảo biến môi trường `JAVA_HOME` được thiết lập chính xác trên máy của bạn thay vì hardcode đường dẫn cục bộ trong tệp `android/gradle.properties`.
-- Kiểm tra và thiết lập các cấu hình cần thiết trong file `.env` (nếu có).
-- **Kết nối Backend**: Ứng dụng giao tiếp độc quyền thông qua **API Gateway (YARP)**, nghiêm cấm gọi trực tiếp vào các cổng microservices nội bộ.
+- Make sure the `JAVA_HOME` environment variable is set correctly on your machine, instead of hardcoding a local path in `android/gradle.properties`.
+- Check and set the required configuration in the `.env` file (if any).
+- **Backend connection**: The app communicates exclusively through the **API Gateway (YARP)**; calling the internal microservice ports directly is prohibited.
 
-### 3. Chạy dự án
+### 3. Run the Project
 
 ```bash
 # Kiểm tra các thiết bị khả dụng
@@ -53,16 +53,16 @@ flutter run
 
 ---
 
-## 🛠 Lưu ý cho nhà phát triển
+## 🛠 Notes for Developers
 
 - **Branching Flow (Trunk-Based)**:
-  - Quy trình phân nhánh: `feature/*` / `fix/*` $\rightarrow$ `main` — mỗi repo chỉ có nhánh `main` duy nhất, CI chạy trên `main` (`.github/workflows/ci.yml`).
-  - Vui lòng tạo branch mới theo định dạng `feature/[tên-tính-năng]` hoặc `fix/[tên-lỗi]` và mở PR vào `main`.
-- **Quản lý công việc**: Theo dõi nhiệm vụ trên Jira tại [skid.atlassian.net](https://skid.atlassian.net).
-- **Cấu hình Debug / Release**:
-  - Luôn đảm bảo các cấu hình debug (như `debugLogDiagnostics`, logging) được bao bọc bởi `kDebugMode` để tránh lộ thông tin nhạy cảm.
-- **Tuân thủ tiêu chuẩn & bảo mật**:
-  - Tuân thủ các quy tắc bảo mật (SEC) và tiêu chuẩn SRS đề ra (ví dụ: quy định về độ mạnh mật khẩu, mã hóa token, thời hạn session, phân quyền 3 nhóm người dùng: Admin, Recruiter, User).
+  - Branching flow: `feature/*` / `fix/*` $\rightarrow$ `main` — each repo has only one `main` branch, and CI runs on `main` (`.github/workflows/ci.yml`).
+  - Please create new branches in the format `feature/[feature-name]` or `fix/[bug-name]` and open PRs against `main`.
+- **Task management**: Track tasks on Jira at [skid.atlassian.net](https://skid.atlassian.net).
+- **Debug / Release configuration**:
+  - Always make sure debug settings (such as `debugLogDiagnostics` and logging) are wrapped in `kDebugMode` to avoid exposing sensitive information.
+- **Standards & security compliance**:
+  - Follow the security rules (SEC) and the SRS standards (for example: password strength requirements, token encryption, session lifetime, and role-based access for 3 user groups: Admin, Recruiter, User).
 
-## Deploy (Mobile — TM4 Khoa, excluded prod)
-- Build: `flutter pub get` `ApiAuthRepository FLUTTER_API_URL=http://10.0.2.2:5000 --dart-define` `AuthSession.load() minSdk 23` `excluded prod` `backlog.md#2`
+## Deploy (Mobile — TM4 Khoa, excluded from prod)
+- Build: `flutter pub get` `ApiAuthRepository FLUTTER_API_URL=http://10.0.2.2:5000 --dart-define` `AuthSession.load() minSdk 23` `excluded from prod` `backlog.md#2`
