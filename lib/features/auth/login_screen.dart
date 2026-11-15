@@ -289,6 +289,16 @@ class _LoginScreenState extends State<LoginScreen> {
             ],
           ),
         ),
+        Center(
+          child: TextButton(
+            key: const Key('login_company_signup_link'),
+            onPressed: () => context.push(AppRoutes.companySignUp),
+            child: const Text(
+              'Bạn đại diện cho doanh nghiệp? Đăng ký công ty',
+              style: TextStyle(fontSize: 13),
+            ),
+          ),
+        ),
         const SizedBox(height: 66),
         const Center(
           child: Text(

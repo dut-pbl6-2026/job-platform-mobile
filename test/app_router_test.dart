@@ -137,6 +137,48 @@ void main() {
       );
       expect(redirect, isNull);
     });
+
+    test('Company sign-up is public, but the join-request status is not', () {
+      expect(
+        AppRouter.router.configuration.topRedirect(
+          TestBuildContext(),
+          TestGoRouterState(AppRoutes.companySignUp),
+        ),
+        isNull,
+      );
+      expect(
+        AppRouter.router.configuration.topRedirect(
+          TestBuildContext(),
+          TestGoRouterState(AppRoutes.myJoinRequest),
+        ),
+        AppRoutes.login,
+      );
+    });
+
+    test('Join-request admin list is recruiter-only', () {
+      AuthSession.instance.setSession(
+        AuthResult(
+          user: UserModel(
+            id: 'candidate',
+            name: 'Candidate',
+            email: 'c@example.com',
+            role: UserRole.user,
+            createdAt: DateTime.now(),
+          ),
+          token: 'jwt-token',
+          refreshToken: 'refresh-token',
+          expiresAt: DateTime.now().add(const Duration(hours: 1)),
+        ),
+      );
+
+      expect(
+        AppRouter.router.configuration.topRedirect(
+          TestBuildContext(),
+          TestGoRouterState(AppRoutes.recruiterJoinRequests),
+        ),
+        AppRoutes.home,
+      );
+    });
   });
 }
 

@@ -42,6 +42,7 @@ class ApiAuthRepository implements IAuthRepository {
     required String password,
     required UserRole role,
     String? inviteCode,
+    String? inviteEmail,
   }) async {
     if (!isPasswordStrong(password)) {
       throw const AuthFailure(
@@ -56,6 +57,20 @@ class ApiAuthRepository implements IAuthRepository {
         code: AuthFailure.invalidInviteCode,
         statusCode: 422,
         rawMessage: 'inviteCode required for Recruiter',
+      );
+    }
+    // AUTH-01-15: the code is bound to one address and job-svc only accepts it
+    // with that address. The registration email is the address sent for the
+    // check and the redeem, so a different invite email can never succeed.
+    final boundEmail = inviteEmail?.trim().toLowerCase();
+    if (role == UserRole.recruiter &&
+        boundEmail != null &&
+        boundEmail.isNotEmpty &&
+        boundEmail != email.trim().toLowerCase()) {
+      throw const AuthFailure(
+        code: AuthFailure.invalidInviteCode,
+        statusCode: 422,
+        rawMessage: 'Invite code is bound to another email',
       );
     }
     try {
@@ -75,6 +90,48 @@ class ApiAuthRepository implements IAuthRepository {
           code: AuthFailure.inviteUnavailable,
           statusCode: 503,
           rawMessage: 'invite code service unavailable',
+        );
+      }
+      throw _toFailure(e);
+    }
+  }
+
+  @override
+  Future<void> registerCompany({
+    required String companyName,
+    String? taxCode,
+    required String email,
+    required String password,
+    required String fullName,
+  }) async {
+    if (!isPasswordStrong(password)) {
+      throw const AuthFailure(
+        code: AuthFailure.weakPassword,
+        statusCode: 422,
+        rawMessage: 'Weak password',
+      );
+    }
+    final tax = taxCode?.trim();
+    try {
+      // Every outcome (new sign-up, existing email, taken name or tax code,
+      // domain match) is the same 202 and the same message, so the response body
+      // is deliberately not interpreted.
+      await _dio.post(
+        '/api/auth/register-company',
+        data: {
+          'companyName': companyName.trim(),
+          if (tax != null && tax.isNotEmpty) 'taxCode': tax,
+          'email': email.trim(),
+          'password': password,
+          'fullName': fullName.trim(),
+        },
+      );
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 503) {
+        throw const AuthFailure(
+          code: AuthFailure.serviceUnavailable,
+          statusCode: 503,
+          rawMessage: 'company sign-up service unavailable',
         );
       }
       throw _toFailure(e);

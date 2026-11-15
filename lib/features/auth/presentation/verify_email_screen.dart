@@ -32,9 +32,10 @@ final RegExp _emailPattern = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
 enum _VerifyState { verifying, verified, invalid, retryable }
 
 /// Landing screen for the verification link: `/verify-email?token=...`.
-/// Redeems the token once, then shows one of four states. Only a 400 from the
-/// server means the link is invalid; network and server failures keep the
-/// user on a retry screen so they are not told the link expired.
+/// Redeems the token once, then shows one of four states. A `422`
+/// (`VERIFICATION_TOKEN_INVALID`) means the link is invalid, expired or already
+/// used; the older `400` is still treated the same way. Network and server
+/// failures keep the user on a retry screen so they are not told the link expired.
 class VerifyEmailScreen extends StatefulWidget {
   const VerifyEmailScreen({super.key, this.token, this.authRepository});
 
@@ -99,7 +100,8 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
   /// Must run inside setState. Classifies by HTTP status, not by message text.
   void _applyFailure(Object error) {
     if (error is AuthFailure) {
-      if (error.statusCode == 400) {
+      // AUTH-01-11: a bad, expired or used token is 422 (it used to be 400).
+      if (error.statusCode == 422 || error.statusCode == 400) {
         _state = _VerifyState.invalid;
         return;
       }

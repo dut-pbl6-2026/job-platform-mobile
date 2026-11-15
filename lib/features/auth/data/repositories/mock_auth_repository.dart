@@ -108,10 +108,23 @@ class MockAuthRepository implements IAuthRepository {
     required String password,
     required UserRole role,
     String? inviteCode,
+    String? inviteEmail,
   }) async {
     await Future.delayed(const Duration(milliseconds: 300));
     // Mock accepts any invite code; real ApiAuthRepository requires one for Recruiter (SRS AUTH-01-06).
     // Like the API, registration issues no session: the account must be verified first.
+  }
+
+  @override
+  Future<void> registerCompany({
+    required String companyName,
+    String? taxCode,
+    required String email,
+    required String password,
+    required String fullName,
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 300));
+    // Mock mirrors the 202-always contract: no session, no existence signal.
   }
 
   @override

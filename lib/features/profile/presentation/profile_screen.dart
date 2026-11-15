@@ -555,6 +555,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         title: 'Việc làm đã ứng tuyển',
                         onTap: () => context.go(AppRoutes.applications),
                       ),
+                      ProfileMenuItem(
+                        icon: Icons.domain_verification_outlined,
+                        iconColor: AppColors.primary,
+                        title: 'Yêu cầu tham gia công ty',
+                        onTap: () => context.push(AppRoutes.myJoinRequest),
+                      ),
                       _buildDivider(),
                       ProfileMenuItem(
                         icon: Icons.tune_rounded,
