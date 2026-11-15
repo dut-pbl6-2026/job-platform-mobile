@@ -12,6 +12,7 @@ import '../../features/applications/presentation/apply_job_screen.dart';
 import '../../features/auth/login_screen.dart';
 import '../../features/auth/presentation/forgot_password_screen.dart';
 import '../../features/auth/presentation/reset_password_screen.dart';
+import '../../features/auth/presentation/verify_email_screen.dart';
 import '../../features/auth/register_screen.dart';
 import '../../features/home/home_screen.dart';
 import '../../features/home/main_navigation_screen.dart';
@@ -44,6 +45,7 @@ class AppRoutes {
   static const String profileDetail = '/profile/detail';
   static const String forgotPassword = '/forgot-password';
   static const String resetPassword = '/reset-password';
+  static const String verifyEmail = '/verify-email';
   static const String aiCopilot = '/ai-copilot';
   static const String resumeScoring = '/resume-scoring';
   static const String recruiterDashboard = '/recruiter/dashboard';
@@ -60,6 +62,7 @@ class AppRoutes {
     search,
     forgotPassword,
     resetPassword,
+    verifyEmail,
   ];
 }
 
@@ -168,6 +171,12 @@ class AppRouter {
         name: 'reset-password',
         builder: (context, state) =>
             ResetPasswordScreen(token: state.uri.queryParameters['token']),
+      ),
+      GoRoute(
+        path: AppRoutes.verifyEmail,
+        name: 'verify-email',
+        builder: (context, state) =>
+            VerifyEmailScreen(token: state.uri.queryParameters['token']),
       ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,

@@ -120,6 +120,11 @@ class MockAuthRepository implements IAuthRepository {
   }
 
   @override
+  Future<void> verifyEmail({required String token}) async {
+    await Future.delayed(const Duration(milliseconds: 300));
+  }
+
+  @override
   Future<void> forgotPassword({required String email}) async {
     await Future.delayed(const Duration(milliseconds: 300));
   }

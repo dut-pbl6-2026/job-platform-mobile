@@ -28,6 +28,10 @@ abstract class IAuthRepository {
   /// address; throws [AuthFailure] with `rateLimited` on 429.
   Future<void> resendVerification({required String email});
 
+  /// Redeems the one-time token from the verification link. Throws [AuthFailure]
+  /// with statusCode 400 when the token is invalid, expired or already used.
+  Future<void> verifyEmail({required String token});
+
   /// Forgot password (AUTH-01-07) anti-enumeration always success
   Future<void> forgotPassword({required String email});
 
