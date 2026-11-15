@@ -129,6 +129,14 @@ void main() {
       );
       expect(redirectLogin, equals(AppRoutes.home));
     });
+
+    test('Verification link is reachable while signed out', () {
+      final redirect = AppRouter.router.configuration.topRedirect(
+        TestBuildContext(),
+        TestGoRouterState(AppRoutes.verifyEmail),
+      );
+      expect(redirect, isNull);
+    });
   });
 }
 

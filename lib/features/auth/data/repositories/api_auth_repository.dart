@@ -85,6 +85,16 @@ class ApiAuthRepository implements IAuthRepository {
   }
 
   @override
+  Future<void> verifyEmail({required String token}) async {
+    try {
+      // 200 with { message } on success. The token is single-use, so callers must not resend it blindly.
+      await _dio.post('/api/auth/verify-email', data: {'token': token});
+    } on DioException catch (e) {
+      throw _toFailure(e);
+    }
+  }
+
+  @override
   Future<void> forgotPassword({required String email}) async {
     try {
       await _dio.post('/api/auth/forgot-password', data: {'email': email});
