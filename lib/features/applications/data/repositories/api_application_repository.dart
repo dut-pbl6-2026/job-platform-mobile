@@ -53,33 +53,25 @@ class ApiApplicationRepository implements IApplicationRepository {
             : Map<String, dynamic>.from(response.data as Map);
         return ApplicationModel.fromJson(data);
       }
+      throw Exception('Lỗi gửi hồ sơ ứng tuyển (${response.statusCode})');
     } on DioException catch (e) {
-      if (e.response != null) {
-        if (e.response?.statusCode == 409) {
-          throw Exception(
-            'Bạn đã nộp hồ sơ cho vị trí này rồi. Vui lòng kiểm tra lịch sử ứng tuyển.',
-          );
-        }
-        final data = e.response?.data;
-        final message = data is Map
-            ? (data['message'] ?? data['detail'])
-            : null;
+      final response = e.response;
+      if (response == null) {
         throw Exception(
-          message ?? 'Lỗi gửi hồ sơ ứng tuyển (${e.response?.statusCode})',
+          'Không thể kết nối tới máy chủ. Vui lòng kiểm tra mạng và thử lại.',
         );
       }
-      debugPrint(
-        '[ApiApplicationRepository] Gateway application offline, falling back: ${e.message}',
-      );
-    } catch (e) {
-      if (e is! DioException) rethrow;
-      debugPrint(
-        '[ApiApplicationRepository] Unexpected error, falling back to mock: $e',
+      if (response.statusCode == 409) {
+        throw Exception(
+          'Bạn đã nộp hồ sơ cho vị trí này rồi. Vui lòng kiểm tra lịch sử ứng tuyển.',
+        );
+      }
+      final data = response.data;
+      final message = data is Map ? (data['message'] ?? data['detail']) : null;
+      throw Exception(
+        message ?? 'Lỗi gửi hồ sơ ứng tuyển (${response.statusCode})',
       );
     }
-
-    // Graceful fallback to Mock repository if Gateway is offline during development
-    return _fallbackMockRepository.applyJob(params);
   }
 
   @override
