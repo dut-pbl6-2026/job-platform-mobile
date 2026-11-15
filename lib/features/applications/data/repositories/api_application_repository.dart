@@ -90,7 +90,8 @@ class ApiApplicationRepository implements IApplicationRepository {
   }) async {
     try {
       final queryParams = <String, dynamic>{
-        'page': page,
+        // The API pages are 1-based; the repository interface is 0-based.
+        'page': page + 1,
         'size': size,
         if (status != null) 'status': status.value,
       };
