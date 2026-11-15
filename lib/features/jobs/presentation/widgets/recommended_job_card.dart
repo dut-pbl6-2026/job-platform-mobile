@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/format_utils.dart';
-import '../../../../core/widgets/bookmark_button.dart';
 import '../../../../core/widgets/pressable_card.dart';
 import '../../domain/models/recommended_job_model.dart';
 
@@ -9,15 +8,11 @@ import '../../domain/models/recommended_job_model.dart';
 class RecommendedJobCard extends StatelessWidget {
   final RecommendedJob recommendation;
   final VoidCallback onTap;
-  final VoidCallback? onBookmarkToggle;
-  final bool isBookmarkLoading;
 
   const RecommendedJobCard({
     super.key,
     required this.recommendation,
     required this.onTap,
-    this.onBookmarkToggle,
-    this.isBookmarkLoading = false,
   });
 
   Color _getScoreColor(int score) {
@@ -83,12 +78,7 @@ class RecommendedJobCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.surface,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: job.isSaved
-                ? AppColors.primary.withValues(alpha: 0.35)
-                : AppColors.border,
-            width: job.isSaved ? 1.5 : 1.0,
-          ),
+          border: Border.all(color: AppColors.border, width: 1.0),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.03),
@@ -170,7 +160,7 @@ class RecommendedJobCard extends StatelessWidget {
               ),
               const SizedBox(height: 10),
 
-              // Company Info & Bookmark
+              // Company Info
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -228,11 +218,6 @@ class RecommendedJobCard extends StatelessWidget {
                         ),
                       ],
                     ),
-                  ),
-                  // Bookmark Button
-                  BookmarkButton(
-                    isSaved: job.isSaved,
-                    onToggle: isBookmarkLoading ? null : onBookmarkToggle,
                   ),
                 ],
               ),

@@ -529,13 +529,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                       _buildDivider(),
                       ProfileMenuItem(
-                        icon: Icons.description_outlined,
-                        iconColor: AppColors.primary,
-                        title: 'CV của tôi',
-                        onTap: () => context.go(AppRoutes.createCv),
-                      ),
-                      _buildDivider(),
-                      ProfileMenuItem(
                         icon: Icons.edit_note_rounded,
                         iconColor: AppColors.primary,
                         title: 'Cover Letter của tôi',
@@ -564,13 +557,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                       _buildDivider(),
                       ProfileMenuItem(
-                        icon: Icons.favorite_border_rounded,
-                        iconColor: AppColors.primary,
-                        title: 'Việc làm đã lưu',
-                        onTap: () => context.push(AppRoutes.savedJobs),
-                      ),
-                      _buildDivider(),
-                      ProfileMenuItem(
                         icon: Icons.tune_rounded,
                         iconColor: AppColors.primary,
                         title: 'Cài đặt gợi ý việc làm',
@@ -595,13 +581,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                       _buildDivider(),
                       ProfileMenuItem(
-                        icon: Icons.person_add_alt_outlined,
-                        iconColor: AppColors.primary,
-                        title: 'NTD muốn kết nối với bạn',
-                        onTap: () => context.push(AppRoutes.connections),
-                      ),
-                      _buildDivider(),
-                      ProfileMenuItem(
                         icon: Icons.domain_outlined,
                         iconColor: AppColors.primary,
                         title: 'Công ty đang theo dõi',
@@ -615,13 +594,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     // Section 5: Cài đặt thông báo
                     _buildSectionHeader('Cài đặt thông báo'),
                     _buildCardContainer([
-                      ProfileMenuItem(
-                        icon: Icons.notifications_none_rounded,
-                        iconColor: AppColors.primary,
-                        title: 'Thông báo việc làm',
-                        onTap: () => context.go(AppRoutes.notifications),
-                      ),
-                      _buildDivider(),
                       ProfileMenuItem(
                         icon: Icons.mail_outline_rounded,
                         iconColor: AppColors.primary,

@@ -1084,14 +1084,6 @@ class _SearchScreenState extends State<SearchScreen> {
                   child: JobCard(
                     job: job,
                     onTap: () => context.push('${AppRoutes.jobs}/${job.id}'),
-                    onBookmarkToggle: () async {
-                      await _jobRepository.toggleSaveJob(job.id);
-                      if (mounted) {
-                        setState(() {
-                          _results[index] = job.copyWith(isSaved: !job.isSaved);
-                        });
-                      }
-                    },
                   ),
                 ),
               );

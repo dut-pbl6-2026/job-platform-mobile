@@ -202,7 +202,7 @@ void main() {
 
     // 5. Recruiter cannot access User-only actions
     test(
-      '5. Recruiter cannot access User-only actions (/jobs/:id/apply, /applications, /create-cv)',
+      '5. Recruiter cannot access User-only actions (/jobs/:id/apply, /applications)',
       () async {
         await AuthSession.instance.setSession(
           AuthResult(
@@ -232,13 +232,6 @@ void main() {
           TestGoRouterState('/applications'),
         );
         expect(redirectApps, equals(AppRoutes.home));
-
-        // Create CV route redirected to home
-        final redirectCreateCv = AppRouter.router.configuration.topRedirect(
-          TestBuildContext(),
-          TestGoRouterState('/create-cv'),
-        );
-        expect(redirectCreateCv, equals(AppRoutes.home));
       },
     );
 

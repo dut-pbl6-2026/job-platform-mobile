@@ -17,7 +17,6 @@ import 'package:job_platform_mobile/features/jobs/domain/models/recommended_job_
 import 'package:job_platform_mobile/features/jobs/presentation/widgets/recommended_job_card.dart';
 
 import 'package:job_platform_mobile/features/jobs/presentation/widgets/recommended_jobs_section.dart';
-import 'package:job_platform_mobile/features/notifications/data/repositories/mock_notification_repository.dart';
 
 class _FakeHttpAdapter implements HttpClientAdapter {
   final Map<String, dynamic> Function(RequestOptions options) handler;
@@ -194,7 +193,6 @@ void main() {
       tester,
     ) async {
       bool tapped = false;
-      bool bookmarked = false;
 
       final item = RecommendedJob(
         job: sampleJob,
@@ -211,7 +209,6 @@ void main() {
               child: RecommendedJobCard(
                 recommendation: item,
                 onTap: () => tapped = true,
-                onBookmarkToggle: () => bookmarked = true,
               ),
             ),
           ),
@@ -234,10 +231,6 @@ void main() {
       // Tap card
       await tester.tap(find.text('Senior Flutter Developer'));
       expect(tapped, isTrue);
-
-      // Tap bookmark
-      await tester.tap(find.byType(IconButton));
-      expect(bookmarked, isTrue);
     });
 
     testWidgets(
@@ -407,11 +400,8 @@ void main() {
           routes: [
             GoRoute(
               path: AppRoutes.home,
-              builder: (context, state) => HomeScreen(
-                authRepository: mockAuth,
-                jobRepository: mockJob,
-                notificationRepository: MockNotificationRepository(),
-              ),
+              builder: (context, state) =>
+                  HomeScreen(authRepository: mockAuth, jobRepository: mockJob),
             ),
             GoRoute(
               path: '${AppRoutes.jobs}/:id',
@@ -469,11 +459,7 @@ void main() {
         await tester.pumpWidget(
           MaterialApp(
             theme: AppTheme.lightTheme,
-            home: HomeScreen(
-              authRepository: mockAuth,
-              jobRepository: mockJob,
-              notificationRepository: MockNotificationRepository(),
-            ),
+            home: HomeScreen(authRepository: mockAuth, jobRepository: mockJob),
           ),
         );
 

@@ -8,16 +8,12 @@ import '../../domain/models/job_model.dart';
 /// Sticky Bottom Action Bar for Job Detail screen with dynamic RBAC support (MOB-01-03)
 class JobDetailBottomBar extends StatelessWidget {
   final JobModel job;
-  final bool isSaved;
-  final VoidCallback onBookmarkToggle;
   final VoidCallback onShare;
   final VoidCallback onPrimaryAction;
 
   const JobDetailBottomBar({
     super.key,
     required this.job,
-    required this.isSaved,
-    required this.onBookmarkToggle,
     required this.onShare,
     required this.onPrimaryAction,
   });
@@ -47,43 +43,7 @@ class JobDetailBottomBar extends StatelessWidget {
       ),
       child: Row(
         children: [
-          // 1. Bookmark / Save Button (Figma #55:3979)
-          OutlinedButton.icon(
-            onPressed: onBookmarkToggle,
-            icon: Icon(
-              isSaved ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
-              color: isSaved ? AppColors.primary : AppColors.textSecondary,
-              size: 20,
-            ),
-            label: Text(
-              isSaved ? 'Đã lưu' : 'Lưu tin',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: isSaved ? AppColors.primary : AppColors.textSecondary,
-              ),
-            ),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: isSaved
-                  ? AppColors.primary
-                  : AppColors.textSecondary,
-              backgroundColor: isSaved
-                  ? AppColors.primary.withValues(alpha: 0.08)
-                  : Colors.white,
-              side: BorderSide(
-                color: isSaved ? AppColors.primary : AppColors.border,
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 14),
-              minimumSize: const Size(0, 46),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(24),
-              ),
-            ),
-          ),
-
-          const SizedBox(width: 8),
-
-          // 2. Share Button
+          // 1. Share Button
           InkWell(
             onTap: onShare,
             borderRadius: BorderRadius.circular(24),

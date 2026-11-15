@@ -7,7 +7,6 @@ import 'package:job_platform_mobile/features/ai_copilot/presentation/ai_copilot_
 import 'package:job_platform_mobile/features/ai_copilot/presentation/resume_scoring_screen.dart';
 import 'package:job_platform_mobile/features/home/home_screen.dart';
 import 'package:job_platform_mobile/features/home/main_navigation_screen.dart';
-import 'package:job_platform_mobile/features/notifications/data/repositories/mock_notification_repository.dart';
 
 import 'support/figma_job_fixture.dart';
 import 'support/load_fonts.dart';
@@ -31,10 +30,7 @@ void main() {
           tester.view.physicalSize = size;
           addTearDown(tester.view.resetDevicePixelRatio);
           addTearDown(tester.view.resetPhysicalSize);
-          final home = HomeScreen(
-            jobRepository: FigmaJobFixture(),
-            notificationRepository: MockNotificationRepository(),
-          );
+          final home = HomeScreen(jobRepository: FigmaJobFixture());
           for (final screen in [
             MainNavigationScreen(homeScreen: home),
             const LoginScreen(),

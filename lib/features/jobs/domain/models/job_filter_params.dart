@@ -24,7 +24,6 @@ class JobFilterParams {
   final num? salaryMax;
   final String currency; // 'VND', 'JPY'
   final bool includeNegotiable;
-  final bool onlySaved;
   final int page;
   final int pageSize;
   final String sortBy; // 'newest', 'salary_desc', 'relevance'
@@ -47,7 +46,6 @@ class JobFilterParams {
     this.salaryMax,
     this.currency = 'VND',
     this.includeNegotiable = true,
-    this.onlySaved = false,
     this.page = 0,
     this.pageSize = 10,
     this.sortBy = 'newest',
@@ -71,8 +69,7 @@ class JobFilterParams {
         (salaryRangeId != null && salaryRangeId!.trim().isNotEmpty) ||
         salaryMin != null ||
         salaryMax != null ||
-        !includeNegotiable ||
-        onlySaved;
+        !includeNegotiable;
   }
 
   /// Number of active categorical filters (excluding search keyword)
@@ -104,7 +101,6 @@ class JobFilterParams {
         !includeNegotiable) {
       count++;
     }
-    if (onlySaved) count++;
     return count;
   }
 
@@ -141,7 +137,6 @@ class JobFilterParams {
     bool clearSalaryMax = false,
     String? currency,
     bool? includeNegotiable,
-    bool? onlySaved,
     int? page,
     int? pageSize,
     String? sortBy,
@@ -176,7 +171,6 @@ class JobFilterParams {
       salaryMax: clearSalaryMax ? null : (salaryMax ?? this.salaryMax),
       currency: currency ?? this.currency,
       includeNegotiable: includeNegotiable ?? this.includeNegotiable,
-      onlySaved: onlySaved ?? this.onlySaved,
       page: page ?? this.page,
       pageSize: pageSize ?? this.pageSize,
       sortBy: sortBy ?? this.sortBy,

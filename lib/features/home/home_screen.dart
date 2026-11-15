@@ -27,21 +27,12 @@ import '../jobs/presentation/widgets/job_shimmer_loading.dart';
 import '../jobs/presentation/widgets/job_card.dart';
 import '../jobs/presentation/widgets/recommended_jobs_section.dart';
 
-import '../notifications/data/repositories/api_notification_repository.dart';
-import '../notifications/domain/repositories/notification_repository.dart';
-
 /// Commercial-grade Home Dashboard with fully integrated real-time job search & filtering
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({
-    super.key,
-    this.authRepository,
-    this.jobRepository,
-    this.notificationRepository,
-  });
+  const HomeScreen({super.key, this.authRepository, this.jobRepository});
 
   final IAuthRepository? authRepository;
   final IJobRepository? jobRepository;
-  final INotificationRepository? notificationRepository;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -50,17 +41,13 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   late final IAuthRepository _authRepository;
   late final IJobRepository _jobRepository;
-  late final INotificationRepository _notificationRepository;
 
   bool _isLoggingOut = false;
   bool _isLoadingJobs = true;
   bool _isLoadingMore = false;
   String? _errorMessage;
-  int _unreadNotificationsCount = 0;
-  StreamSubscription<dynamic>? _notifSub;
 
   List<JobModel> _jobs = [];
-  final Set<String> _savingIds = {};
   int _totalJobs = 0;
   int _currentPage = 0;
   bool _hasNextPage = false;
@@ -81,36 +68,8 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     _authRepository = widget.authRepository ?? ApiAuthRepository();
     _jobRepository = widget.jobRepository ?? ApiJobRepository();
-    _notificationRepository =
-        widget.notificationRepository ?? ApiNotificationRepository();
     _fetchJobs();
     _fetchRecommendations();
-    _loadUnreadCount();
-
-    _notifSub = PushNotificationService.instance.onNotificationReceived.listen((
-      _,
-    ) {
-      if (mounted) {
-        setState(() {
-          _unreadNotificationsCount++;
-        });
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _notifSub?.cancel();
-    super.dispose();
-  }
-
-  Future<void> _loadUnreadCount() async {
-    try {
-      final count = await _notificationRepository.getUnreadCount();
-      if (mounted) {
-        setState(() => _unreadNotificationsCount = count);
-      }
-    } catch (_) {}
   }
 
   Future<void> _fetchRecommendations({bool refresh = false}) async {
@@ -306,39 +265,6 @@ class _HomeScreenState extends State<HomeScreen> {
     _fetchJobs(isResetPage: true);
   }
 
-  Future<void> _toggleBookmark(JobModel job) async {
-    if (_savingIds.contains(job.id)) return;
-    setState(() => _savingIds.add(job.id));
-    try {
-      final saved = await _jobRepository.toggleSaveJob(job.id);
-      if (!mounted) return;
-      setState(() {
-        _jobs = _jobs
-            .map(
-              (item) =>
-                  item.id == job.id ? item.copyWith(isSaved: saved) : item,
-            )
-            .toList();
-        _recommendedJobs = _recommendedJobs
-            .map(
-              (item) => item.job.id == job.id
-                  ? item.copyWith(job: item.job.copyWith(isSaved: saved))
-                  : item,
-            )
-            .toList();
-      });
-    } catch (_) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Không thể lưu việc làm. Vui lòng thử lại.'),
-        ),
-      );
-    } finally {
-      if (mounted) setState(() => _savingIds.remove(job.id));
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final user = AuthSession.instance.currentUser;
@@ -353,7 +279,6 @@ class _HomeScreenState extends State<HomeScreen> {
             await Future.wait([
               _fetchJobs(isResetPage: true),
               _fetchRecommendations(refresh: true),
-              _loadUnreadCount(),
             ]);
           },
           child: SingleChildScrollView(
@@ -380,11 +305,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       recommendations: _recommendedJobs,
                       isLoading: _isLoadingRecommendations,
                       errorMessage: _recommendationsError,
-                      savingIds: _savingIds,
                       onRefresh: () => _fetchRecommendations(refresh: true),
                       onJobTap: (rec) =>
                           context.push('${AppRoutes.jobs}/${rec.job.id}'),
-                      onBookmarkToggle: (job) => _toggleBookmark(job),
                     ),
                   ],
                   const SizedBox(height: 9),
@@ -453,19 +376,6 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
         IconButton(
-          key: const Key('home_notification_button'),
-          tooltip: 'Thông báo',
-          icon: Badge(
-            isLabelVisible: _unreadNotificationsCount > 0,
-            label: Text('$_unreadNotificationsCount'),
-            child: const DesignAsset('home-notification'),
-          ),
-          onPressed: () async {
-            await context.push(AppRoutes.notifications);
-            if (mounted) _loadUnreadCount();
-          },
-        ),
-        IconButton(
           key: const Key('home_ai_copilot_button'),
           tooltip: 'AI Copilot',
           icon: const DesignAsset('home-chat'),
@@ -499,14 +409,6 @@ class _HomeScreenState extends State<HomeScreen> {
               onTap: () {
                 Navigator.pop(sheetContext);
                 context.go(AppRoutes.profile);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.bookmark_outline),
-              title: const Text('Việc làm đã lưu'),
-              onTap: () {
-                Navigator.pop(sheetContext);
-                context.push(AppRoutes.savedJobs);
               },
             ),
             ListTile(
@@ -673,16 +575,16 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildQuickShortcuts(bool isRecruiter) => Row(
     children: [
-      Expanded(
-        child: _shortcut(
-          isRecruiter ? Icons.post_add_rounded : Icons.description_outlined,
-          isRecruiter ? 'Đăng tin' : 'Tạo CV',
-          () => context.go(
-            isRecruiter ? AppRoutes.recruiterPostJob : AppRoutes.createCv,
+      if (isRecruiter) ...[
+        Expanded(
+          child: _shortcut(
+            Icons.post_add_rounded,
+            'Đăng tin',
+            () => context.go(AppRoutes.recruiterPostJob),
           ),
         ),
-      ),
-      const SizedBox(width: 8),
+        const SizedBox(width: 8),
+      ],
       Expanded(
         child: _shortcut(
           Icons.visibility_outlined,
@@ -833,9 +735,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: JobCard(
                   job: job,
                   onTap: () => context.push('${AppRoutes.jobs}/${job.id}'),
-                  onBookmarkToggle: _savingIds.contains(job.id)
-                      ? null
-                      : () => _toggleBookmark(job),
                 ),
               ),
             );

@@ -3,7 +3,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:job_platform_mobile/core/theme/app_theme.dart';
 import 'package:job_platform_mobile/features/home/main_navigation_screen.dart';
 import 'package:job_platform_mobile/features/home/home_screen.dart';
-import 'package:job_platform_mobile/features/notifications/data/repositories/mock_notification_repository.dart';
 import '../support/figma_job_fixture.dart';
 import '../support/golden_tolerance.dart';
 import '../support/load_fonts.dart';
@@ -29,10 +28,7 @@ void main() {
             padding: EdgeInsets.only(top: 52),
           ),
           child: MainNavigationScreen(
-            homeScreen: HomeScreen(
-              jobRepository: FigmaJobFixture(),
-              notificationRepository: MockNotificationRepository(),
-            ),
+            homeScreen: HomeScreen(jobRepository: FigmaJobFixture()),
           ),
         ),
       ),

@@ -6,9 +6,6 @@ import '../../domain/repositories/job_repository.dart';
 
 /// Mock implementation of [IJobRepository] with realistic Vietnamese job dataset.
 class MockJobRepository implements IJobRepository {
-  // In-memory bookmark set
-  final Set<String> _savedJobIds = {'job-1', 'job-4'};
-
   // Realistic mock dataset conforming to SRS JOB-01, SEARCH-01, and MOB-01-02
   static final List<JobModel> _mockJobs = [
     JobModel(
@@ -29,7 +26,6 @@ class MockJobRepository implements IJobRepository {
       benefits:
           'Lương tháng 13 + thưởng hiệu suất (1-3 tháng), bảo hiểm FPT Care cho bản thân và gia đình, cơ hội onsite Nhật Bản & Singapore.',
       postedAt: DateTime.now().subtract(const Duration(hours: 2)),
-      isSaved: true,
       viewCount: 1420,
       applicationCount: 38,
     ),
@@ -99,7 +95,6 @@ class MockJobRepository implements IJobRepository {
       benefits:
           'Mức lương cạnh tranh nhất thị trường, thưởng KPI vượt trội, môi trường làm việc trẻ trung, năng động tại Phú Mỹ Hưng.',
       postedAt: DateTime.now().subtract(const Duration(days: 1)),
-      isSaved: true,
       viewCount: 2100,
       applicationCount: 45,
     ),
@@ -311,10 +306,7 @@ class MockJobRepository implements IJobRepository {
     // Simulate realistic network delay (MOB-01-02 SLA check)
     await Future.delayed(const Duration(milliseconds: 350));
 
-    var filteredList = _mockJobs.map((job) {
-      final isSaved = _savedJobIds.contains(job.id);
-      return job.copyWith(isSaved: isSaved);
-    }).toList();
+    var filteredList = List<JobModel>.of(_mockJobs);
 
     // 1. Keyword search (title, company, skills, category, description)
     if (params.keyword != null && params.keyword!.trim().isNotEmpty) {
@@ -451,11 +443,6 @@ class MockJobRepository implements IJobRepository {
       }).toList();
     }
 
-    // 11. Only saved bookmark filter
-    if (params.onlySaved) {
-      filteredList = filteredList.where((job) => job.isSaved).toList();
-    }
-
     // 8. Sorting
     if (params.sortBy == 'salary_desc') {
       filteredList.sort(
@@ -495,21 +482,9 @@ class MockJobRepository implements IJobRepository {
     await Future.delayed(const Duration(milliseconds: 200));
     try {
       final job = _mockJobs.firstWhere((j) => j.id == id);
-      return job.copyWith(isSaved: _savedJobIds.contains(id));
+      return job;
     } catch (_) {
       return null;
-    }
-  }
-
-  @override
-  Future<bool> toggleSaveJob(String id) async {
-    await Future.delayed(const Duration(milliseconds: 150));
-    if (_savedJobIds.contains(id)) {
-      _savedJobIds.remove(id);
-      return false;
-    } else {
-      _savedJobIds.add(id);
-      return true;
     }
   }
 
@@ -550,9 +525,7 @@ class MockJobRepository implements IJobRepository {
     final recommendations = <RecommendedJob>[
       if (jobMap.containsKey('job-1'))
         RecommendedJob(
-          job: jobMap['job-1']!.copyWith(
-            isSaved: _savedJobIds.contains('job-1'),
-          ),
+          job: jobMap['job-1']!,
           reason:
               'Phù hợp 96% dựa trên kỹ năng Flutter & Dart trong hồ sơ của bạn',
           matchScore: 96,
@@ -560,36 +533,28 @@ class MockJobRepository implements IJobRepository {
         ),
       if (jobMap.containsKey('job-3'))
         RecommendedJob(
-          job: jobMap['job-3']!.copyWith(
-            isSaved: _savedJobIds.contains('job-3'),
-          ),
+          job: jobMap['job-3']!,
           reason: 'Dựa trên các tìm kiếm AI & Python gần đây của bạn',
           matchScore: 89,
           matchType: 'search_history',
         ),
       if (jobMap.containsKey('job-2'))
         RecommendedJob(
-          job: jobMap['job-2']!.copyWith(
-            isSaved: _savedJobIds.contains('job-2'),
-          ),
+          job: jobMap['job-2']!,
           reason: 'Công việc xu hướng được nhiều ứng viên quan tâm tuần này',
           matchScore: 83,
           matchType: 'trending',
         ),
       if (jobMap.containsKey('job-4'))
         RecommendedJob(
-          job: jobMap['job-4']!.copyWith(
-            isSaved: _savedJobIds.contains('job-4'),
-          ),
+          job: jobMap['job-4']!,
           reason: 'Tương tự các việc làm bạn đã lưu gần đây',
           matchScore: 78,
           matchType: 'saved_jobs',
         ),
       if (jobMap.containsKey('job-5'))
         RecommendedJob(
-          job: jobMap['job-5']!.copyWith(
-            isSaved: _savedJobIds.contains('job-5'),
-          ),
+          job: jobMap['job-5']!,
           reason: 'Phù hợp với vị trí làm việc tại Đà Nẵng của bạn',
           matchScore: 75,
           matchType: 'location',

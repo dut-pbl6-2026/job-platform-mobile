@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:job_platform_mobile/core/theme/app_theme.dart';
-import 'package:job_platform_mobile/features/connections/presentation/connections_screen.dart';
-import 'package:job_platform_mobile/features/cv/presentation/create_cv_screen.dart';
 import 'package:job_platform_mobile/features/home/main_navigation_screen.dart';
 import 'package:job_platform_mobile/features/jobs/data/repositories/mock_job_repository.dart';
 import 'package:job_platform_mobile/features/jobs/domain/models/job_filter_params.dart';
@@ -246,41 +244,6 @@ void main() {
       final hasPadding96 = listViews.any(
         (lv) =>
             lv.padding is EdgeInsets && (lv.padding as EdgeInsets).bottom == 96,
-      );
-      expect(hasPadding96, isTrue);
-    });
-
-    testWidgets('CreateCvScreen has bottom padding 96', (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(theme: AppTheme.lightTheme, home: const CreateCvScreen()),
-      );
-      await tester.pumpAndSettle();
-
-      final scrollViews = tester.widgetList<SingleChildScrollView>(
-        find.byType(SingleChildScrollView),
-      );
-      final hasPadding96 = scrollViews.any(
-        (sv) =>
-            sv.padding is EdgeInsets && (sv.padding as EdgeInsets).bottom == 96,
-      );
-      expect(hasPadding96, isTrue);
-    });
-
-    testWidgets('ConnectionsScreen has bottom padding 96', (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: AppTheme.lightTheme,
-          home: const ConnectionsScreen(),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      final scrollViews = tester.widgetList<SingleChildScrollView>(
-        find.byType(SingleChildScrollView),
-      );
-      final hasPadding96 = scrollViews.any(
-        (sv) =>
-            sv.padding is EdgeInsets && (sv.padding as EdgeInsets).bottom == 96,
       );
       expect(hasPadding96, isTrue);
     });

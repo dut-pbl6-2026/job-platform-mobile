@@ -41,7 +41,6 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
   bool _isLoading = true;
   String? _errorMessage;
   JobModel? _job;
-  bool _isSaved = false;
 
   @override
   void initState() {
@@ -63,7 +62,6 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
       if (job != null) {
         setState(() {
           _job = job;
-          _isSaved = job.isSaved;
           _isLoading = false;
         });
       } else {
@@ -79,29 +77,6 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
         _isLoading = false;
       });
     }
-  }
-
-  Future<void> _handleBookmarkToggle() async {
-    if (_job == null) return;
-    final newStatus = await _jobRepository.toggleSaveJob(_job!.id);
-    if (!mounted) return;
-
-    setState(() {
-      _isSaved = newStatus;
-      _job = _job!.copyWith(isSaved: newStatus);
-    });
-
-    ScaffoldMessenger.of(context).hideCurrentSnackBar();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          newStatus
-              ? 'Đã lưu tin tuyển dụng thành công!'
-              : 'Đã bỏ lưu tin tuyển dụng',
-        ),
-        duration: const Duration(seconds: 2),
-      ),
-    );
   }
 
   void _handleShare() {
@@ -227,16 +202,6 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
         actions: [
           if (_job != null) ...[
             IconButton(
-              icon: Icon(
-                _isSaved
-                    ? Icons.bookmark_rounded
-                    : Icons.bookmark_border_rounded,
-                color: _isSaved ? AppColors.primary : AppColors.textPrimary,
-              ),
-              tooltip: _isSaved ? 'Bỏ lưu' : 'Lưu tin',
-              onPressed: _handleBookmarkToggle,
-            ),
-            IconButton(
               icon: const Icon(Icons.share_outlined),
               tooltip: 'Chia sẻ',
               onPressed: _handleShare,
@@ -248,8 +213,6 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
       bottomNavigationBar: (_job != null && !_isLoading)
           ? JobDetailBottomBar(
               job: _job!,
-              isSaved: _isSaved,
-              onBookmarkToggle: _handleBookmarkToggle,
               onShare: _handleShare,
               onPrimaryAction: _handlePrimaryAction,
             )
