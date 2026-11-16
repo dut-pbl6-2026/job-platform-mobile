@@ -50,10 +50,10 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
           _isLoading = false;
         });
       }
-    } catch (e) {
+    } catch (_) {
       if (mounted) {
         setState(() {
-          _errorMessage = 'Không thể tải hồ sơ cá nhân: $e';
+          _errorMessage = 'Không thể tải hồ sơ cá nhân. Vui lòng thử lại.';
           _isLoading = false;
         });
       }

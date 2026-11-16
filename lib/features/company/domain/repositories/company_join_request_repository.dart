@@ -7,8 +7,14 @@ import '../models/join_request.dart';
 /// The requester calls act on the signed-in account, so they take no company or
 /// request id.
 abstract class ICompanyJoinRequestRepository {
-  /// Lists the requests of [companyId]. Only the company admin may call this.
-  Future<List<CompanyJoinRequest>> listForCompany(String companyId);
+  /// Lists one page of the requests of [companyId]. Only the company admin may
+  /// call this. [CompanyJoinRequestPage.total] tells the screen whether more
+  /// requests exist beyond the loaded page.
+  Future<CompanyJoinRequestPage> listForCompany(
+    String companyId, {
+    int page = 1,
+    int size = 20,
+  });
 
   /// Approves a pending request (AUTH-01-12). Throws [JoinRequestException] on
   /// `409` when the request is no longer pending or has expired.

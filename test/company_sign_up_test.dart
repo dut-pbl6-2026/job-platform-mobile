@@ -362,6 +362,88 @@ void main() {
       expect(find.text(CompanySignUpStrings.serviceUnavailable), findsNothing);
     });
 
+    testWidgets('an unknown 422 is a generic failure, not an invite code', (
+      tester,
+    ) async {
+      final server = _ScriptedDio([
+        const _Reply(422, {
+          'title': 'One or more validation errors occurred.',
+          'status': 422,
+          'errors': {
+            'CompanyName': ['The company name is invalid.'],
+          },
+        }),
+      ]);
+      await tester.pumpWidget(
+        MaterialApp(
+          home: CompanySignUpScreen(
+            authRepository: ApiAuthRepository(dio: server.dio),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await _fillValidForm(tester);
+      await _submit(tester);
+
+      expect(find.text(CompanySignUpStrings.failed), findsOneWidget);
+      expect(find.textContaining('Mã mời'), findsNothing);
+      expect(find.text(CompanySignUpStrings.accepted), findsNothing);
+      // The form keeps its values so the user can correct the field.
+      expect(find.byKey(const Key('company_signup_retry')), findsOneWidget);
+    });
+
+    testWidgets('a coded 422 that is not WORK_EMAIL_REQUIRED is generic', (
+      tester,
+    ) async {
+      final server = _ScriptedDio([
+        const _Reply(422, {'errorCode': 'TAX_CODE_INVALID'}),
+      ]);
+      await tester.pumpWidget(
+        MaterialApp(
+          home: CompanySignUpScreen(
+            authRepository: ApiAuthRepository(dio: server.dio),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await _fillValidForm(tester);
+      await _submit(tester);
+
+      expect(find.text(CompanySignUpStrings.failed), findsOneWidget);
+      expect(find.textContaining('Mã mời'), findsNothing);
+    });
+
+    testWidgets('every field label is its accessible name', (tester) async {
+      final handle = tester.ensureSemantics();
+      final server = _ScriptedDio([const _Reply(202)]);
+      await tester.pumpWidget(
+        MaterialApp(
+          home: CompanySignUpScreen(
+            authRepository: ApiAuthRepository(dio: server.dio),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Screen readers (and getByLabel-style finders) must hear the label, not
+      // only the hint: the hint alone never says which field failed.
+      expect(
+        find.bySemanticsLabel(CompanySignUpStrings.companyNameLabel),
+        findsOneWidget,
+      );
+      expect(
+        find.bySemanticsLabel(CompanySignUpStrings.emailLabel),
+        findsOneWidget,
+      );
+      expect(
+        find.bySemanticsLabel(CompanySignUpStrings.passwordLabel),
+        findsOneWidget,
+      );
+      handle.dispose();
+    });
+
     testWidgets('503 keeps the form and offers a retry that succeeds', (
       tester,
     ) async {

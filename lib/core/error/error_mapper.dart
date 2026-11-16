@@ -72,23 +72,19 @@ AuthFailure mapDioToFailure(DioException e) {
         rawMessage: raw,
       );
     }
-    if (errorCode == 'INVITE_EMAIL_INVALID') {
+    if (errorCode == 'INVITE_CODE_INVALID' ||
+        errorCode == 'INVITE_EMAIL_INVALID') {
       return AuthFailure(
         code: AuthFailure.invalidInviteCode,
         statusCode: 422,
         rawMessage: raw,
       );
     }
-    if (errorCode == null && data is Map && data['errors'] is Map) {
-      // ValidationProblem (e.g. password too weak), not an invite-code error.
-      return AuthFailure(
-        code: AuthFailure.requestInvalid,
-        statusCode: 422,
-        rawMessage: raw,
-      );
-    }
+    // Everything else is a validation error: a ProblemDetails field map, a
+    // code this client does not know, or a code-less 422. None of them is an
+    // invite-code error, so the invite copy is never shown for them.
     return AuthFailure(
-      code: AuthFailure.invalidInviteCode,
+      code: AuthFailure.requestInvalid,
       statusCode: 422,
       rawMessage: raw,
     );
@@ -129,13 +125,22 @@ AuthFailure mapDioToFailure(DioException e) {
 /// Login 401 copy. The server returns the same 401 for a wrong password and for
 /// an account that is not verified yet, so the client cannot tell them apart.
 const String loginCredentialsOrVerifyMessage =
-    'Check your credentials or verify your email';
+    'Email hoặc mật khẩu không chính xác, hoặc tài khoản chưa được xác minh.';
+
+/// Copy for any failure the mapper cannot name. Screens prefix it with what the
+/// user was doing. It never carries server text or a Dart exception string.
+const String genericFailureMessage = 'Đã xảy ra lỗi, vui lòng thử lại.';
 
 /// Shown when the server answers 429 (too many requests from this IP).
 const String rateLimitedMessage =
     'Bạn đã yêu cầu quá nhiều lần. Vui lòng thử lại sau.';
 
-String authFailureToMessage(AuthFailure f) {
+/// Maps [f] to user-facing Vietnamese copy. [fallback] is used for codes this
+/// client cannot explain; the server's `detail`/`title` is never returned.
+String authFailureToMessage(
+  AuthFailure f, {
+  String fallback = genericFailureMessage,
+}) {
   switch (f.code) {
     case AuthFailure.rateLimited:
       return rateLimitedMessage;
@@ -168,6 +173,16 @@ String authFailureToMessage(AuthFailure f) {
     case AuthFailure.networkError:
       return 'Lỗi kết nối mạng, vui lòng thử lại';
     default:
-      return f.rawMessage ?? 'Đã xảy ra lỗi';
+      return fallback;
   }
+}
+
+/// Copy for an arbitrary error caught by a screen: an [AuthFailure] is mapped by
+/// code, everything else becomes [fallback]. The exception itself is never
+/// rendered - a `DioException` or ProblemDetails body is not user copy.
+String failureMessage(Object error, {required String fallback}) {
+  if (error is AuthFailure) {
+    return authFailureToMessage(error, fallback: fallback);
+  }
+  return fallback;
 }

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/error/error_mapper.dart';
-import '../../../core/error/failures.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/password_validator.dart';
@@ -68,7 +67,10 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
       );
       context.go(AppRoutes.login);
     } catch (e) {
-      final msg = e is AuthFailure ? authFailureToMessage(e) : e.toString();
+      final msg = failureMessage(
+        e,
+        fallback: 'Không đặt lại được mật khẩu. Vui lòng thử lại.',
+      );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(msg), backgroundColor: AppColors.error),

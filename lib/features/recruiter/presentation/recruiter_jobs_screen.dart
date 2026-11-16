@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/router/app_router.dart';
+import '../../../core/error/error_mapper.dart';
 import '../../../core/theme/app_theme.dart';
 import '../data/repositories/api_recruiter_repository.dart';
 import '../domain/models/recruiter_models.dart';
@@ -52,7 +53,10 @@ class _RecruiterJobsScreenState extends State<RecruiterJobsScreen> {
       if (mounted) {
         setState(() {
           _isLoading = false;
-          _errorMessage = e.toString();
+          _errorMessage = failureMessage(
+            e,
+            fallback: 'Không tải được tin tuyển dụng. Vui lòng thử lại.',
+          );
           _isMockMode = widget.isMock ?? _repository.isMock;
         });
       }

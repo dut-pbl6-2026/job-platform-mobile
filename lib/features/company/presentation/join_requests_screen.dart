@@ -31,7 +31,11 @@ class _JoinRequestsScreenState extends State<JoinRequestsScreen> {
       widget.repository ?? ApiCompanyJoinRequestRepository();
 
   List<CompanyJoinRequest> _requests = const [];
+  int _total = 0;
+  int _page = 0;
+  bool _hasMore = false;
   bool _loading = true;
+  bool _loadingMore = false;
   String? _error;
   String? _busyRequestId;
 
@@ -46,6 +50,7 @@ class _JoinRequestsScreenState extends State<JoinRequestsScreen> {
     _load();
   }
 
+  /// Loads the first page and replaces the list.
   Future<void> _load() async {
     final companyId = _companyId;
     if (companyId == null || companyId.isEmpty) {
@@ -57,13 +62,17 @@ class _JoinRequestsScreenState extends State<JoinRequestsScreen> {
     }
     setState(() {
       _loading = true;
+      _loadingMore = false;
       _error = null;
     });
     try {
-      final requests = await _repository.listForCompany(companyId);
+      final page = await _repository.listForCompany(companyId);
       if (!mounted) return;
       setState(() {
-        _requests = requests;
+        _requests = page.items;
+        _total = page.total;
+        _page = page.page;
+        _hasMore = page.hasMore;
         _loading = false;
       });
     } on JoinRequestException catch (e) {
@@ -72,6 +81,42 @@ class _JoinRequestsScreenState extends State<JoinRequestsScreen> {
         _error = e.message;
         _loading = false;
       });
+    } catch (_) {
+      // A payload change or any other throw must not leave the spinner up
+      // forever: the screen shows the same retry as a mapped failure.
+      if (!mounted) return;
+      setState(() {
+        _error = JoinRequestStrings.listFailed;
+        _loading = false;
+      });
+    }
+  }
+
+  /// Appends the next page. The server's `total` decides whether a next page
+  /// exists, so a truncated list is never presented as the whole list.
+  Future<void> _loadMore() async {
+    final companyId = _companyId;
+    if (companyId == null || companyId.isEmpty) return;
+    if (_loading || _loadingMore || !_hasMore) return;
+    setState(() => _loadingMore = true);
+    try {
+      final page = await _repository.listForCompany(companyId, page: _page + 1);
+      if (!mounted) return;
+      setState(() {
+        _requests = [..._requests, ...page.items];
+        _total = page.total;
+        _page = page.page;
+        _hasMore = page.hasMore;
+        _loadingMore = false;
+      });
+    } on JoinRequestException catch (e) {
+      if (!mounted) return;
+      setState(() => _loadingMore = false);
+      _showSnack(e.message, AppColors.error);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _loadingMore = false);
+      _showSnack(JoinRequestStrings.listFailed, AppColors.error);
     }
   }
 
@@ -87,6 +132,9 @@ class _JoinRequestsScreenState extends State<JoinRequestsScreen> {
     } on JoinRequestException catch (e) {
       if (!mounted) return;
       _showSnack(e.message, AppColors.error);
+    } catch (_) {
+      if (!mounted) return;
+      _showSnack(JoinRequestStrings.decideFailed, AppColors.error);
     } finally {
       if (mounted) setState(() => _busyRequestId = null);
     }
@@ -111,6 +159,9 @@ class _JoinRequestsScreenState extends State<JoinRequestsScreen> {
     } on JoinRequestException catch (e) {
       if (!mounted) return;
       _showSnack(e.message, AppColors.error);
+    } catch (_) {
+      if (!mounted) return;
+      _showSnack(JoinRequestStrings.decideFailed, AppColors.error);
     } finally {
       if (mounted) setState(() => _busyRequestId = null);
     }
@@ -183,7 +234,19 @@ class _JoinRequestsScreenState extends State<JoinRequestsScreen> {
                 )
               else if (_requests.isEmpty)
                 const _Notice(text: JoinRequestStrings.adminEmpty, info: true)
-              else
+              else ...[
+                if (_requests.length > 1)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Text(
+                      JoinRequestStrings.showingCount(_requests.length, _total),
+                      key: const Key('join_requests_count'),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ),
                 for (final request in _requests)
                   _JoinRequestCard(
                     request: request,
@@ -191,6 +254,22 @@ class _JoinRequestsScreenState extends State<JoinRequestsScreen> {
                     onApprove: () => _approve(request),
                     onReject: () => _reject(request),
                   ),
+                if (_hasMore)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: OutlinedButton(
+                      key: const Key('join_requests_load_more'),
+                      onPressed: _loadingMore ? null : _loadMore,
+                      child: _loadingMore
+                          ? const SizedBox(
+                              height: 16,
+                              width: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Text(JoinRequestStrings.loadMore),
+                    ),
+                  ),
+              ],
             ],
           ),
         ),

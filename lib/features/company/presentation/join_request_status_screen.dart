@@ -56,6 +56,14 @@ class _JoinRequestStatusScreenState extends State<JoinRequestStatusScreen> {
         _error = e.message;
         _loading = false;
       });
+    } catch (_) {
+      // A payload change or any other throw must not leave the spinner up
+      // forever: the screen shows the same retry as a mapped failure.
+      if (!mounted) return;
+      setState(() {
+        _error = JoinRequestStrings.mineFailed;
+        _loading = false;
+      });
     }
   }
 
@@ -84,6 +92,16 @@ class _JoinRequestStatusScreenState extends State<JoinRequestStatusScreen> {
       );
       // The status may have changed on the server (for example it was decided
       // by support); reload so the screen matches the backend.
+      await _load();
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(JoinRequestStrings.escalateFailed),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
       await _load();
     } finally {
       if (mounted) setState(() => _escalating = false);

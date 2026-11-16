@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/error/error_mapper.dart';
-import '../../../core/error/failures.dart';
 import '../../../core/theme/app_theme.dart';
 import '../data/repositories/api_auth_repository.dart';
 import '../domain/repositories/auth_repository.dart';
@@ -53,7 +52,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       );
       context.pop();
     } catch (e) {
-      final msg = e is AuthFailure ? authFailureToMessage(e) : e.toString();
+      final msg = failureMessage(
+        e,
+        fallback: 'Không gửi được liên kết đặt lại mật khẩu. Vui lòng thử lại.',
+      );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(msg), backgroundColor: AppColors.error),

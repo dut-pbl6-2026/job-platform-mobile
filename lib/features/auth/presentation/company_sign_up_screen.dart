@@ -154,11 +154,16 @@ class _CompanySignUpScreenState extends State<CompanySignUpScreen> {
             _emailServerError = authFailureToMessage(error);
           } else if (error.code == AuthFailure.serviceUnavailable) {
             _retryableError = CompanySignUpStrings.serviceUnavailable;
+          } else if (error.code == AuthFailure.rateLimited) {
+            _retryableError = rateLimitedMessage;
           } else {
-            _retryableError = authFailureToMessage(error);
+            // A 422 here can only be WORK_EMAIL_REQUIRED or a validation
+            // failure. Neither is an invite-code problem: this screen has no
+            // invite code field, so unknown failures get the screen's copy.
+            _retryableError = CompanySignUpStrings.failed;
           }
         } else {
-          _retryableError = CompanySignUpStrings.serviceUnavailable;
+          _retryableError = CompanySignUpStrings.failed;
         }
       });
       // Re-run validation so the server-side email error appears inline.

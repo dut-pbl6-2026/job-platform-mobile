@@ -71,34 +71,44 @@ class AuthField extends StatelessWidget {
   Widget build(BuildContext context) => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      Text(
-        label,
-        style: const TextStyle(
-          fontSize: 13,
-          fontWeight: FontWeight.w500,
-          color: Color(0xFF141A24),
+      // The label names the field for screen readers and for `getByLabel`
+      // style finders. It is excluded here so it is announced once, by the
+      // field's own semantics node, and not as a separate sibling.
+      ExcludeSemantics(
+        child: Text(
+          label,
+          style: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+            color: Color(0xFF141A24),
+          ),
         ),
       ),
       const SizedBox(height: 6),
-      Theme(
-        data: Theme.of(context).copyWith(
-          textTheme: Theme.of(context).textTheme.copyWith(
-            titleMedium: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontSize: 14,
-              color: AppColors.textPrimary,
+      Semantics(
+        label: label,
+        textField: true,
+        child: Theme(
+          data: Theme.of(context).copyWith(
+            textTheme: Theme.of(context).textTheme.copyWith(
+              titleMedium: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontSize: 14,
+                color: AppColors.textPrimary,
+              ),
             ),
+            inputDecorationTheme: Theme.of(context).inputDecorationTheme
+                .copyWith(
+                  fillColor: Colors.white,
+                  isDense: true,
+                  constraints: const BoxConstraints(minHeight: 52),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 14,
+                  ),
+                ),
           ),
-          inputDecorationTheme: Theme.of(context).inputDecorationTheme.copyWith(
-            fillColor: Colors.white,
-            isDense: true,
-            constraints: const BoxConstraints(minHeight: 52),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 14,
-            ),
-          ),
+          child: child,
         ),
-        child: child,
       ),
     ],
   );
