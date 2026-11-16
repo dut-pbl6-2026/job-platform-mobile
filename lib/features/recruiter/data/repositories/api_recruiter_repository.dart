@@ -363,15 +363,17 @@ class ApiRecruiterRepository implements IRecruiterRepository {
     }
   }
 
-  /// Maps a UI job status to a job-svc `JobStatus` (Pending, Active, Closed,
-  /// Rejected, Deleted). Returns null when job-svc has no equivalent.
+  /// Maps a UI job status to a job-svc `JobStatus`. Companies publish
+  /// immediately, so legacy "pending"/"draft" values filter as Active.
   String? _mapJobStatusToBackend(String uiStatus) {
     switch (uiStatus.trim().toLowerCase()) {
+      case 'active':
       case 'đang mở':
-        return 'Active';
       case 'chờ duyệt':
-        // job-svc "Pending": awaiting admin approval.
-        return 'Pending';
+      case 'pending':
+      case 'draft':
+        return 'Active';
+      case 'closed':
       case 'đã đóng':
         return 'Closed';
       default:

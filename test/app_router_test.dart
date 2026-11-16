@@ -19,7 +19,7 @@ void main() {
 
   group('AppRouter Route Guard Tests (Issue 4.2 / SEC-08)', () {
     test('Personal Figma routes require authentication', () {
-      for (final path in [AppRoutes.aiCopilot, AppRoutes.resumeScoring]) {
+      for (final path in [AppRoutes.aiCopilot]) {
         final redirect = AppRouter.router.configuration.topRedirect(
           TestBuildContext(),
           TestGoRouterState(path),
@@ -48,6 +48,7 @@ void main() {
         AppRoutes.recruiterJobs,
         AppRoutes.recruiterPostJob,
         AppRoutes.recruiterCandidates,
+        AppRoutes.companyProfile,
       ]) {
         expect(
           AppRouter.router.configuration.topRedirect(
@@ -55,6 +56,34 @@ void main() {
             TestGoRouterState(path),
           ),
           AppRoutes.home,
+        );
+      }
+    });
+
+    test('Recruiter can open the profile and company routes', () {
+      AuthSession.instance.setSession(
+        AuthResult(
+          user: UserModel(
+            id: 'recruiter',
+            name: 'Recruiter',
+            email: 'r@example.com',
+            role: UserRole.recruiter,
+            createdAt: DateTime.now(),
+          ),
+          token: 'jwt-token',
+          refreshToken: 'refresh-token',
+          expiresAt: DateTime.now().add(const Duration(hours: 1)),
+        ),
+      );
+
+      for (final path in [AppRoutes.profile, AppRoutes.companyProfile]) {
+        expect(
+          AppRouter.router.configuration.topRedirect(
+            TestBuildContext(),
+            TestGoRouterState(path),
+          ),
+          isNull,
+          reason: path,
         );
       }
     });

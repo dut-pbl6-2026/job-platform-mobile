@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 import '../session/auth_session.dart';
 import '../../features/auth/domain/models/user_model.dart';
 import '../../features/ai_copilot/presentation/ai_copilot_screen.dart';
-import '../../features/ai_copilot/presentation/resume_scoring_screen.dart';
 import '../../features/applications/presentation/application_detail_screen.dart';
 import '../../features/applications/presentation/application_history_screen.dart';
 import '../../features/applications/presentation/apply_job_screen.dart';
@@ -15,6 +14,7 @@ import '../../features/auth/presentation/forgot_password_screen.dart';
 import '../../features/auth/presentation/reset_password_screen.dart';
 import '../../features/auth/presentation/verify_email_screen.dart';
 import '../../features/auth/register_screen.dart';
+import '../../features/company/presentation/company_profile_screen.dart';
 import '../../features/company/presentation/join_request_status_screen.dart';
 import '../../features/company/presentation/join_requests_screen.dart';
 import '../../features/home/home_screen.dart';
@@ -23,7 +23,6 @@ import '../../features/jobs/presentation/job_detail_screen.dart';
 import '../../features/jobs/presentation/job_list_screen.dart';
 import '../../features/jobs/presentation/search_screen.dart';
 import '../../features/profile/presentation/profile_detail_screen.dart';
-import '../../features/profile/presentation/profile_screen.dart';
 import '../../features/recruiter/presentation/candidate_applications_screen.dart';
 import '../../features/recruiter/presentation/invite_code_screen.dart';
 import '../../features/recruiter/presentation/post_job_screen.dart';
@@ -47,18 +46,17 @@ class AppRoutes {
   static const String applications = '/applications';
   static const String applicationDetail = '/applications/:id';
   static const String profile = '/profile';
-  static const String profileDetail = '/profile/detail';
   static const String forgotPassword = '/forgot-password';
   static const String resetPassword = '/reset-password';
   static const String verifyEmail = '/verify-email';
   static const String aiCopilot = '/ai-copilot';
-  static const String resumeScoring = '/resume-scoring';
   static const String recruiterDashboard = '/recruiter/dashboard';
   static const String recruiterJobs = '/recruiter/jobs';
   static const String recruiterPostJob = '/recruiter/jobs/create';
   static const String recruiterInviteCodes = '/recruiter/invite-codes';
   static const String recruiterJoinRequests = '/recruiter/join-requests';
   static const String recruiterCandidates = '/recruiter/candidates';
+  static const String companyProfile = '/recruiter/company';
 
   /// Requester-side status of the signed-in account's join request.
   static const String myJoinRequest = '/my-join-request';
@@ -221,12 +219,9 @@ class AppRouter {
       ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
-        path: AppRoutes.resumeScoring,
-        name: 'resume-scoring',
-        builder: (context, state) => ResumeScoringScreen(
-          jobId: state.uri.queryParameters['jobId'],
-          targetJobTitle: state.uri.queryParameters['title'],
-        ),
+        path: AppRoutes.profile,
+        name: 'profile',
+        builder: (context, state) => const ProfileDetailScreen(),
       ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
@@ -257,6 +252,12 @@ class AppRouter {
         path: AppRoutes.recruiterJoinRequests,
         name: 'recruiter-join-requests',
         builder: (context, state) => const JoinRequestsScreen(),
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: AppRoutes.companyProfile,
+        name: 'company-profile',
+        builder: (context, state) => const CompanyProfileScreen(),
       ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
@@ -348,24 +349,6 @@ class AppRouter {
                         },
                       ),
                     ],
-                  ),
-                ],
-              ),
-            ],
-          ),
-          // Branch 2: Hồ sơ (#2073:888)
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: AppRoutes.profile,
-                name: 'profile',
-                builder: (context, state) => const ProfileScreen(),
-                routes: [
-                  GoRoute(
-                    parentNavigatorKey: _rootNavigatorKey,
-                    path: 'detail',
-                    name: 'profile-detail',
-                    builder: (context, state) => const ProfileDetailScreen(),
                   ),
                 ],
               ),

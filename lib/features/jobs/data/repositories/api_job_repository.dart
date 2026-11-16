@@ -224,6 +224,11 @@ class ApiJobRepository implements IJobRepository {
           data = jsonDecode(response.data.toString()) as Map<String, dynamic>;
         }
         final job = JobModel.fromJson(data);
+        // A detail without an id or title cannot be rendered. Treat it as a
+        // failed response so the screen shows retry instead of a blank page.
+        if (job.id.trim().isEmpty || job.title.trim().isEmpty) {
+          throw StateError('Job detail is missing id or title');
+        }
         await HiveCacheService.instance.saveJobDetail(job);
         return job;
       }

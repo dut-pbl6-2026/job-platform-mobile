@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'dart:typed_data';
-import 'package:job_platform_mobile/core/services/file_picker_service.dart';
 import 'support/fake_ai_repository.dart';
 import 'package:job_platform_mobile/features/ai_copilot/presentation/ai_copilot_screen.dart';
-import 'package:job_platform_mobile/features/ai_copilot/presentation/resume_scoring_screen.dart';
 import 'package:job_platform_mobile/features/recruiter/presentation/candidate_applications_screen.dart';
 import 'package:job_platform_mobile/features/recruiter/presentation/post_job_screen.dart';
 import 'package:job_platform_mobile/features/recruiter/presentation/recruiter_dashboard_screen.dart';
@@ -39,39 +36,6 @@ void main() {
         expect(find.text('90% phù hợp'), findsNothing);
       },
     );
-
-    testWidgets('ResumeScoringScreen renders score hero and skill feedback', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          home: ResumeScoringScreen(
-            repository: FakeAiRepository(),
-            jobId: 'actual-job',
-            cvPickerService: MockCvPickerService(
-              predefinedFile: SelectedCvFile(
-                name: 'cv.pdf',
-                size: 3,
-                bytes: Uint8List.fromList([1, 2, 3]),
-              ),
-            ),
-            targetJobTitle: 'UI/UX Designer',
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      expect(find.text('Mức độ phù hợp CV'), findsOneWidget);
-      expect(find.text('82 / 100'), findsNothing);
-      await tester.tap(find.byKey(const Key('scoring_choose_cv')));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('scoring_submit')));
-      await tester.pumpAndSettle();
-      expect(find.text('82 / 100'), findsOneWidget);
-      expect(find.text('Kỹ năng phù hợp'), findsOneWidget);
-      expect(find.text('Cần bổ sung'), findsOneWidget);
-      expect(find.text('Ứng tuyển ngay'), findsOneWidget);
-    });
 
     testWidgets('RecruiterDashboardScreen renders metrics and action tiles', (
       tester,

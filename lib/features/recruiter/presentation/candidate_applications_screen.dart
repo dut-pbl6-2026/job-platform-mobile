@@ -525,7 +525,7 @@ class _CandidateApplicationsScreenState
                                     borderRadius: BorderRadius.circular(6),
                                   ),
                                   child: Text(
-                                    '${cand.matchScore}% phù hợp',
+                                    'Điểm phù hợp AI: ${cand.matchScore}%',
                                     style: const TextStyle(
                                       fontSize: 11,
                                       fontWeight: FontWeight.bold,

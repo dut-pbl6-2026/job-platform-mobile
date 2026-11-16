@@ -6,7 +6,6 @@ class FakeAiRepository implements IAiRepository {
   final List<String> messages = [];
   String? lastSessionId;
   String? lastClearedSessionId;
-  int scoreCalls = 0;
   bool cancelled = false;
 
   @override
@@ -36,21 +35,6 @@ class FakeAiRepository implements IAiRepository {
   @override
   Future<void> clearSession(String sessionId) async {
     lastClearedSessionId = sessionId;
-  }
-
-  @override
-  Future<ResumeFeedback> scoreResume(
-    AiCvInput cv, {
-    required String jobId,
-  }) async {
-    scoreCalls++;
-    if (failure != null) throw AiFailure(failure!);
-    return const ResumeFeedback(
-      score: 82,
-      matchingSkills: ['Figma'],
-      missingSkills: ['User Research'],
-      suggestions: ['Bổ sung kết quả dự án.'],
-    );
   }
 
   @override

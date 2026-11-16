@@ -12,6 +12,29 @@ void main() {
     });
 
     test(
+      'a detail missing required fields fails instead of rendering blank',
+      () async {
+        final dio = Dio(BaseOptions(baseUrl: 'http://unused.invalid'));
+        dio.interceptors.add(
+          InterceptorsWrapper(
+            onRequest: (options, handler) => handler.resolve(
+              Response(
+                requestOptions: options,
+                statusCode: 200,
+                data: {'id': 'job-1'},
+              ),
+            ),
+          ),
+        );
+
+        await expectLater(
+          ApiJobRepository(dio: dio).getJobById('job-1'),
+          throwsA(isA<StateError>()),
+        );
+      },
+    );
+
+    test(
       'mocks are used when injected and the gateway is unreachable',
       () async {
         final repo = ApiJobRepository(

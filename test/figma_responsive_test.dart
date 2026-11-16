@@ -4,7 +4,6 @@ import 'package:job_platform_mobile/core/theme/app_theme.dart';
 import 'package:job_platform_mobile/features/auth/login_screen.dart';
 import 'package:job_platform_mobile/features/auth/register_screen.dart';
 import 'package:job_platform_mobile/features/ai_copilot/presentation/ai_copilot_screen.dart';
-import 'package:job_platform_mobile/features/ai_copilot/presentation/resume_scoring_screen.dart';
 import 'package:job_platform_mobile/features/home/home_screen.dart';
 import 'package:job_platform_mobile/features/home/main_navigation_screen.dart';
 
@@ -36,7 +35,6 @@ void main() {
             const LoginScreen(),
             const RegisterScreen(),
             AiCopilotScreen(repository: FakeAiRepository()),
-            ResumeScoringScreen(repository: FakeAiRepository()),
           ]) {
             await tester.pumpWidget(
               MaterialApp(

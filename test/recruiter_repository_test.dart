@@ -21,8 +21,10 @@ void main() {
       expect(jobs.isNotEmpty, isTrue);
       expect(jobs.any((j) => j.title == 'UI/UX Designer'), isTrue);
 
-      final openJobs = await repository.getMyJobs(status: 'Đang mở');
-      expect(openJobs.every((j) => j.status == 'Đang mở'), isTrue);
+      final openJobs = await repository.getMyJobs(status: 'Active');
+      expect(openJobs.every((j) => j.isOpen), isTrue);
+      final closedJobs = await repository.getMyJobs(status: 'Closed');
+      expect(closedJobs.every((j) => j.isClosed), isTrue);
     });
 
     test(
@@ -56,7 +58,7 @@ void main() {
       expect(newId.isNotEmpty, isTrue);
       final jobs = await repository.getMyJobs();
       expect(jobs.first.title, 'Senior DevOps Engineer');
-      expect(jobs.first.status, 'Chờ duyệt');
+      expect(jobs.first.status, 'Active');
     });
 
     test('getDashboardStats returns valid metrics', () async {
@@ -252,11 +254,17 @@ void main() {
       return query;
     }
 
-    test('maps each UI status to a job-svc JobStatus value', () async {
-      expect((await captureJobsQuery('Đang mở'))['status'], 'Active');
-      expect((await captureJobsQuery('Chờ duyệt'))['status'], 'Pending');
-      expect((await captureJobsQuery('Đã đóng'))['status'], 'Closed');
-    });
+    test(
+      'maps UI statuses to Active/Closed and publishes legacy pending',
+      () async {
+        expect((await captureJobsQuery('Active'))['status'], 'Active');
+        expect((await captureJobsQuery('Đang mở'))['status'], 'Active');
+        expect((await captureJobsQuery('Chờ duyệt'))['status'], 'Active');
+        expect((await captureJobsQuery('Pending'))['status'], 'Active');
+        expect((await captureJobsQuery('Closed'))['status'], 'Closed');
+        expect((await captureJobsQuery('Đã đóng'))['status'], 'Closed');
+      },
+    );
 
     test('never sends the non-existent Draft status', () async {
       final query = await captureJobsQuery('Chờ duyệt');

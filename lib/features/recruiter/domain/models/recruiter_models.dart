@@ -188,30 +188,37 @@ class RecruiterJob {
     );
   }
 
+  /// Companies publish immediately, so a legacy `pending`/`draft` value is an
+  /// active posting, not one waiting for approval. Unknown values are shown
+  /// unchanged so a legacy API answer is not mislabelled.
   static String normalizeJobStatus(String? raw) {
-    if (raw == null) return 'Đang mở';
+    if (raw == null || raw.trim().isEmpty) return 'Active';
     switch (raw.trim().toLowerCase()) {
       case 'active':
+      case 'published':
+      case 'open':
       case 'đang mở':
-        return 'Đang mở';
       case 'draft':
       case 'pending':
       case 'chờ duyệt':
-        return 'Chờ duyệt';
+        return 'Active';
       case 'closed':
+      case 'expired':
       case 'đã đóng':
-        return 'Đã đóng';
+        return 'Closed';
       default:
         return raw;
     }
   }
 
-  bool get isOpen => status == 'Đang mở' || status.toLowerCase() == 'active';
-  bool get isPending =>
-      status == 'Chờ duyệt' ||
-      status.toLowerCase() == 'draft' ||
-      status.toLowerCase() == 'pending';
-  bool get isClosed => status == 'Đã đóng' || status.toLowerCase() == 'closed';
+  bool get isOpen =>
+      status == 'Active' ||
+      status.toLowerCase() == 'active' ||
+      status.toLowerCase() == 'đang mở';
+  bool get isClosed =>
+      status == 'Closed' ||
+      status.toLowerCase() == 'closed' ||
+      status.toLowerCase() == 'đã đóng';
 
   factory RecruiterJob.fromJson(Map<String, dynamic> json) {
     return RecruiterJob(

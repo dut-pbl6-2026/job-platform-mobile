@@ -72,7 +72,7 @@ class MockRecruiterRepository implements IRecruiterRepository {
     const RecruiterJob(
       id: 'rec_job_1',
       title: 'UI/UX Designer',
-      status: 'Đang mở',
+      status: 'Active',
       applicationsCount: 18,
       viewsCount: 240,
       location: 'Đà Nẵng · Hybrid',
@@ -82,7 +82,7 @@ class MockRecruiterRepository implements IRecruiterRepository {
     const RecruiterJob(
       id: 'rec_job_2',
       title: 'Senior Flutter Engineer',
-      status: 'Đang mở',
+      status: 'Active',
       applicationsCount: 12,
       viewsCount: 185,
       location: 'Từ xa · Remote',
@@ -92,7 +92,7 @@ class MockRecruiterRepository implements IRecruiterRepository {
     const RecruiterJob(
       id: 'rec_job_3',
       title: 'Product Manager',
-      status: 'Chờ duyệt',
+      status: 'Closed',
       applicationsCount: 0,
       viewsCount: 0,
       location: 'TP. Hồ Chí Minh',
@@ -102,7 +102,7 @@ class MockRecruiterRepository implements IRecruiterRepository {
     const RecruiterJob(
       id: 'rec_job_4',
       title: 'Backend Developer (.NET / C#)',
-      status: 'Đã đóng',
+      status: 'Closed',
       applicationsCount: 24,
       viewsCount: 310,
       location: 'Đà Nẵng · Onsite',
@@ -149,7 +149,11 @@ class MockRecruiterRepository implements IRecruiterRepository {
     await _simulateDelay();
     var result = List<RecruiterJob>.from(_jobs);
     if (status != null && status.isNotEmpty) {
-      result = result.where((j) => j.status == status).toList();
+      result = result.where((j) {
+        if (status == 'Active') return j.isOpen;
+        if (status == 'Closed') return j.isClosed;
+        return j.status == status;
+      }).toList();
     }
     return result;
   }
@@ -157,7 +161,7 @@ class MockRecruiterRepository implements IRecruiterRepository {
   @override
   Future<RecruiterStats> getDashboardStats() async {
     await _simulateDelay();
-    final active = _jobs.where((j) => j.status == 'Đang mở').length;
+    final active = _jobs.where((j) => j.isOpen).length;
     final totalApps = _candidates.length;
     final totalViews = _jobs.fold<int>(0, (sum, j) => sum + j.viewsCount);
     return RecruiterStats(
@@ -175,7 +179,7 @@ class MockRecruiterRepository implements IRecruiterRepository {
     final newJob = RecruiterJob(
       id: newId,
       title: params.title,
-      status: 'Chờ duyệt',
+      status: 'Active',
       applicationsCount: 0,
       viewsCount: 0,
       location: params.location,
