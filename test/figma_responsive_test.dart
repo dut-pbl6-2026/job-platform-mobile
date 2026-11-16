@@ -3,13 +3,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:job_platform_mobile/core/theme/app_theme.dart';
 import 'package:job_platform_mobile/features/auth/login_screen.dart';
 import 'package:job_platform_mobile/features/auth/register_screen.dart';
-import 'package:job_platform_mobile/features/ai_copilot/presentation/ai_copilot_screen.dart';
 import 'package:job_platform_mobile/features/home/home_screen.dart';
 import 'package:job_platform_mobile/features/home/main_navigation_screen.dart';
 
 import 'support/figma_job_fixture.dart';
 import 'support/load_fonts.dart';
-import 'support/fake_ai_repository.dart';
 
 void main() {
   setUpAll(loadAppFonts);
@@ -34,7 +32,6 @@ void main() {
             MainNavigationScreen(homeScreen: home),
             const LoginScreen(),
             const RegisterScreen(),
-            AiCopilotScreen(repository: FakeAiRepository()),
           ]) {
             await tester.pumpWidget(
               MaterialApp(

@@ -387,12 +387,6 @@ class _HomeScreenState extends State<HomeScreen> {
             style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
           ),
         ),
-        IconButton(
-          key: const Key('home_ai_copilot_button'),
-          tooltip: 'AI Copilot',
-          icon: const DesignAsset('home-chat'),
-          onPressed: () => context.push(AppRoutes.aiCopilot),
-        ),
       ],
     ),
   );

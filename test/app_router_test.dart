@@ -19,7 +19,7 @@ void main() {
 
   group('AppRouter Route Guard Tests (Issue 4.2 / SEC-08)', () {
     test('Personal Figma routes require authentication', () {
-      for (final path in [AppRoutes.aiCopilot]) {
+      for (final path in [AppRoutes.profile]) {
         final redirect = AppRouter.router.configuration.topRedirect(
           TestBuildContext(),
           TestGoRouterState(path),

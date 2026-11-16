@@ -3,8 +3,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:job_platform_mobile/core/theme/app_theme.dart';
 import 'package:job_platform_mobile/features/auth/login_screen.dart';
 import 'package:job_platform_mobile/features/auth/register_screen.dart';
-import 'package:job_platform_mobile/features/ai_copilot/presentation/ai_copilot_screen.dart';
-import '../support/fake_ai_repository.dart';
 import '../support/golden_tolerance.dart';
 import '../support/load_fonts.dart';
 
@@ -13,7 +11,6 @@ void main() {
   final screens = <String, Widget Function()>{
     'login': () => const LoginScreen(),
     'register_role': () => const RegisterScreen(),
-    'ai_welcome': () => AiCopilotScreen(repository: FakeAiRepository()),
   };
   for (final entry in screens.entries) {
     testWidgets('${entry.key} regression baseline at Figma viewport', (
@@ -30,9 +27,7 @@ void main() {
           home: MediaQuery(
             data: MediaQueryData(
               size: const Size(345, 680),
-              padding: entry.key == 'ai_welcome'
-                  ? const EdgeInsets.only(top: 52, bottom: 34)
-                  : EdgeInsets.zero,
+              padding: EdgeInsets.zero,
             ),
             child: entry.value(),
           ),
