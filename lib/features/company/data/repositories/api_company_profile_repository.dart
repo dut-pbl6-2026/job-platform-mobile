@@ -50,13 +50,19 @@ class ApiCompanyProfileRepository implements ICompanyProfileRepository {
         '/api/companies/${company.id.trim()}',
         data: company.toApiJson(),
       );
-      if (response.statusCode == 200 && response.data is Map) {
-        final updated = _parseCompany(response.data);
-        if (updated.isUsable) return updated;
-      } else if (response.statusCode == 204) {
-        return company;
-      } else if (response.statusCode == 200) {
-        return company;
+      if (response.statusCode == 204) return company;
+      if (response.statusCode == 200) {
+        if (response.data is Map) {
+          final updated = _parseCompany(response.data);
+          if (updated.isUsable) return updated;
+        }
+        // PUT only answers { message }; read the authoritative company back. A failed re-read
+        // must not turn a successful save into an error.
+        try {
+          return await getMyCompany();
+        } on CompanyProfileException {
+          return company;
+        }
       }
       throw const CompanyProfileException(CompanyProfileStrings.saveFailed);
     } on CompanyProfileException {

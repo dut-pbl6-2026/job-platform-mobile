@@ -175,6 +175,46 @@ void main() {
         expect(updated.name, 'FPT Software mới');
       },
     );
+
+    test(
+      'PUT answers only a message: the company is read back, not reported as failed',
+      () async {
+        final company = CompanyProfile.fromJson(_companyJson);
+        final calls = <String>[];
+        final repo = ApiCompanyProfileRepository(
+          dio: _dio((options, handler) {
+            calls.add('${options.method} ${options.path}');
+            if (options.method == 'PUT') {
+              handler.resolve(
+                Response(
+                  requestOptions: options,
+                  statusCode: 200,
+                  data: {'message': 'Company updated successfully'},
+                ),
+              );
+              return;
+            }
+            handler.resolve(
+              Response(
+                requestOptions: options,
+                statusCode: 200,
+                data: {..._companyJson, 'name': 'FPT Software mới'},
+              ),
+            );
+          }),
+        );
+
+        final updated = await repo.updateCompany(
+          company.copyWith(name: 'FPT Software mới'),
+        );
+
+        expect(calls, [
+          'PUT /api/companies/company-1',
+          'GET /api/companies/mine',
+        ]);
+        expect(updated.name, 'FPT Software mới');
+      },
+    );
   });
 
   group('CompanyProfileScreen', () {
