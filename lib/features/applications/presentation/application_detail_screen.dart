@@ -239,8 +239,9 @@ class _ApplicationDetailScreenState extends State<ApplicationDetailScreen> {
 
             const SizedBox(height: 24),
 
-            // Recruiter Notes & Evaluation Score (if available)
-            if (app.recruiterNotes != null || app.score != null) ...[
+            // Recruiter notes only: AI scores are recruiter-facing and are not
+            // exposed to candidates.
+            if (app.recruiterNotes != null) ...[
               Text(
                 'Phản hồi từ Nhà tuyển dụng',
                 style: Theme.of(context).textTheme.titleLarge,
@@ -256,40 +257,13 @@ class _ApplicationDetailScreenState extends State<ApplicationDetailScreen> {
                     color: AppColors.primary.withValues(alpha: 0.2),
                   ),
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (app.score != null) ...[
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.star_rounded,
-                            color: Color(0xFFF59E0B),
-                            size: 20,
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            'Điểm đánh giá hồ sơ: ${app.score!.toStringAsFixed(1)} / 10',
-                            style: const TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                    ],
-                    if (app.recruiterNotes != null)
-                      Text(
-                        app.recruiterNotes!,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: AppColors.textPrimary,
-                          height: 1.4,
-                        ),
-                      ),
-                  ],
+                child: Text(
+                  app.recruiterNotes!,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: AppColors.textPrimary,
+                    height: 1.4,
+                  ),
                 ),
               ),
               const SizedBox(height: 24),

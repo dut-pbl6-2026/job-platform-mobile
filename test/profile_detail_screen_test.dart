@@ -2,16 +2,37 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:job_platform_mobile/core/router/app_router.dart';
+import 'package:job_platform_mobile/core/session/auth_session.dart';
 import 'package:job_platform_mobile/core/theme/app_theme.dart';
+import 'package:job_platform_mobile/features/auth/domain/models/auth_result.dart';
+import 'package:job_platform_mobile/features/auth/domain/models/user_model.dart';
 import 'package:job_platform_mobile/features/profile/data/repositories/mock_profile_repository.dart';
 import 'package:job_platform_mobile/features/profile/presentation/profile_detail_screen.dart';
 
 void main() {
   late MockProfileRepository mockRepo;
 
-  setUp(() {
+  setUp(() async {
     mockRepo = MockProfileRepository();
     mockRepo.reset();
+    await AuthSession.instance.setSession(
+      AuthResult(
+        user: UserModel(
+          id: 'candidate-1',
+          name: 'Nguyễn Văn An',
+          email: 'an@example.com',
+          role: UserRole.user,
+          createdAt: DateTime.now(),
+        ),
+        token: 'test-token',
+        refreshToken: 'test-refresh',
+        expiresAt: DateTime.now().add(const Duration(hours: 1)),
+      ),
+    );
+  });
+
+  tearDown(() async {
+    await AuthSession.instance.clearSession();
   });
 
   testWidgets(
@@ -118,12 +139,11 @@ void main() {
       tester.view.physicalSize = const Size(800, 1600);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
-
       final router = GoRouter(
-        initialLocation: AppRoutes.profileDetail,
+        initialLocation: AppRoutes.profile,
         routes: [
           GoRoute(
-            path: AppRoutes.profileDetail,
+            path: AppRoutes.profile,
             builder: (context, state) =>
                 ProfileDetailScreen(profileRepository: mockRepo),
           ),

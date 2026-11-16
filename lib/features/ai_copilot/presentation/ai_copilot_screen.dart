@@ -286,20 +286,10 @@ class _AiCopilotScreenState extends State<AiCopilotScreen> {
                   ),
                   PopupMenuButton<String>(
                     tooltip: 'Tùy chọn AI',
-                    onSelected: (value) {
-                      if (value == 'score') {
-                        context.push(AppRoutes.resumeScoring);
-                      } else {
-                        _startNewSession();
-                      }
-                    },
+                    onSelected: (_) => _startNewSession(),
                     enabled: !_waiting,
                     itemBuilder: (_) => const [
                       PopupMenuItem(value: 'new', child: Text('Hội thoại mới')),
-                      PopupMenuItem(
-                        value: 'score',
-                        child: Text('Chấm CV với việc làm'),
-                      ),
                     ],
                   ),
                 ],
@@ -643,27 +633,6 @@ class _AiCopilotScreenState extends State<AiCopilotScreen> {
               borderRadius: BorderRadius.circular(20),
             ),
             onPressed: () => context.push(AppRoutes.search),
-          ),
-          ActionChip(
-            avatar: const Icon(
-              Icons.document_scanner_outlined,
-              size: 14,
-              color: AppColors.primary,
-            ),
-            label: const Text(
-              'Chấm điểm CV',
-              style: TextStyle(
-                fontSize: 11,
-                color: AppColors.primary,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            backgroundColor: Colors.white,
-            side: const BorderSide(color: Color(0xFFCBDDF7)),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-            ),
-            onPressed: () => context.push(AppRoutes.resumeScoring),
           ),
         ],
       ),

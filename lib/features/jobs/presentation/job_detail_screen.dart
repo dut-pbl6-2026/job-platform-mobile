@@ -4,8 +4,6 @@ import 'package:go_router/go_router.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/session/auth_session.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../core/services/file_picker_service.dart';
-import '../../ai_copilot/domain/ai_repository.dart';
 import '../../auth/domain/models/user_model.dart';
 import '../data/repositories/api_job_repository.dart';
 import '../domain/models/job_model.dart';
@@ -21,16 +19,7 @@ class JobDetailScreen extends StatefulWidget {
   final String jobId;
   final IJobRepository? jobRepository;
 
-  final IAiRepository? aiRepository;
-  final ICvPickerService? cvPickerService;
-
-  const JobDetailScreen({
-    super.key,
-    required this.jobId,
-    this.jobRepository,
-    this.aiRepository,
-    this.cvPickerService,
-  });
+  const JobDetailScreen({super.key, required this.jobId, this.jobRepository});
 
   @override
   State<JobDetailScreen> createState() => _JobDetailScreenState();
@@ -238,12 +227,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             JobDetailHeader(job: _job!),
-            JobDetailContent(
-              job: _job!,
-              aiRepository: widget.aiRepository,
-              cvPickerService: widget.cvPickerService,
-              onApplyPressed: _handlePrimaryAction,
-            ),
+            JobDetailContent(job: _job!),
           ],
         ),
       ),

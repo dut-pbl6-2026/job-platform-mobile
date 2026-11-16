@@ -110,6 +110,15 @@ class MockProfileRepository implements IProfileRepository {
   }
 
   @override
+  Future<ProfileModel> getOrCreateProfile() => getMyProfile();
+
+  @override
+  Future<ProfileModel> createProfile() {
+    _initSeedProfile();
+    return getMyProfile();
+  }
+
+  @override
   Future<ProfileModel> updateProfile(ProfileModel updated) async {
     await Future.delayed(const Duration(milliseconds: 300));
     _profile = updated.copyWith(updatedAt: DateTime.now());

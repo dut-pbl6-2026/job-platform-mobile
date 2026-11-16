@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import '../../../../core/config/mock_fallback.dart';
 import '../../../../core/network/dio_provider.dart';
+import '../../../../core/session/auth_session.dart';
 import '../../domain/models/profile_model.dart';
 import '../../domain/repositories/profile_repository.dart';
 import 'mock_profile_repository.dart';
@@ -39,6 +40,9 @@ class ApiProfileRepository implements IProfileRepository {
       }
       throw _failure('Không thể tải thông tin hồ sơ cá nhân');
     } on DioException catch (e) {
+      if (e.response?.statusCode == 404) {
+        throw const ProfileNotFoundException();
+      }
       if (shouldUseMockFallback(
         enabled: _enableMocks,
         statusCode: e.response?.statusCode,
@@ -50,6 +54,44 @@ class ApiProfileRepository implements IProfileRepository {
       }
       debugPrint('[ApiProfileRepository] profile/me failed: ${e.type}');
       throw _failure('Không thể tải thông tin hồ sơ cá nhân');
+    }
+  }
+
+  @override
+  Future<ProfileModel> getOrCreateProfile() async {
+    try {
+      return await getMyProfile();
+    } on ProfileNotFoundException {
+      debugPrint('[ApiProfileRepository] profile/me not found, creating it.');
+      return createProfile();
+    }
+  }
+
+  @override
+  Future<ProfileModel> createProfile() async {
+    final user = AuthSession.instance.currentUser;
+    try {
+      final response = await _dio.post(
+        '/api/profiles',
+        data: {
+          'fullName': user?.name ?? '',
+          if (user?.avatarUrl != null && user!.avatarUrl!.isNotEmpty)
+            'avatarUrl': user.avatarUrl,
+        },
+      );
+
+      final status = response.statusCode;
+      if ((status == 200 || status == 201) && response.data is Map) {
+        final data = Map<String, dynamic>.from(response.data as Map);
+        return ProfileModel.fromJson(data);
+      }
+      throw _failure('Không thể tạo hồ sơ cá nhân');
+    } on DioException catch (e) {
+      debugPrint(
+        '[ApiProfileRepository] createProfile failed: '
+        '${e.response?.statusCode ?? e.type}',
+      );
+      throw _failure('Không thể tạo hồ sơ cá nhân');
     }
   }
 

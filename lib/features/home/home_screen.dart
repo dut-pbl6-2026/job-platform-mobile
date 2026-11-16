@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/constants/account_menu_strings.dart';
 import '../../core/router/app_router.dart';
 import '../../core/services/push_notification_service.dart';
 import '../../core/session/auth_session.dart';
@@ -12,6 +13,7 @@ import '../../core/widgets/design_asset.dart';
 
 import '../../core/widgets/fade_slide_transition.dart';
 
+import '../../core/widgets/account_menu_sheet.dart';
 import '../../core/widgets/pressable_card.dart';
 import '../../core/widgets/user_avatar.dart';
 import '../auth/data/repositories/api_auth_repository.dart';
@@ -42,7 +44,6 @@ class _HomeScreenState extends State<HomeScreen> {
   late final IAuthRepository _authRepository;
   late final IJobRepository _jobRepository;
 
-  bool _isLoggingOut = false;
   bool _isLoadingJobs = true;
   bool _isLoadingMore = false;
   String? _errorMessage;
@@ -200,7 +201,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
 
     if (shouldLogout == true && mounted) {
-      setState(() => _isLoggingOut = true);
       await PushNotificationService.instance.unregisterTokenOnLogout();
       await _authRepository.logout();
       if (mounted) {
@@ -292,9 +292,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   _buildSearchBar(),
                   const SizedBox(height: 9),
                   _buildFilterPills(),
-                  _buildAiMatchBanner(),
                   const SizedBox(height: 10),
-                  _buildQuickShortcuts(isRecruiter),
+                  _buildQuickShortcuts(user?.role),
                   if (!isRecruiter &&
                       !_isFilterActive &&
                       (_isLoadingRecommendations ||
@@ -365,7 +364,20 @@ class _HomeScreenState extends State<HomeScreen> {
     padding: const EdgeInsets.only(top: 14, bottom: 7),
     child: Row(
       children: [
-        UserAvatar(name: user?.name, imageUrl: user?.avatarUrl),
+        Tooltip(
+          message: AccountMenuStrings.menuLabel,
+          child: Semantics(
+            button: true,
+            label: AccountMenuStrings.menuLabel,
+            child: InkWell(
+              key: const Key('home_account_avatar'),
+              customBorder: const CircleBorder(),
+              onTap: () =>
+                  AccountMenuSheet.show(context, onSignOut: _handleLogout),
+              child: UserAvatar(name: user?.name, imageUrl: user?.avatarUrl),
+            ),
+          ),
+        ),
         const SizedBox(width: 17),
         Expanded(
           child: Text(
@@ -381,49 +393,9 @@ class _HomeScreenState extends State<HomeScreen> {
           icon: const DesignAsset('home-chat'),
           onPressed: () => context.push(AppRoutes.aiCopilot),
         ),
-        IconButton(
-          tooltip: 'Menu tài khoản',
-          icon: _isLoggingOut
-              ? const SizedBox.square(
-                  dimension: 25,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const DesignAsset('home-menu'),
-          onPressed: _isLoggingOut ? null : _openAccountMenu,
-        ),
       ],
     ),
   );
-
-  void _openAccountMenu() {
-    showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      builder: (sheetContext) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.person_outline),
-              title: const Text('Hồ sơ'),
-              onTap: () {
-                Navigator.pop(sheetContext);
-                context.go(AppRoutes.profile);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.logout),
-              title: const Text('Đăng xuất'),
-              onTap: () {
-                Navigator.pop(sheetContext);
-                _handleLogout();
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   Widget _buildSearchBar() => Material(
     color: AppColors.searchSurface,
@@ -527,81 +499,43 @@ class _HomeScreenState extends State<HomeScreen> {
     ],
   );
 
-  Widget _buildAiMatchBanner() => PressableCard(
-    onTap: () => context.push(AppRoutes.resumeScoring),
-    child: Material(
-      color: AppColors.primary,
-      borderRadius: BorderRadius.circular(14),
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(
-          minHeight: AppDimensions.bannerHeight,
-          minWidth: double.infinity,
+  Widget _buildQuickShortcuts(UserRole? role) {
+    final shortcuts = <Widget>[];
+    if (role == UserRole.recruiter) {
+      shortcuts.add(
+        _shortcut(
+          Icons.post_add_rounded,
+          'Đăng tin',
+          () => context.push(AppRoutes.recruiterPostJob),
         ),
-        child: const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 15, vertical: 10),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '✦  AI MATCH  ·  Cá nhân hóa cho bạn',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              SizedBox(height: 3),
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      'Khám phá mức độ phù hợp của hồ sơ',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                  Icon(Icons.arrow_forward, color: Colors.white, size: 14),
-                ],
-              ),
-            ],
-          ),
+      );
+      shortcuts.add(
+        _shortcut(
+          Icons.work_outline_rounded,
+          'Tin tuyển dụng',
+          () => context.push(AppRoutes.recruiterJobs),
         ),
-      ),
-    ),
-  );
-
-  Widget _buildQuickShortcuts(bool isRecruiter) => Row(
-    children: [
-      if (isRecruiter) ...[
-        Expanded(
-          child: _shortcut(
-            Icons.post_add_rounded,
-            'Đăng tin',
-            () => context.go(AppRoutes.recruiterPostJob),
-          ),
-        ),
-        const SizedBox(width: 8),
-      ],
-      Expanded(
-        child: _shortcut(
-          Icons.visibility_outlined,
-          'Hồ sơ',
-          () => context.go(AppRoutes.profile),
-        ),
-      ),
-      const SizedBox(width: 8),
-      Expanded(
-        child: _shortcut(
+      );
+    } else if (role == UserRole.user) {
+      shortcuts.add(
+        _shortcut(
           Icons.send_outlined,
           'Ứng tuyển',
-          () => context.go(AppRoutes.applications),
+          () => context.push(AppRoutes.applications),
         ),
-      ),
-    ],
-  );
+      );
+    }
+    if (shortcuts.isEmpty) return const SizedBox.shrink();
+
+    return Row(
+      children: [
+        for (var i = 0; i < shortcuts.length; i++) ...[
+          if (i > 0) const SizedBox(width: 8),
+          Expanded(child: shortcuts[i]),
+        ],
+      ],
+    );
+  }
 
   Widget _shortcut(IconData icon, String title, VoidCallback onTap) => Material(
     color: AppColors.surface,

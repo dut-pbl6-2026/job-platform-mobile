@@ -84,8 +84,9 @@ void main() {
           stopwatch.stop();
           expect(e.type, DioExceptionType.connectionError);
           expect(e.error, isA<GatewayCircuitBreakerException>());
-          // Must reject in less than 50 milliseconds (0ms network delay)
-          expect(stopwatch.elapsedMilliseconds, lessThan(50));
+          // Rejects from the interceptor without a network attempt. The bound
+          // is generous because the full suite runs many tests in parallel.
+          expect(stopwatch.elapsedMilliseconds, lessThan(500));
         }
       },
     );

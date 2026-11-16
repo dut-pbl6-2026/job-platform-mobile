@@ -93,6 +93,56 @@ void main() {
       expect(message, isNot(contains('traceId')));
     });
 
+    test(
+      'getOrCreateProfile creates the profile when /me answers 404',
+      () async {
+        final calls = <String>[];
+        final dio = Dio(BaseOptions(baseUrl: 'http://gateway.test'));
+        dio.interceptors.add(
+          InterceptorsWrapper(
+            onRequest: (options, handler) {
+              calls.add('${options.method} ${options.path}');
+              if (options.method == 'GET') {
+                handler.reject(
+                  DioException(
+                    requestOptions: options,
+                    type: DioExceptionType.badResponse,
+                    response: Response(
+                      requestOptions: options,
+                      statusCode: 404,
+                    ),
+                  ),
+                );
+                return;
+              }
+              expect(options.path, '/api/profiles');
+              handler.resolve(
+                Response(
+                  requestOptions: options,
+                  statusCode: 201,
+                  data: {
+                    'id': 'profile-1',
+                    'userId': 'user-1',
+                    'fullName': 'Nhà tuyển dụng',
+                    'createdAt': DateTime(2026).toIso8601String(),
+                    'updatedAt': DateTime(2026).toIso8601String(),
+                  },
+                ),
+              );
+            },
+          ),
+        );
+
+        final profile = await ApiProfileRepository(
+          dio: dio,
+        ).getOrCreateProfile();
+
+        expect(calls, ['GET /api/profiles/me', 'POST /api/profiles']);
+        expect(profile.id, 'profile-1');
+        expect(profile.fullName, 'Nhà tuyển dụng');
+      },
+    );
+
     test('Throws exception on HTTP error with response', () async {
       final dio = Dio();
       dio.interceptors.add(

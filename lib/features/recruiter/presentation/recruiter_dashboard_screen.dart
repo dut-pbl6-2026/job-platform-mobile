@@ -315,15 +315,9 @@ class _RecruiterDashboardScreenState extends State<RecruiterDashboardScreen> {
               _buildActionTile(
                 icon: Icons.apartment_rounded,
                 title: 'Hồ sơ công ty',
-                subtitle: 'Cập nhật thông tin doanh nghiệp, logo và mô tả',
-                onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Hồ sơ doanh nghiệp: $companyName'),
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
-                },
+                subtitle:
+                    'Xem và cập nhật thông tin doanh nghiệp, logo và mô tả',
+                onTap: () => context.push(AppRoutes.companyProfile),
               ),
             ],
           ),

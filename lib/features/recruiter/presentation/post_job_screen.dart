@@ -64,7 +64,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
       builder: (dialogContext) => AlertDialog(
         title: const Text('Xác nhận đăng tin'),
         content: Text(
-          'Tin tuyển dụng "${_titleController.text}" sẽ được gửi đến job-svc để kiểm duyệt và xuất bản.',
+          'Tin tuyển dụng "${_titleController.text}" sẽ được xuất bản ngay sau khi xác nhận.',
         ),
         actions: [
           TextButton(
@@ -110,7 +110,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Tin tuyển dụng đã được gửi duyệt thành công!'),
+          content: Text('Tin tuyển dụng đã được đăng thành công!'),
           backgroundColor: AppColors.success,
           behavior: SnackBarBehavior.floating,
         ),

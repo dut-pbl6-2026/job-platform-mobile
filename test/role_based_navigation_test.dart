@@ -6,7 +6,6 @@ import 'package:job_platform_mobile/core/router/app_router.dart';
 import 'package:job_platform_mobile/features/applications/presentation/application_history_screen.dart';
 import 'package:job_platform_mobile/features/home/home_screen.dart';
 import 'package:job_platform_mobile/features/jobs/presentation/search_screen.dart';
-import 'package:job_platform_mobile/features/profile/presentation/profile_screen.dart';
 import 'package:job_platform_mobile/core/session/auth_session.dart';
 import 'package:job_platform_mobile/core/theme/app_theme.dart';
 import 'package:job_platform_mobile/features/auth/domain/models/auth_result.dart';
@@ -45,54 +44,50 @@ void main() {
 
   group('Role-Based Navigation & Route Guard Tests (MOB-01-07, AUTH-01-03)', () {
     // 1. User sees the correct navigation tabs
-    testWidgets(
-      '1. Candidate / User sees Home, Search, Applications, Profile tabs',
-      (tester) async {
-        await AuthSession.instance.setSession(
-          AuthResult(
-            user: UserModel(
-              id: 'candidate-1',
-              name: 'Nguyễn Ứng Viên',
-              email: 'candidate@test.com',
-              role: UserRole.user,
-              createdAt: DateTime.now(),
-            ),
-            token: createTestJwt('User'),
-            refreshToken: 'refresh-token',
-            expiresAt: DateTime.now().add(const Duration(hours: 1)),
-          ),
-        );
-
-        final destinations = MainNavigationScreen.getDestinationsForRole(
-          UserRole.user,
-        );
-        expect(destinations.length, equals(4));
-        expect(destinations[0].label, equals('Trang chủ'));
-        expect(destinations[1].label, equals('Tìm kiếm'));
-        expect(destinations[2].label, equals('Ứng tuyển'));
-        expect(destinations[3].label, equals('Hồ sơ'));
-
-        await tester.pumpWidget(
-          MaterialApp(
-            theme: AppTheme.lightTheme,
-            home: const MainNavigationScreen(body: SizedBox.shrink()),
-          ),
-        );
-        await tester.pump();
-
-        expect(findNavTab('Trang chủ'), findsOneWidget);
-        expect(findNavTab('Tìm kiếm'), findsOneWidget);
-        expect(findNavTab('Ứng tuyển'), findsOneWidget);
-        expect(findNavTab('Hồ sơ'), findsOneWidget);
-        // Recruiter jobs tab must not be present
-        expect(findNavTab('Tin tuyển dụng'), findsNothing);
-      },
-    );
-
-    // 2. Recruiter sees the Jobs tab
-    testWidgets('2. Recruiter sees Home, Search, Jobs, Profile tabs', (
+    testWidgets('1. Candidate / User sees Home, Search and Applications tabs', (
       tester,
     ) async {
+      await AuthSession.instance.setSession(
+        AuthResult(
+          user: UserModel(
+            id: 'candidate-1',
+            name: 'Nguyễn Ứng Viên',
+            email: 'candidate@test.com',
+            role: UserRole.user,
+            createdAt: DateTime.now(),
+          ),
+          token: createTestJwt('User'),
+          refreshToken: 'refresh-token',
+          expiresAt: DateTime.now().add(const Duration(hours: 1)),
+        ),
+      );
+
+      final destinations = MainNavigationScreen.getDestinationsForRole(
+        UserRole.user,
+      );
+      expect(destinations.length, equals(3));
+      expect(destinations[0].label, equals('Trang chủ'));
+      expect(destinations[1].label, equals('Tìm kiếm'));
+      expect(destinations[2].label, equals('Ứng tuyển'));
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.lightTheme,
+          home: const MainNavigationScreen(body: SizedBox.shrink()),
+        ),
+      );
+      await tester.pump();
+
+      expect(findNavTab('Trang chủ'), findsOneWidget);
+      expect(findNavTab('Tìm kiếm'), findsOneWidget);
+      expect(findNavTab('Ứng tuyển'), findsOneWidget);
+      expect(findNavTab('Hồ sơ'), findsNothing);
+      // Recruiter jobs tab must not be present
+      expect(findNavTab('Tin tuyển dụng'), findsNothing);
+    });
+
+    // 2. Recruiter sees the Jobs tab
+    testWidgets('2. Recruiter sees Home, Search and Jobs tabs', (tester) async {
       await AuthSession.instance.setSession(
         AuthResult(
           user: UserModel(
@@ -111,11 +106,10 @@ void main() {
       final destinations = MainNavigationScreen.getDestinationsForRole(
         UserRole.recruiter,
       );
-      expect(destinations.length, equals(4));
+      expect(destinations.length, equals(3));
       expect(destinations[0].label, equals('Trang chủ'));
       expect(destinations[1].label, equals('Tìm kiếm'));
       expect(destinations[2].label, equals('Tin tuyển dụng'));
-      expect(destinations[3].label, equals('Hồ sơ'));
 
       await tester.pumpWidget(
         MaterialApp(
@@ -128,14 +122,14 @@ void main() {
       expect(findNavTab('Trang chủ'), findsOneWidget);
       expect(findNavTab('Tìm kiếm'), findsOneWidget);
       expect(findNavTab('Tin tuyển dụng'), findsOneWidget);
-      expect(findNavTab('Hồ sơ'), findsOneWidget);
+      expect(findNavTab('Hồ sơ'), findsNothing);
       // Candidate application history tab must not be present
       expect(findNavTab('Ứng tuyển'), findsNothing);
     });
 
     // 3. Admin only sees supported Admin navigation
     testWidgets(
-      '3. Admin only sees supported Admin navigation (Home, Search, Profile)',
+      '3. Admin only sees supported Admin navigation (Home, Search)',
       (tester) async {
         await AuthSession.instance.setSession(
           AuthResult(
@@ -155,10 +149,9 @@ void main() {
         final destinations = MainNavigationScreen.getDestinationsForRole(
           UserRole.admin,
         );
-        expect(destinations.length, equals(3));
+        expect(destinations.length, equals(2));
         expect(destinations[0].label, equals('Trang chủ'));
         expect(destinations[1].label, equals('Tìm kiếm'));
-        expect(destinations[2].label, equals('Hồ sơ'));
 
         await tester.pumpWidget(
           MaterialApp(
@@ -170,7 +163,7 @@ void main() {
 
         expect(findNavTab('Trang chủ'), findsOneWidget);
         expect(findNavTab('Tìm kiếm'), findsOneWidget);
-        expect(findNavTab('Hồ sơ'), findsOneWidget);
+        expect(findNavTab('Hồ sơ'), findsNothing);
         // Unsupported tabs must not be exposed
         expect(findNavTab('Ứng tuyển'), findsNothing);
         expect(findNavTab('Tin tuyển dụng'), findsNothing);
@@ -414,7 +407,7 @@ void main() {
         );
         expect(
           destinations.map((d) => d.label).toList(),
-          equals(['Trang chủ', 'Tìm kiếm', 'Tin tuyển dụng', 'Hồ sơ']),
+          equals(['Trang chủ', 'Tìm kiếm', 'Tin tuyển dụng']),
         );
       },
     );
@@ -506,7 +499,7 @@ void main() {
 
   group('Candidate destination mapping', () {
     // Shell branch order from AppRouter's StatefulShellRoute:
-    // 0 = Trang chủ (home), 1 = Việc làm (jobs), 2 = Hồ sơ (profile).
+    // 0 = Trang chủ (home), 1 = Việc làm (jobs).
     final candidate = MainNavigationScreen.getDestinationsForRole(
       UserRole.user,
     );
@@ -521,23 +514,17 @@ void main() {
         byLabel('Ứng tuyển').screenBuilder(),
         isA<ApplicationHistoryScreen>(),
       );
-      expect(byLabel('Hồ sơ').screenBuilder(), isA<ProfileScreen>());
     });
 
     test('each candidate tab points at its own route', () {
       expect(byLabel('Trang chủ').routePath, AppRoutes.home);
       expect(byLabel('Tìm kiếm').routePath, AppRoutes.search);
       expect(byLabel('Ứng tuyển').routePath, AppRoutes.applications);
-      expect(byLabel('Hồ sơ').routePath, AppRoutes.profile);
     });
 
-    test(
-      'Ứng tuyển is not mapped to a shell branch (it used to be branch 2)',
-      () {
-        expect(byLabel('Ứng tuyển').branchIndex, isNull);
-        expect(byLabel('Hồ sơ').branchIndex, 2);
-      },
-    );
+    test('Ứng tuyển is not mapped to a shell branch', () {
+      expect(byLabel('Ứng tuyển').branchIndex, isNull);
+    });
 
     test('Tìm kiếm is not mapped to the Việc làm branch', () {
       expect(byLabel('Tìm kiếm').branchIndex, isNull);

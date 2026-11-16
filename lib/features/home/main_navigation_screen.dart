@@ -5,12 +5,10 @@ import '../../core/router/app_router.dart';
 import '../../core/session/auth_session.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/design_asset.dart';
-import '../../core/widgets/user_avatar.dart';
 import '../applications/presentation/application_history_screen.dart';
 import '../auth/domain/models/user_model.dart';
 import '../jobs/presentation/job_list_screen.dart';
 import '../jobs/presentation/search_screen.dart';
-import '../profile/presentation/profile_screen.dart';
 import 'home_screen.dart';
 
 /// Navigation destination descriptor for role-based tabs (MOB-01-07)
@@ -84,14 +82,6 @@ class MainNavigationScreen extends StatefulWidget {
             routePath: AppRoutes.applications,
             screenBuilder: _buildApplicationHistoryScreen,
           ),
-          RoleNavDestination(
-            label: 'Hồ sơ',
-            icon: Icons.person_outline_rounded,
-            selectedIcon: Icons.person_rounded,
-            routePath: AppRoutes.profile,
-            branchIndex: 2,
-            screenBuilder: _buildProfileScreen,
-          ),
         ];
 
       case UserRole.recruiter:
@@ -119,14 +109,6 @@ class MainNavigationScreen extends StatefulWidget {
             branchIndex: 1,
             screenBuilder: _buildJobListScreen,
           ),
-          RoleNavDestination(
-            label: 'Hồ sơ',
-            icon: Icons.person_outline_rounded,
-            selectedIcon: Icons.person_rounded,
-            routePath: AppRoutes.profile,
-            branchIndex: 2,
-            screenBuilder: _buildProfileScreen,
-          ),
         ];
 
       case UserRole.admin:
@@ -146,14 +128,6 @@ class MainNavigationScreen extends StatefulWidget {
             routePath: AppRoutes.search,
             screenBuilder: _buildSearchScreen,
           ),
-          RoleNavDestination(
-            label: 'Hồ sơ',
-            icon: Icons.person_outline_rounded,
-            selectedIcon: Icons.person_rounded,
-            routePath: AppRoutes.profile,
-            branchIndex: 2,
-            screenBuilder: _buildProfileScreen,
-          ),
         ];
 
       case null:
@@ -166,7 +140,6 @@ class MainNavigationScreen extends StatefulWidget {
   static Widget _buildApplicationHistoryScreen() =>
       const ApplicationHistoryScreen();
   static Widget _buildJobListScreen() => const JobListScreen();
-  static Widget _buildProfileScreen() => const ProfileScreen();
 }
 
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
@@ -282,7 +255,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     final screens = [
       widget.homeScreen ?? const HomeScreen(),
       const JobListScreen(),
-      const ProfileScreen(),
+      const ApplicationHistoryScreen(),
     ];
 
     final Widget activePage;
@@ -329,11 +302,10 @@ class JobBottomNavigation extends StatelessWidget {
   final int selectedIndex;
   final ValueChanged<int> onSelected;
 
-  static const _labels = ['Trang chủ', 'Việc làm', 'Hồ sơ'];
+  static const _labels = ['Trang chủ', 'Việc làm', 'Ứng tuyển'];
 
   @override
   Widget build(BuildContext context) {
-    final user = AuthSession.instance.currentUser;
     return Material(
       color: AppColors.surface,
       clipBehavior: Clip.none, // Cho phép phần tử con nhô lên trên thanh bar
@@ -420,9 +392,7 @@ class JobBottomNavigation extends StatelessWidget {
                                         child: SizedBox(
                                           width: 23,
                                           height: 23,
-                                          child: Center(
-                                            child: _buildIcon(i, user),
-                                          ),
+                                          child: Center(child: _buildIcon(i)),
                                         ),
                                       ),
                                     ),
@@ -467,18 +437,14 @@ class JobBottomNavigation extends StatelessWidget {
     );
   }
 
-  Widget _buildIcon(int index, dynamic user) {
+  Widget _buildIcon(int index) {
     final isSelected = index == selectedIndex;
     final iconColor = isSelected ? AppColors.primary : AppColors.darkSurface;
 
     return switch (index) {
       0 => DesignAsset('nav-home', width: 23, height: 23, color: iconColor),
       1 => DesignAsset('nav-jobs', width: 23, height: 23, color: iconColor),
-      _ => UserAvatar(
-        name: user?.name,
-        imageUrl: user?.avatarUrl,
-        radius: 11.5,
-      ),
+      _ => Icon(Icons.history_edu_outlined, size: 20, color: iconColor),
     };
   }
 }

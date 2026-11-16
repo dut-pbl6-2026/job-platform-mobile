@@ -66,7 +66,7 @@ class _RecruiterJobsScreenState extends State<RecruiterJobsScreen> {
   @override
   Widget build(BuildContext context) {
     final openCount = _jobs.where((j) => j.isOpen).length;
-    final pendingCount = _jobs.where((j) => j.isPending).length;
+    final closedCount = _jobs.where((j) => j.isClosed).length;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -194,7 +194,7 @@ class _RecruiterJobsScreenState extends State<RecruiterJobsScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 const Text(
-                                  'Đang mở · Chờ duyệt · Đã đóng',
+                                  'Active · Closed',
                                   style: TextStyle(
                                     fontSize: 15,
                                     fontWeight: FontWeight.bold,
@@ -203,7 +203,7 @@ class _RecruiterJobsScreenState extends State<RecruiterJobsScreen> {
                                 ),
                                 const SizedBox(height: 3),
                                 Text(
-                                  '$openCount tin đang mở · $pendingCount tin chờ duyệt',
+                                  '$openCount tin đang mở · $closedCount tin đã đóng',
                                   style: const TextStyle(
                                     fontSize: 12.5,
                                     color: AppColors.textSecondary,
@@ -231,7 +231,7 @@ class _RecruiterJobsScreenState extends State<RecruiterJobsScreen> {
 
                     ..._jobs.map((job) {
                       final isOpen = job.isOpen;
-                      final isPending = job.isPending;
+                      final isClosed = job.isClosed;
 
                       return Container(
                         margin: const EdgeInsets.only(bottom: 14),
@@ -267,11 +267,11 @@ class _RecruiterJobsScreenState extends State<RecruiterJobsScreen> {
                                         ? AppColors.success.withValues(
                                             alpha: 0.1,
                                           )
-                                        : isPending
-                                        ? AppColors.warning.withValues(
+                                        : isClosed
+                                        ? AppColors.textHint.withValues(
                                             alpha: 0.1,
                                           )
-                                        : AppColors.textHint.withValues(
+                                        : AppColors.warning.withValues(
                                             alpha: 0.1,
                                           ),
                                     borderRadius: BorderRadius.circular(8),
@@ -283,9 +283,9 @@ class _RecruiterJobsScreenState extends State<RecruiterJobsScreen> {
                                       fontWeight: FontWeight.bold,
                                       color: isOpen
                                           ? AppColors.success
-                                          : isPending
-                                          ? AppColors.warning
-                                          : AppColors.textSecondary,
+                                          : isClosed
+                                          ? AppColors.textSecondary
+                                          : AppColors.warning,
                                     ),
                                   ),
                                 ),
