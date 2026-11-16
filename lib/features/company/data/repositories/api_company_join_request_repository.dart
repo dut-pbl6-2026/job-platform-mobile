@@ -16,23 +16,35 @@ class ApiCompanyJoinRequestRepository implements ICompanyJoinRequestRepository {
     : _dio = dio ?? DioProvider.instance.dio;
 
   @override
-  Future<List<CompanyJoinRequest>> listForCompany(String companyId) async {
+  Future<CompanyJoinRequestPage> listForCompany(
+    String companyId, {
+    int page = 1,
+    int size = 20,
+  }) async {
     try {
       final response = await _dio.get(
         '/api/companies/$companyId/join-requests',
-        queryParameters: const {'page': 1, 'size': 100},
+        queryParameters: {'page': page, 'size': size},
       );
       final data = response.data;
-      final List<dynamic> items = data is Map
-          ? (data['items'] as List<dynamic>? ?? const [])
-          : (data as List<dynamic>? ?? const []);
-      return items
+      if (data is Map) {
+        return CompanyJoinRequestPage.fromJson(Map<String, dynamic>.from(data));
+      }
+      // Tolerate a bare array: every item is one request, so the page is the
+      // whole answer and there is nothing more to load.
+      final items = (data is List ? data : const [])
           .whereType<Map>()
           .map(
             (item) =>
                 CompanyJoinRequest.fromJson(Map<String, dynamic>.from(item)),
           )
           .toList(growable: false);
+      return CompanyJoinRequestPage(
+        items: items,
+        total: items.length,
+        page: page,
+        size: size,
+      );
     } on DioException catch (e) {
       throw _toException(e, fallback: _listFallback);
     }

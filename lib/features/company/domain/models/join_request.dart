@@ -81,8 +81,7 @@ class CompanyJoinRequest {
 }
 
 /// The requester's own join request (AUTH-01-13, AUTH-01-14). [canEscalate] is
-/// decided by the server so the client never guesses from the clock.
-@immutable
+/// decided by the server so the client never guesses from the clock.@immutable
 class MyJoinRequest {
   final String id;
   final String companyId;
@@ -110,4 +109,48 @@ class MyJoinRequest {
       canEscalate: json['canEscalate'] == true,
     );
   }
+}
+
+/// One page of a company's join requests. The endpoint is paginated
+/// (`JoinRequestPage {items,total,page,size}` in job-svc); [total] is kept so the
+/// admin screen can tell "no requests" apart from "more requests than shown".
+@immutable
+class CompanyJoinRequestPage {
+  final List<CompanyJoinRequest> items;
+  final int total;
+  final int page;
+  final int size;
+
+  const CompanyJoinRequestPage({
+    required this.items,
+    required this.total,
+    required this.page,
+    required this.size,
+  });
+
+  /// True while the server reports requests beyond the ones already loaded.
+  bool get hasMore => (page - 1) * size + items.length < total;
+
+  factory CompanyJoinRequestPage.fromJson(Map<String, dynamic> json) {
+    final rawItems = json['items'];
+    final items = (rawItems is List ? rawItems : const [])
+        .whereType<Map>()
+        .map(
+          (item) =>
+              CompanyJoinRequest.fromJson(Map<String, dynamic>.from(item)),
+        )
+        .toList(growable: false);
+    return CompanyJoinRequestPage(
+      items: items,
+      total: _parseInt(json['total']) ?? items.length,
+      page: _parseInt(json['page']) ?? 1,
+      size: _parseInt(json['size']) ?? items.length,
+    );
+  }
+}
+
+int? _parseInt(Object? value) {
+  if (value is int) return value;
+  if (value == null) return null;
+  return int.tryParse(value.toString());
 }

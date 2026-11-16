@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import '../../../../core/config/mock_fallback.dart';
 import '../../../../core/network/dio_provider.dart';
 import '../../../../core/services/hive_cache_service.dart';
 import '../../domain/models/job_filter_params.dart';
@@ -13,11 +14,16 @@ import 'mock_job_repository.dart';
 /// Remote API Implementation of [IJobRepository] communicating exclusively
 /// via API Gateway (YARP) per architectural constraint (Section 1.1 / Section 4).
 /// Prohibits direct access to internal microservice ports.
+///
+/// Mock data is only reachable when the build enables it
+/// (`--dart-define=ENABLE_MOCKS=true`) *and* the failure is a transport failure
+/// or a 5xx. A 4xx never yields fabricated jobs.
 class ApiJobRepository implements IJobRepository {
   final Dio _dio;
   final MockJobRepository _fallbackMockRepository = MockJobRepository();
+  final bool _enableMocks;
 
-  ApiJobRepository({Dio? dio, String? gatewayBaseUrl})
+  ApiJobRepository({Dio? dio, String? gatewayBaseUrl, bool? enableMockFallback})
     : _dio =
           dio ??
           (gatewayBaseUrl != null && gatewayBaseUrl.isNotEmpty
@@ -29,10 +35,12 @@ class ApiJobRepository implements IJobRepository {
                     headers: {'Accept': 'application/json'},
                   ),
                 )
-              : DioProvider.instance.dio);
+              : DioProvider.instance.dio),
+      _enableMocks = enableMockFallback ?? kEnableMocks;
 
   @override
   Future<PaginatedJobs> getJobs(JobFilterParams params) async {
+    var useMock = false;
     try {
       final queryParams = <String, dynamic>{
         'page': params.page.toString(),
@@ -87,92 +95,115 @@ class ApiJobRepository implements IJobRepository {
         ),
       );
 
-      if (response.statusCode == 200 && response.data != null) {
-        final Map<String, dynamic> data;
-        if (response.data is Map<String, dynamic>) {
-          data = response.data as Map<String, dynamic>;
-        } else if (response.data is Map) {
-          data = Map<String, dynamic>.from(response.data as Map);
-        } else {
-          data = jsonDecode(response.data.toString()) as Map<String, dynamic>;
-        }
-
-        final items =
-            (data['items'] as List<dynamic>?)
-                ?.map(
-                  (item) => JobModel.fromJson(
-                    item is Map<String, dynamic>
-                        ? item
-                        : Map<String, dynamic>.from(item as Map),
-                  ),
-                )
-                .toList() ??
-            [];
-
-        // Cache jobs in Hive for offline browsing (OFFLINE-01)
-        if (items.isNotEmpty) {
-          await HiveCacheService.instance.saveJobs(items);
-        }
-
-        return PaginatedJobs(
-          items: items,
-          total: data['total'] as int? ?? items.length,
-          page: data['page'] as int? ?? params.page,
-          size: data['size'] as int? ?? params.pageSize,
-          totalPages: data['totalPages'] as int? ?? 1,
+      if (response.statusCode != 200 || response.data == null) {
+        throw StateError(
+          'Unexpected job search response (${response.statusCode})',
         );
       }
-    } catch (e) {
-      debugPrint('[ApiJobRepository] Gateway connection fallback: $e');
 
-      // Check Hive local cache before mock fallback (OFFLINE-01)
-      final cached = await HiveCacheService.instance.getCachedJobs();
-      if (cached.isNotEmpty) {
-        var filteredCached = List<JobModel>.from(cached);
-        if (params.keyword != null && params.keyword!.trim().isNotEmpty) {
-          final q = params.keyword!.trim().toLowerCase();
-          filteredCached = filteredCached
-              .where(
-                (j) =>
-                    j.title.toLowerCase().contains(q) ||
-                    j.companyName.toLowerCase().contains(q) ||
-                    j.skills.any((s) => s.toLowerCase().contains(q)),
+      final Map<String, dynamic> data;
+      if (response.data is Map<String, dynamic>) {
+        data = response.data as Map<String, dynamic>;
+      } else if (response.data is Map) {
+        data = Map<String, dynamic>.from(response.data as Map);
+      } else {
+        data = jsonDecode(response.data.toString()) as Map<String, dynamic>;
+      }
+
+      final items =
+          (data['items'] as List<dynamic>?)
+              ?.map(
+                (item) => JobModel.fromJson(
+                  item is Map<String, dynamic>
+                      ? item
+                      : Map<String, dynamic>.from(item as Map),
+                ),
               )
-              .toList();
-        }
-        if (params.location != null &&
-            params.location!.trim().isNotEmpty &&
-            params.location != 'Tất cả') {
-          final loc = params.location!.trim().toLowerCase();
-          filteredCached = filteredCached
-              .where((j) => j.location.toLowerCase().contains(loc))
-              .toList();
-        }
-        if (params.skills.isNotEmpty) {
-          final filterSkillsLower = params.skills
-              .map((s) => s.toLowerCase())
-              .toSet();
-          filteredCached = filteredCached.where((j) {
-            final jobSkillsLower = j.skills.map((s) => s.toLowerCase()).toSet();
-            return filterSkillsLower.any((fs) => jobSkillsLower.contains(fs));
-          }).toList();
-        }
-        return PaginatedJobs(
-          items: filteredCached,
-          total: filteredCached.length,
-          page: params.page,
-          size: params.pageSize,
-          totalPages: 1,
-        );
+              .toList() ??
+          [];
+
+      // Cache jobs in Hive for offline browsing (OFFLINE-01)
+      if (items.isNotEmpty) {
+        await HiveCacheService.instance.saveJobs(items);
       }
+
+      return PaginatedJobs(
+        items: items,
+        total: data['total'] as int? ?? items.length,
+        page: data['page'] as int? ?? params.page,
+        size: data['size'] as int? ?? params.pageSize,
+        totalPages: data['totalPages'] as int? ?? 1,
+      );
+    } on DioException catch (e) {
+      debugPrint(
+        '[ApiJobRepository] getJobs failed: ${e.type} ${e.response?.statusCode}',
+      );
+      // Cached jobs were fetched from the server earlier, so they stay usable
+      // when the gateway is unreachable. A server answer (4xx/5xx) is not
+      // unreachable: it must reach the caller.
+      if (e.response == null) {
+        final cached = await _cachedJobsPage(params);
+        if (cached != null) return cached;
+      }
+      useMock = shouldUseMockFallback(
+        enabled: _enableMocks,
+        statusCode: e.response?.statusCode,
+      );
+      if (!useMock) rethrow;
     }
 
-    // Graceful fallback to Mock repository if Gateway is offline during local test
+    // Reachable only when mocks are enabled and the failure was transport/5xx.
     return _fallbackMockRepository.getJobs(params);
+  }
+
+  /// Applies the same filters the server would to the Hive cache. Returns null
+  /// when there is no cached job to show.
+  Future<PaginatedJobs?> _cachedJobsPage(JobFilterParams params) async {
+    final cached = await HiveCacheService.instance.getCachedJobs();
+    if (cached.isEmpty) return null;
+
+    var filteredCached = List<JobModel>.from(cached);
+    if (params.keyword != null && params.keyword!.trim().isNotEmpty) {
+      final q = params.keyword!.trim().toLowerCase();
+      filteredCached = filteredCached
+          .where(
+            (j) =>
+                j.title.toLowerCase().contains(q) ||
+                j.companyName.toLowerCase().contains(q) ||
+                j.skills.any((s) => s.toLowerCase().contains(q)),
+          )
+          .toList();
+    }
+    if (params.location != null &&
+        params.location!.trim().isNotEmpty &&
+        params.location != 'Tất cả') {
+      final loc = params.location!.trim().toLowerCase();
+      filteredCached = filteredCached
+          .where((j) => j.location.toLowerCase().contains(loc))
+          .toList();
+    }
+    if (params.skills.isNotEmpty) {
+      final filterSkillsLower = params.skills
+          .map((s) => s.toLowerCase())
+          .toSet();
+      filteredCached = filteredCached.where((j) {
+        final jobSkillsLower = j.skills.map((s) => s.toLowerCase()).toSet();
+        return filterSkillsLower.any((fs) => jobSkillsLower.contains(fs));
+      }).toList();
+    }
+
+    return PaginatedJobs(
+      items: filteredCached,
+      total: filteredCached.length,
+      page: params.page,
+      size: params.pageSize,
+      totalPages: 1,
+    );
   }
 
   @override
   Future<JobModel?> getJobById(String id) async {
+    var useMock = false;
     try {
       final response = await _dio.get(
         '/api/jobs/$id',
@@ -196,20 +227,35 @@ class ApiJobRepository implements IJobRepository {
         await HiveCacheService.instance.saveJobDetail(job);
         return job;
       }
-    } catch (e) {
-      debugPrint('[ApiJobRepository] Gateway getJobById fallback: $e');
-      final cached = await HiveCacheService.instance.getCachedJobDetail(id);
-      if (cached != null) {
-        return cached;
+      throw StateError(
+        'Unexpected job detail response (${response.statusCode})',
+      );
+    } on DioException catch (e) {
+      debugPrint(
+        '[ApiJobRepository] getJobById failed: '
+        '${e.type} ${e.response?.statusCode}',
+      );
+      if (e.response == null) {
+        final cached = await HiveCacheService.instance.getCachedJobDetail(id);
+        if (cached != null) return cached;
       }
+      useMock = shouldUseMockFallback(
+        enabled: _enableMocks,
+        statusCode: e.response?.statusCode,
+      );
+      if (!useMock) rethrow;
     }
+    if (!useMock) return null;
     return _fallbackMockRepository.getJobById(id);
   }
 
   @override
   Future<List<String>> getSearchSuggestions(String query) async {
     final q = query.trim();
-    if (q.isEmpty) return _fallbackMockRepository.getSearchSuggestions(query);
+    // An empty query has nothing to suggest; suggestions are fired per
+    // keystroke and the UI only shows them from the first character.
+    if (q.isEmpty) return const [];
+    var useMock = false;
     try {
       final response = await _dio.get(
         '/api/search/suggest',
@@ -233,9 +279,18 @@ class ApiJobRepository implements IJobRepository {
           return items.map((e) => e.toString()).toList();
         }
       }
-    } catch (e) {
-      debugPrint('[ApiJobRepository] Gateway suggest fallback: $e');
+    } on DioException catch (e) {
+      debugPrint(
+        '[ApiJobRepository] getSearchSuggestions failed: '
+        '${e.type} ${e.response?.statusCode}',
+      );
+      useMock = shouldUseMockFallback(
+        enabled: _enableMocks,
+        statusCode: e.response?.statusCode,
+      );
+      if (!useMock) rethrow;
     }
+    if (!useMock) return const [];
     return _fallbackMockRepository.getSearchSuggestions(query);
   }
 
@@ -244,6 +299,7 @@ class ApiJobRepository implements IJobRepository {
     int limit = 10,
     bool refresh = false,
   }) async {
+    var useMock = false;
     try {
       final response = await _dio.get(
         '/api/jobs/recommended',
@@ -323,23 +379,34 @@ class ApiJobRepository implements IJobRepository {
           return recommendedJobs;
         }
       }
-    } catch (e) {
-      debugPrint('[ApiJobRepository] Gateway getRecommendedJobs fallback: $e');
+    } on DioException catch (e) {
+      debugPrint(
+        '[ApiJobRepository] getRecommendedJobs failed: '
+        '${e.type} ${e.response?.statusCode}',
+      );
+      // Real UUID jobs already cached stay usable when the gateway is down.
+      if (e.response == null) {
+        final cached = await HiveCacheService.instance.getCachedJobs();
+        if (cached.isNotEmpty) {
+          return cached.take(limit).map((job) {
+            return RecommendedJob(
+              job: job,
+              reason: 'Phù hợp với kỹ năng và vị trí đã lưu của bạn',
+              matchType: 'content',
+            );
+          }).toList();
+        }
+      }
+      useMock = shouldUseMockFallback(
+        enabled: _enableMocks,
+        statusCode: e.response?.statusCode,
+      );
+      if (!useMock) rethrow;
     }
 
-    // Graceful fallback: check local Hive cache first to preserve real UUID jobs
-    final cached = await HiveCacheService.instance.getCachedJobs();
-    if (cached.isNotEmpty) {
-      return cached.take(limit).map((job) {
-        return RecommendedJob(
-          job: job,
-          reason: 'Phù hợp với kỹ năng và vị trí đã lưu của bạn',
-          matchType: 'content',
-        );
-      }).toList();
-    }
-
-    // Otherwise fallback to Mock repository (cold start or offline Gateway)
+    // A 200 without recommendations is an empty answer, not a failure.
+    if (!useMock) return const [];
+    // Reachable only when mocks are enabled and the failure was transport/5xx.
     return _fallbackMockRepository.getRecommendedJobs(
       limit: limit,
       refresh: refresh,

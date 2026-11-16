@@ -162,11 +162,20 @@ class AppRouter {
       GoRoute(
         path: AppRoutes.login,
         name: 'login',
-        builder: (context, state) => LoginScreen(
-          verificationEmail: state.extra is String
-              ? state.extra as String
-              : null,
-        ),
+        builder: (context, state) {
+          final extra = state.extra;
+          // A candidate registration passes the address to verify; a recruiter
+          // registration passes the "account ready" notice and no address.
+          String? email;
+          String? notice;
+          if (extra is String) {
+            email = extra;
+          } else if (extra is Map) {
+            email = extra['email']?.toString();
+            notice = extra['notice']?.toString();
+          }
+          return LoginScreen(verificationEmail: email, notice: notice);
+        },
       ),
       GoRoute(
         path: AppRoutes.register,

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/error/error_mapper.dart';
-import '../../core/error/failures.dart';
 import '../../core/router/app_router.dart';
 import '../../core/theme/app_theme.dart';
 import 'data/repositories/api_auth_repository.dart';
@@ -19,12 +18,22 @@ import 'register_screen.dart' show registrationPendingVerificationMessage;
 /// - Login button with 2s mock latency
 /// - Navigation to Register and Home
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key, this.authRepository, this.verificationEmail});
+  const LoginScreen({
+    super.key,
+    this.authRepository,
+    this.verificationEmail,
+    this.notice,
+  });
 
   final IAuthRepository? authRepository;
 
-  /// Set after registration: the address that must be verified before login.
+  /// Set after a candidate registration: the address that must be verified
+  /// before login.
   final String? verificationEmail;
+
+  /// Set after a recruiter registration, whose account is active at once and
+  /// gets no verification mail. Takes precedence over [verificationEmail].
+  final String? notice;
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -111,9 +120,7 @@ class _LoginScreenState extends State<LoginScreen> {
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
-        final msg = e is AuthFailure
-            ? authFailureToMessage(e)
-            : e.toString().replaceAll('Exception: ', '');
+        final msg = failureMessage(e, fallback: genericFailureMessage);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Đăng nhập thất bại: $msg'),
@@ -135,13 +142,19 @@ class _LoginScreenState extends State<LoginScreen> {
       children: [
         const AuthBrand(),
         const SizedBox(height: 28),
-        if (widget.verificationEmail != null) ...[
+        if (widget.notice != null) ...[
           Text(
-            registrationPendingVerificationMessage,
+            widget.notice!,
             style: const TextStyle(
               fontSize: 14,
               color: AppColors.textSecondary,
             ),
+          ),
+          const SizedBox(height: 14),
+        ] else if (widget.verificationEmail != null) ...[
+          const Text(
+            registrationPendingVerificationMessage,
+            style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
           ),
           const SizedBox(height: 8),
           ResendVerificationButton(

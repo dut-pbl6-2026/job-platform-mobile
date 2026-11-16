@@ -4,16 +4,22 @@ import 'package:go_router/go_router.dart';
 import '../../core/router/app_router.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/error/error_mapper.dart';
-import '../../core/error/failures.dart';
 import 'data/repositories/api_auth_repository.dart';
 import 'domain/models/user_model.dart';
 import 'domain/repositories/auth_repository.dart';
 import 'presentation/widgets/auth_layout.dart';
 
-/// Shown after a successful registration. The user is not signed in until the
-/// verification link in the email is used.
+/// Shown after a successful candidate registration. The user is not signed in
+/// until the verification link in the email is used. Mirrors the web client's
+/// `auth.register.verifyNotice`.
 const String registrationPendingVerificationMessage =
-    'Check your email to verify your account.';
+    'Kiểm tra email để xác minh tài khoản của bạn.';
+
+/// Shown after a successful recruiter registration. auth-svc activates an
+/// invited recruiter in the same transaction and sends no verification mail, so
+/// the notice must not ask for one. Mirrors `auth.register.recruiterReadyNotice`.
+const String recruiterReadyNotice =
+    'Tài khoản nhà tuyển dụng đã sẵn sàng. Hãy đăng nhập.';
 
 /// Register Screen - Create new candidate or recruiter account
 /// Features:
@@ -188,9 +194,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
       if (mounted) {
         setState(() => _isLoading = false);
 
+        final isRecruiter = _selectedRole == UserRole.recruiter;
+        final notice = isRecruiter
+            ? recruiterReadyNotice
+            : registrationPendingVerificationMessage;
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text(registrationPendingVerificationMessage),
+            content: Text(notice),
             backgroundColor: AppColors.success,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
@@ -199,16 +210,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
           ),
         );
 
-        // No session is created here; the user signs in after verifying.
-        // The address travels with the navigation so login can offer a new link.
-        context.go(AppRoutes.login, extra: _emailController.text.trim());
+        // No session is created here. A candidate signs in after verifying, and
+        // the address travels with the navigation so login can offer a new link.
+        // A recruiter is already active: the notice must not offer a resend.
+        context.go(
+          AppRoutes.login,
+          extra: isRecruiter
+              ? {'notice': notice}
+              : _emailController.text.trim(),
+        );
       }
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
-        final msg = e is AuthFailure
-            ? authFailureToMessage(e)
-            : e.toString().replaceAll('Exception: ', '');
+        final msg = failureMessage(e, fallback: genericFailureMessage);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Đăng ký thất bại: $msg'),

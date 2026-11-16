@@ -55,8 +55,9 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
     setState(() {
       _loading = true;
       _error = null;
-      // The previously issued code is shown once; a new issue replaces it.
-      _issued = null;
+      // The issued code is shown exactly once and cannot be recovered, so the
+      // previous one stays on screen until a new one actually arrives. A failed
+      // reissue must not take away a code already sent to a colleague.
     });
     try {
       final issued = await _repository.createInviteCode(
@@ -68,6 +69,9 @@ class _InviteCodeScreenState extends State<InviteCodeScreen> {
     } on InviteCodeException catch (e) {
       if (!mounted) return;
       setState(() => _error = e.message);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _error = InviteCodeStrings.failed);
     } finally {
       if (mounted) setState(() => _loading = false);
     }

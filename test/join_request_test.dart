@@ -57,27 +57,56 @@ class _FakeJoinRequestRepository implements ICompanyJoinRequestRepository {
     List<CompanyJoinRequest>? requests,
     this.mine,
     this.listError,
+    this.listThrows,
     this.mineError,
+    this.mineThrows,
     this.escalateError,
+    this.pages,
   }) : requests = requests ?? [];
 
   List<CompanyJoinRequest> requests;
   MyJoinRequest? mine;
   String? listError;
+
+  /// An error that is not a [JoinRequestException] (for example a payload
+  /// change), which the screen must still surface instead of spinning.
+  Object? listThrows;
   String? mineError;
+  Object? mineThrows;
   String? escalateError;
+
+  /// Explicit page contents, keyed by the 1-based page number.
+  Map<int, List<CompanyJoinRequest>>? pages;
 
   final List<String> approved = [];
   final List<String> rejected = [];
   final List<String?> rejectReasons = [];
+  final List<int> requestedPages = [];
   int listCalls = 0;
   bool escalated = false;
 
   @override
-  Future<List<CompanyJoinRequest>> listForCompany(String companyId) async {
+  Future<CompanyJoinRequestPage> listForCompany(
+    String companyId, {
+    int page = 1,
+    int size = 20,
+  }) async {
     listCalls++;
+    requestedPages.add(page);
+    if (listThrows != null) throw listThrows!;
     if (listError != null) throw JoinRequestException(listError!);
-    return List.of(requests);
+    final pageItems = pages != null
+        ? (pages![page] ?? const <CompanyJoinRequest>[])
+        : (page == 1 ? List.of(requests) : const <CompanyJoinRequest>[]);
+    final pageTotal = pages != null
+        ? pages!.values.expand((items) => items).length
+        : requests.length;
+    return CompanyJoinRequestPage(
+      items: pageItems,
+      total: pageTotal,
+      page: page,
+      size: size,
+    );
   }
 
   @override
@@ -106,6 +135,7 @@ class _FakeJoinRequestRepository implements ICompanyJoinRequestRepository {
 
   @override
   Future<MyJoinRequest?> getMine() async {
+    if (mineThrows != null) throw mineThrows!;
     if (mineError != null) throw JoinRequestException(mineError!);
     return mine;
   }
@@ -189,19 +219,23 @@ void main() {
         ]);
         final repo = ApiCompanyJoinRequestRepository(dio: server.dio);
 
-        final requests = await repo.listForCompany('company-1');
+        final page = await repo.listForCompany('company-1');
 
         expect(
           server.requests.single.path,
           '/api/companies/company-1/join-requests',
         );
         expect(server.requests.single.method, 'GET');
-        expect(requests, hasLength(2));
-        expect(requests.first.id, 'request-1');
-        expect(requests.first.status, JoinRequestStatus.pending);
-        expect(requests.first.expiresAt, isNotNull);
-        expect(requests.last.status, JoinRequestStatus.expired);
-        expect(requests.last.createdAt, isNotNull);
+        // The endpoint is paginated: one explicit page, not a 100-row dump.
+        expect(server.requests.single.queryParameters, {'page': 1, 'size': 20});
+        expect(page.items, hasLength(2));
+        expect(page.total, 2);
+        expect(page.hasMore, isFalse);
+        expect(page.items.first.id, 'request-1');
+        expect(page.items.first.status, JoinRequestStatus.pending);
+        expect(page.items.first.expiresAt, isNotNull);
+        expect(page.items.last.status, JoinRequestStatus.expired);
+        expect(page.items.last.createdAt, isNotNull);
       },
     );
 
@@ -215,10 +249,37 @@ void main() {
       ]);
       final repo = ApiCompanyJoinRequestRepository(dio: server.dio);
 
-      final requests = await repo.listForCompany('company-1');
+      final page = await repo.listForCompany('company-1');
 
-      expect(requests.single.status, JoinRequestStatus.unknown);
-      expect(requests.single.status.label, JoinRequestStrings.statusUnknown);
+      expect(page.items.single.status, JoinRequestStatus.unknown);
+      expect(page.items.single.status.label, JoinRequestStrings.statusUnknown);
+    });
+
+    test('asks for one page and reports whether more requests exist', () async {
+      final server = _ScriptedDio([
+        const _Reply(200, {
+          'items': [
+            {
+              'id': 'request-1',
+              'companyId': 'company-1',
+              'userId': 'user-1',
+              'status': 'Pending',
+            },
+          ],
+          'total': 101,
+          'page': 2,
+          'size': 20,
+        }),
+      ]);
+      final repo = ApiCompanyJoinRequestRepository(dio: server.dio);
+
+      final page = await repo.listForCompany('company-1', page: 2);
+
+      expect(server.requests.single.queryParameters, {'page': 2, 'size': 20});
+      expect(page.total, 101);
+      expect(page.page, 2);
+      // 100 rows loaded, 101 exist: the extra one must not be invisible.
+      expect(page.hasMore, isTrue);
     });
 
     test('approve and reject post to the decision paths', () async {
@@ -453,6 +514,59 @@ void main() {
       expect(find.text(JoinRequestStrings.adminEmpty), findsOneWidget);
     });
 
+    testWidgets('a truncated page says how many exist and loads the rest', (
+      tester,
+    ) async {
+      final repo = _FakeJoinRequestRepository(
+        pages: {
+          1: [_request(id: 'pending-1'), _request(id: 'pending-2')],
+          2: [_request(id: 'pending-3')],
+        },
+      );
+      await tester.pumpWidget(
+        MaterialApp(
+          home: JoinRequestsScreen(repository: repo, companyId: 'company-1'),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text(JoinRequestStrings.showingCount(2, 3)), findsOneWidget);
+      expect(find.byKey(const Key('join_requests_load_more')), findsOneWidget);
+      expect(
+        find.byKey(const Key('join_request_approve_pending-3')),
+        findsNothing,
+      );
+
+      final loadMore = find.byKey(const Key('join_requests_load_more'));
+      await tester.ensureVisible(loadMore);
+      await tester.tap(loadMore);
+      await tester.pumpAndSettle();
+
+      expect(repo.requestedPages, [1, 2]);
+      expect(
+        find.byKey(const Key('join_request_approve_pending-3')),
+        findsOneWidget,
+      );
+      // Everything is loaded now, so there is nothing more to ask for.
+      expect(find.byKey(const Key('join_requests_load_more')), findsNothing);
+    });
+
+    testWidgets('a non-typed failure shows a retry instead of spinning', (
+      tester,
+    ) async {
+      final repo = _FakeJoinRequestRepository(listThrows: TypeError());
+      await tester.pumpWidget(
+        MaterialApp(
+          home: JoinRequestsScreen(repository: repo, companyId: 'company-1'),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(find.text(JoinRequestStrings.listFailed), findsOneWidget);
+      expect(find.byKey(const Key('join_requests_retry')), findsOneWidget);
+    });
+
     testWidgets('a 403 shows the admin-only message and a retry', (
       tester,
     ) async {
@@ -547,6 +661,23 @@ void main() {
         ),
         findsOneWidget,
       );
+      expect(
+        find.byKey(const Key('join_request_status_retry')),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('a non-typed failure shows a retry instead of spinning', (
+      tester,
+    ) async {
+      final repo = _FakeJoinRequestRepository(mineThrows: TypeError());
+      await tester.pumpWidget(
+        MaterialApp(home: JoinRequestStatusScreen(repository: repo)),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(find.text(JoinRequestStrings.mineFailed), findsOneWidget);
       expect(
         find.byKey(const Key('join_request_status_retry')),
         findsOneWidget,

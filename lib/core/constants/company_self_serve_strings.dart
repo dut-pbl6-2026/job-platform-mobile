@@ -49,6 +49,11 @@ abstract final class CompanySignUpStrings {
       'Cần dùng email công ty để đăng ký doanh nghiệp.';
   static const serviceUnavailable =
       'Hệ thống tạm thời không khả dụng. Vui lòng thử lại sau.';
+
+  /// Any other failure (an unlabelled 422, a 500, a transport error). It must not
+  /// reuse copy from another flow, because this form has no invite code.
+  static const failed =
+      'Không gửi được đăng ký doanh nghiệp. Vui lòng kiểm tra thông tin và thử lại.';
   static const retry = 'Thử lại';
 }
 
@@ -98,6 +103,22 @@ abstract final class JoinRequestStrings {
   static const noCompany =
       'Tài khoản của bạn chưa gắn với công ty nên chưa xem được yêu cầu tham gia.';
   static const retry = 'Thử lại';
+  static const loadMore = 'Tải thêm yêu cầu';
+
+  /// Shown above the list so the admin knows how many requests exist in total.
+  static String showingCount(int shown, int total) =>
+      'Đang hiển thị $shown/$total yêu cầu tham gia.';
+
+  // Fallbacks for failures that carry no usable message. They are screen copy,
+  // never a server `detail` or a Dart exception string.
+  static const listFailed =
+      'Không tải được danh sách yêu cầu tham gia. Vui lòng thử lại.';
+  static const decideFailed =
+      'Không xử lý được yêu cầu tham gia. Vui lòng thử lại.';
+  static const mineFailed =
+      'Không tải được trạng thái yêu cầu tham gia. Vui lòng thử lại.';
+  static const escalateFailed =
+      'Không gửi được yêu cầu hỗ trợ. Vui lòng thử lại.';
 
   static const myTitle = 'Yêu cầu tham gia công ty';
   static const statusLabel = 'Trạng thái yêu cầu';

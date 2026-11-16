@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import '../../../../core/config/mock_fallback.dart';
 import '../../../../core/network/dio_provider.dart';
 import '../../domain/models/app_notification.dart';
 import '../../domain/repositories/notification_repository.dart';
@@ -8,13 +9,20 @@ import 'mock_notification_repository.dart';
 /// Remote API implementation of [INotificationRepository] communicating exclusively
 /// via API Gateway (YARP) per architectural constraint (Section 1.1 / Section 4).
 /// Strictly prohibits direct calls to internal microservice ports (e.g. 5006).
+///
+/// Mock data is only reachable when the build enables it
+/// (`--dart-define=ENABLE_MOCKS=true`) and the failure is a transport failure or
+/// a 5xx. Writes (device token, read state) never report success for a request
+/// the server rejected.
 class ApiNotificationRepository implements INotificationRepository {
   final Dio _dio;
   final MockNotificationRepository _fallbackMockRepository =
       MockNotificationRepository();
+  final bool _enableMocks;
 
-  ApiNotificationRepository({Dio? dio})
-    : _dio = dio ?? DioProvider.instance.dio;
+  ApiNotificationRepository({Dio? dio, bool? enableMockFallback})
+    : _dio = dio ?? DioProvider.instance.dio,
+      _enableMocks = enableMockFallback ?? kEnableMocks;
 
   @override
   Future<void> registerDeviceToken({
@@ -22,30 +30,26 @@ class ApiNotificationRepository implements INotificationRepository {
     required String platform,
   }) async {
     try {
-      final response = await _dio.post(
+      await _dio.post(
         '/api/notifications/devices',
         data: {'token': token, 'platform': platform},
       );
-      if (response.statusCode != 200 && response.statusCode != 201) {
-        debugPrint(
-          'API Gateway notification token registration returned status ${response.statusCode}',
-        );
-      }
     } on DioException catch (e) {
-      if (e.response != null) {
+      if (!shouldUseMockFallback(
+        enabled: _enableMocks,
+        statusCode: e.response?.statusCode,
+      )) {
         debugPrint(
-          'Device token registration through Gateway failed with status: ${e.response?.statusCode}',
+          'Device token registration through Gateway failed '
+          '(${e.response?.statusCode ?? e.type}).',
         );
-        return;
+        rethrow;
       }
-      debugPrint('Device token registration through Gateway failed: $e');
-      // Record in local fallback so app remains functional in dev/offline
+      debugPrint('Device token registration unavailable, recording locally.');
       await _fallbackMockRepository.registerDeviceToken(
         token: token,
         platform: platform,
       );
-    } catch (e) {
-      debugPrint('Unexpected error registering device token: $e');
     }
   }
 
@@ -54,16 +58,17 @@ class ApiNotificationRepository implements INotificationRepository {
     try {
       await _dio.delete('/api/notifications/devices/$token');
     } on DioException catch (e) {
-      if (e.response != null) {
+      if (!shouldUseMockFallback(
+        enabled: _enableMocks,
+        statusCode: e.response?.statusCode,
+      )) {
         debugPrint(
-          'Device token unregistration failed with status: ${e.response?.statusCode}',
+          'Device token unregistration failed '
+          '(${e.response?.statusCode ?? e.type}).',
         );
-        return;
+        rethrow;
       }
-      debugPrint('Device token unregistration failed: $e');
       await _fallbackMockRepository.unregisterDeviceToken(token);
-    } catch (e) {
-      debugPrint('Unexpected error unregistering device token: $e');
     }
   }
 
@@ -83,49 +88,43 @@ class ApiNotificationRepository implements INotificationRepository {
         },
       );
 
-      if (response.statusCode == 200 && response.data != null) {
-        final dynamic raw = response.data;
-        List<dynamic> items = [];
-        if (raw is List) {
-          items = raw;
-        } else if (raw is Map<String, dynamic>) {
-          items = (raw['items'] ?? raw['data'] ?? []) as List<dynamic>;
-        }
-
-        await MockNotificationRepository.ensureLoaded();
-        return items.map((item) {
-          final notif = AppNotification.fromJson(
-            Map<String, dynamic>.from(item as Map),
-          );
-          if (MockNotificationRepository.isMarkedReadLocally(notif.id)) {
-            return notif.copyWith(isRead: true);
-          }
-          return notif;
-        }).toList();
-      }
-      return await _fallbackMockRepository.getNotifications(
-        page: page,
-        size: size,
-        unreadOnly: unreadOnly,
-      );
-    } on DioException catch (e) {
-      if (e.response != null) {
-        debugPrint(
-          'Fetch notifications via Gateway error: ${e.response?.statusCode}',
+      if (response.statusCode != 200 || response.data == null) {
+        throw StateError(
+          'Unexpected notifications response (${response.statusCode})',
         );
-        return [];
       }
-      debugPrint(
-        'Fetch notifications via Gateway error: $e, falling back to mock.',
-      );
-      return await _fallbackMockRepository.getNotifications(
-        page: page,
-        size: size,
-        unreadOnly: unreadOnly,
-      );
-    } catch (e) {
-      debugPrint('Unexpected error fetching notifications: $e');
-      return await _fallbackMockRepository.getNotifications(
+
+      final dynamic raw = response.data;
+      List<dynamic> items = [];
+      if (raw is List) {
+        items = raw;
+      } else if (raw is Map<String, dynamic>) {
+        items = (raw['items'] ?? raw['data'] ?? []) as List<dynamic>;
+      }
+
+      await MockNotificationRepository.ensureLoaded();
+      return items.map((item) {
+        final notif = AppNotification.fromJson(
+          Map<String, dynamic>.from(item as Map),
+        );
+        if (MockNotificationRepository.isMarkedReadLocally(notif.id)) {
+          return notif.copyWith(isRead: true);
+        }
+        return notif;
+      }).toList();
+    } on DioException catch (e) {
+      if (!shouldUseMockFallback(
+        enabled: _enableMocks,
+        statusCode: e.response?.statusCode,
+      )) {
+        debugPrint(
+          'Fetch notifications via Gateway failed '
+          '(${e.response?.statusCode ?? e.type}).',
+        );
+        rethrow;
+      }
+      debugPrint('Notifications unavailable, using mock data.');
+      return _fallbackMockRepository.getNotifications(
         page: page,
         size: size,
         unreadOnly: unreadOnly,
@@ -138,16 +137,17 @@ class ApiNotificationRepository implements INotificationRepository {
     try {
       await _dio.put('/api/notifications/$id/read');
     } on DioException catch (e) {
-      if (e.response != null) {
+      if (!shouldUseMockFallback(
+        enabled: _enableMocks,
+        statusCode: e.response?.statusCode,
+      )) {
         debugPrint(
-          'Mark notification read via Gateway error (${e.response?.statusCode}): $e',
+          'Mark notification read via Gateway failed '
+          '(${e.response?.statusCode ?? e.type}).',
         );
-        return;
+        rethrow;
       }
-      debugPrint('Gateway offline, updating mock notification state: $e');
       await _fallbackMockRepository.markAsRead(id);
-    } catch (e) {
-      debugPrint('Unexpected error marking notification read: $e');
     }
   }
 
@@ -156,16 +156,17 @@ class ApiNotificationRepository implements INotificationRepository {
     try {
       await _dio.put('/api/notifications/read-all');
     } on DioException catch (e) {
-      if (e.response != null) {
+      if (!shouldUseMockFallback(
+        enabled: _enableMocks,
+        statusCode: e.response?.statusCode,
+      )) {
         debugPrint(
-          'Mark all notifications read via Gateway error (${e.response?.statusCode}): $e',
+          'Mark all notifications read via Gateway failed '
+          '(${e.response?.statusCode ?? e.type}).',
         );
-        return;
+        rethrow;
       }
-      debugPrint('Gateway offline, updating mock all notifications state: $e');
       await _fallbackMockRepository.markAllAsRead();
-    } catch (e) {
-      debugPrint('Unexpected error marking all notifications read: $e');
     }
   }
 
@@ -181,19 +182,19 @@ class ApiNotificationRepository implements INotificationRepository {
           return response.data as int;
         }
       }
-      return await _fallbackMockRepository.getUnreadCount();
+      return 0;
     } on DioException catch (e) {
-      if (e.response != null) {
+      if (!shouldUseMockFallback(
+        enabled: _enableMocks,
+        statusCode: e.response?.statusCode,
+      )) {
         debugPrint(
-          'Get unread count via Gateway error (${e.response?.statusCode}): $e',
+          'Get unread count via Gateway failed '
+          '(${e.response?.statusCode ?? e.type}).',
         );
-        return 0;
+        rethrow;
       }
-      debugPrint('Get unread count via Gateway error: $e');
-      return await _fallbackMockRepository.getUnreadCount();
-    } catch (e) {
-      debugPrint('Unexpected error getting unread count: $e');
-      return await _fallbackMockRepository.getUnreadCount();
+      return _fallbackMockRepository.getUnreadCount();
     }
   }
 }

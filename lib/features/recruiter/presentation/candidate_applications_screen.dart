@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/error/error_mapper.dart';
 import '../../../core/theme/app_theme.dart';
 import '../data/repositories/api_recruiter_repository.dart';
 import '../domain/models/recruiter_models.dart';
@@ -60,7 +61,10 @@ class _CandidateApplicationsScreenState
       if (mounted) {
         setState(() {
           _isLoading = false;
-          _errorMessage = e.toString();
+          _errorMessage = failureMessage(
+            e,
+            fallback: 'Không tải được danh sách ứng viên. Vui lòng thử lại.',
+          );
           _isMockMode = widget.isMock ?? _repository.isMock;
         });
       }
@@ -102,7 +106,13 @@ class _CandidateApplicationsScreenState
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Không thể cập nhật trạng thái: $e'),
+          content: Text(
+            failureMessage(
+              e,
+              fallback:
+                  'Không cập nhật được trạng thái ứng viên. Vui lòng thử lại.',
+            ),
+          ),
           backgroundColor: AppColors.error,
           behavior: SnackBarBehavior.floating,
         ),
