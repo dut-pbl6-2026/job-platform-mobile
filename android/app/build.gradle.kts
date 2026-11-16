@@ -1,5 +1,8 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
+    id("kotlin-android")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
     id("com.google.gms.google-services")
@@ -7,7 +10,7 @@ plugins {
 
 // Release signing comes from environment variables (CI) or android/key.properties
 // (local, gitignored). Each value is read from the environment first.
-val keystoreProperties = java.util.Properties().apply {
+val keystoreProperties = Properties().apply {
     val file = rootProject.file("key.properties")
     if (file.exists()) file.inputStream().use { load(it) }
 }
@@ -40,6 +43,14 @@ android {
         isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+    }
+
+    // The Kotlin Gradle plugin bundled with the pinned Flutter SDK (2.1.0) sets
+    // jvmTarget through `kotlinOptions`; the top-level `kotlin {}` block used by
+    // KGP 2.4 is not available there.
+    @Suppress("DEPRECATION")
+    kotlinOptions {
+        jvmTarget = JavaVersion.VERSION_17.toString()
     }
 
     defaultConfig {
@@ -105,12 +116,6 @@ gradle.taskGraph.whenReady {
 
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
-}
-
-kotlin {
-    compilerOptions {
-        jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
-    }
 }
 
 flutter {

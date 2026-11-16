@@ -49,3 +49,46 @@ jobs:
           name: coverage
           path: coverage/lcov.info
           if-no-files-found: warn
+
+  # A release APK must actually build with an explicit gateway URL. The debug
+  # build (and the test suite) never exercise `kReleaseMode`, so without this job
+  # a store build missing `--dart-define=FLUTTER_API_URL=...` ships unnoticed.
+  #
+  # release packaging refuses to run without a keystore (android/app/build.gradle.kts),
+  # so this CI-only build signs with a throwaway key generated in the job. It is
+  # never published and the debug key is not used for a release artifact.
+  release-apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.32.8'
+          channel: stable
+          cache: true
+      - name: Install dependencies
+        run: flutter pub get
+      - name: Create a throwaway CI release keystore
+        run: |
+          keytool -genkeypair -v \
+            -keystore "$GITHUB_WORKSPACE/ci-release.jks" \
+            -storetype JKS \
+            -keyalg RSA -keysize 2048 -validity 1 \
+            -alias ci-release \
+            -storepass ci-release-password \
+            -keypass ci-release-password \
+            -dname "CN=CI Release, OU=CI, O=PBL6, L=Ho Chi Minh, ST=HCMC, C=VN"
+      - name: Build release APK (exercises the release configuration)
+        env:
+          ANDROID_KEYSTORE_PATH: ${{ github.workspace }}/ci-release.jks
+          ANDROID_KEYSTORE_PASSWORD: ci-release-password
+          ANDROID_KEY_ALIAS: ci-release
+          ANDROID_KEY_PASSWORD: ci-release-password
+        run: >
+          flutter build apk --release
+          --dart-define=FLUTTER_API_URL=https://example.invalid
+          --dart-define=ENABLE_MOCKS=false
