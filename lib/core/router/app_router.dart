@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 
 import '../session/auth_session.dart';
 import '../../features/auth/domain/models/user_model.dart';
-import '../../features/ai_copilot/presentation/ai_copilot_screen.dart';
 import '../../features/applications/presentation/application_detail_screen.dart';
 import '../../features/applications/presentation/application_history_screen.dart';
 import '../../features/applications/presentation/apply_job_screen.dart';
@@ -49,7 +48,6 @@ class AppRoutes {
   static const String forgotPassword = '/forgot-password';
   static const String resetPassword = '/reset-password';
   static const String verifyEmail = '/verify-email';
-  static const String aiCopilot = '/ai-copilot';
   static const String recruiterDashboard = '/recruiter/dashboard';
   static const String recruiterJobs = '/recruiter/jobs';
   static const String recruiterPostJob = '/recruiter/jobs/create';
@@ -210,12 +208,6 @@ class AppRouter {
           final query = state.uri.queryParameters['q'];
           return SearchScreen(initialQuery: query);
         },
-      ),
-      GoRoute(
-        parentNavigatorKey: _rootNavigatorKey,
-        path: AppRoutes.aiCopilot,
-        name: 'ai-copilot',
-        builder: (context, state) => const AiCopilotScreen(),
       ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,

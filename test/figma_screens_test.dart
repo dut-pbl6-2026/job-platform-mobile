@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'support/fake_ai_repository.dart';
-import 'package:job_platform_mobile/features/ai_copilot/presentation/ai_copilot_screen.dart';
 import 'package:job_platform_mobile/features/recruiter/presentation/candidate_applications_screen.dart';
 import 'package:job_platform_mobile/features/recruiter/presentation/post_job_screen.dart';
 import 'package:job_platform_mobile/features/recruiter/presentation/recruiter_dashboard_screen.dart';
@@ -12,31 +10,6 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('Figma Screens Widget Tests', () {
-    testWidgets(
-      'AiCopilotScreen renders greeting, suggestions, and sends a prompt',
-      (tester) async {
-        await tester.pumpWidget(
-          MaterialApp(home: AiCopilotScreen(repository: FakeAiRepository())),
-        );
-        await tester.pumpAndSettle();
-
-        expect(find.text('Trợ lý việc làm AI'), findsOneWidget);
-        expect(find.text('Chào bạn 👋'), findsOneWidget);
-        expect(find.text('Gợi ý việc làm'), findsOneWidget);
-        expect(find.text('Cải thiện CV'), findsOneWidget);
-        expect(find.text('Luyện phỏng vấn'), findsOneWidget);
-
-        // Tap on a suggestion prompt
-        await tester.tap(find.text('Gợi ý việc làm'));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 1000));
-        await tester.pumpAndSettle();
-
-        expect(find.text('Phản hồi kiểm thử từ Gateway.'), findsOneWidget);
-        expect(find.text('90% phù hợp'), findsNothing);
-      },
-    );
-
     testWidgets('RecruiterDashboardScreen renders metrics and action tiles', (
       tester,
     ) async {
