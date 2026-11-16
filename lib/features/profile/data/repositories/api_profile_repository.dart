@@ -71,8 +71,9 @@ class ApiProfileRepository implements IProfileRepository {
   Future<ProfileModel> createProfile() async {
     final user = AuthSession.instance.currentUser;
     try {
-      final response = await _dio.post(
-        '/api/profiles',
+      // profile-svc has no POST /api/profiles: PUT /api/profiles/me is the upsert.
+      final response = await _dio.put(
+        '/api/profiles/me',
         data: {
           'fullName': user?.name ?? '',
           if (user?.avatarUrl != null && user!.avatarUrl!.isNotEmpty)
@@ -80,12 +81,12 @@ class ApiProfileRepository implements IProfileRepository {
         },
       );
 
-      final status = response.statusCode;
-      if ((status == 200 || status == 201) && response.data is Map) {
-        final data = Map<String, dynamic>.from(response.data as Map);
-        return ProfileModel.fromJson(data);
+      if (response.statusCode != 200) {
+        throw _failure('Không thể tạo hồ sơ cá nhân');
       }
-      throw _failure('Không thể tạo hồ sơ cá nhân');
+
+      // The upsert answers { message, id }; read the created profile back.
+      return await getMyProfile();
     } on DioException catch (e) {
       debugPrint(
         '[ApiProfileRepository] createProfile failed: '

@@ -97,12 +97,13 @@ void main() {
       'getOrCreateProfile creates the profile when /me answers 404',
       () async {
         final calls = <String>[];
+        var getCount = 0;
         final dio = Dio(BaseOptions(baseUrl: 'http://gateway.test'));
         dio.interceptors.add(
           InterceptorsWrapper(
             onRequest: (options, handler) {
               calls.add('${options.method} ${options.path}');
-              if (options.method == 'GET') {
+              if (options.method == 'GET' && getCount++ == 0) {
                 handler.reject(
                   DioException(
                     requestOptions: options,
@@ -115,11 +116,24 @@ void main() {
                 );
                 return;
               }
-              expect(options.path, '/api/profiles');
+              if (options.method == 'PUT') {
+                expect(options.path, '/api/profiles/me');
+                handler.resolve(
+                  Response(
+                    requestOptions: options,
+                    statusCode: 200,
+                    data: {
+                      'message': 'Profile updated successfully',
+                      'id': 'profile-1',
+                    },
+                  ),
+                );
+                return;
+              }
               handler.resolve(
                 Response(
                   requestOptions: options,
-                  statusCode: 201,
+                  statusCode: 200,
                   data: {
                     'id': 'profile-1',
                     'userId': 'user-1',
@@ -137,7 +151,11 @@ void main() {
           dio: dio,
         ).getOrCreateProfile();
 
-        expect(calls, ['GET /api/profiles/me', 'POST /api/profiles']);
+        expect(calls, [
+          'GET /api/profiles/me',
+          'PUT /api/profiles/me',
+          'GET /api/profiles/me',
+        ]);
         expect(profile.id, 'profile-1');
         expect(profile.fullName, 'Nhà tuyển dụng');
       },
