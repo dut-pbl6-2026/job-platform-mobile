@@ -9,41 +9,47 @@ void main() {
       expect(repo, isNotNull);
     });
 
-    test(
-      'Falls back gracefully to mock repository when Gateway is offline',
-      () async {
-        final dio = Dio();
-        dio.interceptors.add(
-          InterceptorsWrapper(
-            onRequest: (options, handler) {
-              handler.reject(
-                DioException(
-                  requestOptions: options,
-                  error: 'Connection refused',
-                  type: DioExceptionType.connectionError,
-                ),
-              );
-            },
-          ),
-        );
-        final repo = ApiNotificationRepository(dio: dio);
+    test('mocks are used when injected and the Gateway is offline', () async {
+      final repo = ApiNotificationRepository(
+        dio: _offlineDio(),
+        enableMockFallback: true,
+      );
 
-        final notifications = await repo.getNotifications();
-        expect(notifications.isNotEmpty, isTrue);
+      final notifications = await repo.getNotifications();
+      expect(notifications.isNotEmpty, isTrue);
 
-        final unreadCount = await repo.getUnreadCount();
-        expect(unreadCount, greaterThanOrEqualTo(0));
+      final unreadCount = await repo.getUnreadCount();
+      expect(unreadCount, greaterThanOrEqualTo(0));
 
-        // Should not throw
-        await repo.registerDeviceToken(
-          token: 'test-fcm-token',
-          platform: 'android',
-        );
-        await repo.unregisterDeviceToken('test-fcm-token');
-        await repo.markAsRead('notif-001');
-        await repo.markAllAsRead();
-      },
-    );
+      // Should not throw
+      await repo.registerDeviceToken(
+        token: 'test-fcm-token',
+        platform: 'android',
+      );
+      await repo.unregisterDeviceToken('test-fcm-token');
+      await repo.markAsRead('notif-001');
+      await repo.markAllAsRead();
+    });
+
+    test('mocks are off by default: an offline Gateway is an error', () async {
+      final repo = ApiNotificationRepository(dio: _offlineDio());
+
+      await expectLater(repo.getNotifications(), throwsA(isA<DioException>()));
+      await expectLater(repo.getUnreadCount(), throwsA(isA<DioException>()));
+    });
+
+    test('a 401 never yields mock notifications', () async {
+      final repo = ApiNotificationRepository(
+        dio: _statusDio(401),
+        enableMockFallback: true,
+      );
+
+      await expectLater(repo.getNotifications(), throwsA(isA<DioException>()));
+      await expectLater(
+        repo.markAsRead('notif-001'),
+        throwsA(isA<DioException>()),
+      );
+    });
 
     test('Parses successful API Gateway response correctly', () async {
       final dio = Dio();
@@ -95,4 +101,40 @@ void main() {
       expect(count, 5);
     });
   });
+}
+
+Dio _offlineDio() {
+  final dio = Dio(BaseOptions(baseUrl: 'http://gateway.test'));
+  dio.interceptors.add(
+    InterceptorsWrapper(
+      onRequest: (options, handler) => handler.reject(
+        DioException(
+          requestOptions: options,
+          error: 'Connection refused',
+          type: DioExceptionType.connectionError,
+        ),
+      ),
+    ),
+  );
+  return dio;
+}
+
+Dio _statusDio(int status) {
+  final dio = Dio(BaseOptions(baseUrl: 'http://gateway.test'));
+  dio.interceptors.add(
+    InterceptorsWrapper(
+      onRequest: (options, handler) => handler.reject(
+        DioException(
+          requestOptions: options,
+          type: DioExceptionType.badResponse,
+          response: Response(
+            requestOptions: options,
+            statusCode: status,
+            data: const {},
+          ),
+        ),
+      ),
+    ),
+  );
+  return dio;
 }

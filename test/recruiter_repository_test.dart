@@ -78,9 +78,9 @@ void main() {
           ),
         );
 
-        final repo = ApiRecruiterRepository(dio: dio);
+        final repo = ApiRecruiterRepository(dio: dio, enableMockFallback: true);
 
-        // Reads fall back gracefully
+        // Reads fall back when mocks are explicitly injected
         final jobs = await repo.getMyJobs();
         expect(jobs.isNotEmpty, isTrue);
         expect(repo.isMock, isTrue);
@@ -112,6 +112,36 @@ void main() {
         );
       },
     );
+
+    test('a 403 never shows invented jobs, candidates or stats', () async {
+      final dio = Dio(BaseOptions(baseUrl: 'http://unused.invalid'));
+      dio.interceptors.add(
+        InterceptorsWrapper(
+          onRequest: (options, handler) => handler.reject(
+            DioException(
+              requestOptions: options,
+              type: DioExceptionType.badResponse,
+              response: Response(
+                requestOptions: options,
+                statusCode: 403,
+                data: {'title': 'Forbidden'},
+              ),
+            ),
+          ),
+        ),
+      );
+      // Even with mocks enabled, an authorisation answer is not a failure to
+      // paper over: the recruiter must see that the session/company is wrong.
+      final repo = ApiRecruiterRepository(dio: dio, enableMockFallback: true);
+
+      await expectLater(repo.getMyJobs(), throwsA(isA<DioException>()));
+      await expectLater(
+        repo.getCandidateApplications(jobId: 'job-1'),
+        throwsA(isA<DioException>()),
+      );
+      await expectLater(repo.getDashboardStats(), throwsA(isA<DioException>()));
+      expect(repo.isMock, isFalse);
+    });
 
     group('postJob sends canonical backend enum values', () {
       // Captures the POST /api/jobs body and answers 201 so no request leaves.

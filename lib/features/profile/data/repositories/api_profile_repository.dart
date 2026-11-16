@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import '../../../../core/config/mock_fallback.dart';
 import '../../../../core/network/dio_provider.dart';
 import '../../domain/models/profile_model.dart';
 import '../../domain/repositories/profile_repository.dart';
@@ -8,24 +9,23 @@ import 'mock_profile_repository.dart';
 /// Remote API implementation of [IProfileRepository] communicating exclusively
 /// via API Gateway (YARP) per architectural constraint (Section 1.1 / Section 4).
 /// Prohibits direct access to internal microservice ports.
+///
+/// Reads may answer with mock data only when the build enables it
+/// (`--dart-define=ENABLE_MOCKS=true`) and the gateway was unreachable or
+/// answered 5xx. Writes never fall back: reporting "saved" for a request that
+/// never reached the server loses the user's edit silently.
 class ApiProfileRepository implements IProfileRepository {
   final Dio _dio;
   final MockProfileRepository _fallbackMockRepository = MockProfileRepository();
+  final bool _enableMocks;
 
-  ApiProfileRepository({Dio? dio}) : _dio = dio ?? DioProvider.instance.dio;
+  ApiProfileRepository({Dio? dio, bool? enableMockFallback})
+    : _dio = dio ?? DioProvider.instance.dio,
+      _enableMocks = enableMockFallback ?? kEnableMocks;
 
-  Exception _handleError(DioException e, String defaultMessage) {
-    if (e.response != null) {
-      final data = e.response?.data;
-      final serverMsg = data is Map
-          ? (data['message'] ?? data['detail'])
-          : null;
-      return Exception(
-        serverMsg ?? '$defaultMessage (${e.response?.statusCode})',
-      );
-    }
-    return Exception('$defaultMessage: ${e.message}');
-  }
+  /// A user-facing Vietnamese message. The server's ProblemDetails body and any
+  /// Dart exception string stay out of it.
+  Exception _failure(String message) => Exception(message);
 
   @override
   Future<ProfileModel> getMyProfile() async {
@@ -37,17 +37,20 @@ class ApiProfileRepository implements IProfileRepository {
             : Map<String, dynamic>.from(response.data as Map);
         return ProfileModel.fromJson(data);
       }
+      throw _failure('Không thể tải thông tin hồ sơ cá nhân');
     } on DioException catch (e) {
-      if (e.response != null) {
-        throw _handleError(e, 'Không thể tải thông tin hồ sơ cá nhân');
+      if (shouldUseMockFallback(
+        enabled: _enableMocks,
+        statusCode: e.response?.statusCode,
+      )) {
+        debugPrint(
+          '[ApiProfileRepository] Gateway profile/me unavailable, using mock data.',
+        );
+        return _fallbackMockRepository.getMyProfile();
       }
-      debugPrint(
-        '[ApiProfileRepository] Gateway profile/me offline, falling back to mock: ${e.message}',
-      );
-    } catch (e) {
-      debugPrint('[ApiProfileRepository] Unexpected error: $e');
+      debugPrint('[ApiProfileRepository] profile/me failed: ${e.type}');
+      throw _failure('Không thể tải thông tin hồ sơ cá nhân');
     }
-    return _fallbackMockRepository.getMyProfile();
   }
 
   @override
@@ -69,17 +72,11 @@ class ApiProfileRepository implements IProfileRepository {
       if (response.statusCode == 200) {
         return updated;
       }
+      throw _failure('Không thể cập nhật hồ sơ cá nhân');
     } on DioException catch (e) {
-      if (e.response != null) {
-        throw _handleError(e, 'Không thể cập nhật hồ sơ cá nhân');
-      }
-      debugPrint(
-        '[ApiProfileRepository] Gateway updateProfile offline, falling back to mock: ${e.message}',
-      );
-    } catch (e) {
-      debugPrint('[ApiProfileRepository] Unexpected error: $e');
+      debugPrint('[ApiProfileRepository] updateProfile failed: ${e.type}');
+      throw _failure('Không thể cập nhật hồ sơ cá nhân');
     }
-    return _fallbackMockRepository.updateProfile(updated);
   }
 
   @override
@@ -100,35 +97,24 @@ class ApiProfileRepository implements IProfileRepository {
         }
         return skill;
       }
+      throw _failure('Không thể thêm kỹ năng mới');
     } on DioException catch (e) {
-      if (e.response != null) {
-        throw _handleError(e, 'Không thể thêm kỹ năng mới');
-      }
-      debugPrint(
-        '[ApiProfileRepository] Gateway addSkill offline, falling back to mock: ${e.message}',
-      );
-    } catch (e) {
-      debugPrint('[ApiProfileRepository] Unexpected error: $e');
+      debugPrint('[ApiProfileRepository] addSkill failed: ${e.type}');
+      throw _failure('Không thể thêm kỹ năng mới');
     }
-    return _fallbackMockRepository.addSkill(skill);
   }
 
   @override
   Future<void> deleteSkill(String skillId) async {
     try {
       final response = await _dio.delete('/api/profiles/skills/$skillId');
-      if (response.statusCode == 200) return;
-    } on DioException catch (e) {
-      if (e.response != null) {
-        throw _handleError(e, 'Không thể xóa kỹ năng');
+      if (response.statusCode != 200) {
+        throw _failure('Không thể xóa kỹ năng');
       }
-      debugPrint(
-        '[ApiProfileRepository] Gateway deleteSkill offline, falling back to mock: ${e.message}',
-      );
-    } catch (e) {
-      debugPrint('[ApiProfileRepository] Unexpected error: $e');
+    } on DioException catch (e) {
+      debugPrint('[ApiProfileRepository] deleteSkill failed: ${e.type}');
+      throw _failure('Không thể xóa kỹ năng');
     }
-    await _fallbackMockRepository.deleteSkill(skillId);
   }
 
   @override
@@ -154,17 +140,11 @@ class ApiProfileRepository implements IProfileRepository {
         }
         return experience;
       }
+      throw _failure('Không thể thêm kinh nghiệm làm việc');
     } on DioException catch (e) {
-      if (e.response != null) {
-        throw _handleError(e, 'Không thể thêm kinh nghiệm làm việc');
-      }
-      debugPrint(
-        '[ApiProfileRepository] Gateway addExperience offline, falling back to mock: ${e.message}',
-      );
-    } catch (e) {
-      debugPrint('[ApiProfileRepository] Unexpected error: $e');
+      debugPrint('[ApiProfileRepository] addExperience failed: ${e.type}');
+      throw _failure('Không thể thêm kinh nghiệm làm việc');
     }
-    return _fallbackMockRepository.addExperience(experience);
   }
 
   @override
@@ -173,18 +153,13 @@ class ApiProfileRepository implements IProfileRepository {
       final response = await _dio.delete(
         '/api/profiles/experiences/$experienceId',
       );
-      if (response.statusCode == 200) return;
-    } on DioException catch (e) {
-      if (e.response != null) {
-        throw _handleError(e, 'Không thể xóa kinh nghiệm làm việc');
+      if (response.statusCode != 200) {
+        throw _failure('Không thể xóa kinh nghiệm làm việc');
       }
-      debugPrint(
-        '[ApiProfileRepository] Gateway deleteExperience offline, falling back to mock: ${e.message}',
-      );
-    } catch (e) {
-      debugPrint('[ApiProfileRepository] Unexpected error: $e');
+    } on DioException catch (e) {
+      debugPrint('[ApiProfileRepository] deleteExperience failed: ${e.type}');
+      throw _failure('Không thể xóa kinh nghiệm làm việc');
     }
-    await _fallbackMockRepository.deleteExperience(experienceId);
   }
 
   @override
@@ -208,17 +183,11 @@ class ApiProfileRepository implements IProfileRepository {
         }
         return education;
       }
+      throw _failure('Không thể thêm thông tin học vấn');
     } on DioException catch (e) {
-      if (e.response != null) {
-        throw _handleError(e, 'Không thể thêm thông tin học vấn');
-      }
-      debugPrint(
-        '[ApiProfileRepository] Gateway addEducation offline, falling back to mock: ${e.message}',
-      );
-    } catch (e) {
-      debugPrint('[ApiProfileRepository] Unexpected error: $e');
+      debugPrint('[ApiProfileRepository] addEducation failed: ${e.type}');
+      throw _failure('Không thể thêm thông tin học vấn');
     }
-    return _fallbackMockRepository.addEducation(education);
   }
 
   @override
@@ -227,17 +196,12 @@ class ApiProfileRepository implements IProfileRepository {
       final response = await _dio.delete(
         '/api/profiles/educations/$educationId',
       );
-      if (response.statusCode == 200) return;
-    } on DioException catch (e) {
-      if (e.response != null) {
-        throw _handleError(e, 'Không thể xóa thông tin học vấn');
+      if (response.statusCode != 200) {
+        throw _failure('Không thể xóa thông tin học vấn');
       }
-      debugPrint(
-        '[ApiProfileRepository] Gateway deleteEducation offline, falling back to mock: ${e.message}',
-      );
-    } catch (e) {
-      debugPrint('[ApiProfileRepository] Unexpected error: $e');
+    } on DioException catch (e) {
+      debugPrint('[ApiProfileRepository] deleteEducation failed: ${e.type}');
+      throw _failure('Không thể xóa thông tin học vấn');
     }
-    await _fallbackMockRepository.deleteEducation(educationId);
   }
 }

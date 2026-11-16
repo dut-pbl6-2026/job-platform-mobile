@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive/hive.dart';
 import 'package:job_platform_mobile/core/services/hive_cache_service.dart';
@@ -49,8 +50,11 @@ void main() {
     // Populate Hive cache with an offline job
     await HiveCacheService.instance.saveJobs([cachedJob]);
 
-    // Instantiate ApiJobRepository with a non-existent gateway address to force network error
-    final repo = ApiJobRepository(gatewayBaseUrl: 'http://127.0.0.1:54321');
+    // An unreachable gateway is a transport failure, which may serve cached
+    // data. The test binding answers real requests with 400, so the failure is
+    // injected instead of relying on a network error.
+    final dio = _offlineDio();
+    final repo = ApiJobRepository(dio: dio);
     final result = await repo.getJobs(const JobFilterParams());
 
     expect(result.items.isNotEmpty, isTrue);
@@ -60,4 +64,62 @@ void main() {
       equals('Offline Flutter Specialist'),
     );
   });
+
+  test('a server answer (400) is an error, not cached data', () async {
+    final cachedJob = JobModel(
+      id: 'offline-cached-job-1',
+      title: 'Offline Flutter Specialist',
+      companyName: 'Offline Tech',
+      location: 'Hà Nội',
+      category: 'Công nghệ thông tin',
+      jobType: JobType.fullTime,
+      experienceLevel: ExperienceLevel.middle,
+      skills: const ['Flutter'],
+      description: 'Cached job',
+      requirements: '2+ years experience',
+      postedAt: DateTime.now(),
+    );
+    await HiveCacheService.instance.saveJobs([cachedJob]);
+
+    final dio = Dio(BaseOptions(baseUrl: 'http://gateway.test'));
+    dio.interceptors.add(
+      InterceptorsWrapper(
+        onRequest: (options, handler) => handler.reject(
+          DioException(
+            requestOptions: options,
+            type: DioExceptionType.badResponse,
+            response: Response(
+              requestOptions: options,
+              statusCode: 400,
+              data: {'title': 'Bad request'},
+            ),
+          ),
+        ),
+      ),
+    );
+    final repo = ApiJobRepository(dio: dio);
+
+    // A 400 is the server answering, so stale cache (and mock data) must not
+    // pretend the search succeeded.
+    await expectLater(
+      repo.getJobs(const JobFilterParams()),
+      throwsA(isA<DioException>()),
+    );
+  });
+}
+
+Dio _offlineDio() {
+  final dio = Dio(BaseOptions(baseUrl: 'http://offline.test'));
+  dio.interceptors.add(
+    InterceptorsWrapper(
+      onRequest: (options, handler) => handler.reject(
+        DioException(
+          requestOptions: options,
+          type: DioExceptionType.connectionError,
+          message: 'offline',
+        ),
+      ),
+    ),
+  );
+  return dio;
 }

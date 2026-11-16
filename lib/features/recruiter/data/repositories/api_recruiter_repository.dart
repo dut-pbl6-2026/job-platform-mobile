@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 
+import '../../../../core/config/mock_fallback.dart';
 import '../../../../core/network/dio_provider.dart';
 import '../../../../core/session/auth_session.dart';
 import '../../domain/models/recruiter_models.dart';
@@ -10,12 +11,20 @@ import 'mock_recruiter_repository.dart';
 /// Remote API implementation of [IRecruiterRepository] communicating exclusively
 /// via API Gateway (YARP) per architectural constraint (Section 1.1).
 /// Direct microservice port access is prohibited.
+///
+/// Mock data is only reachable when the build enables it
+/// (`--dart-define=ENABLE_MOCKS=true`) and the failure is a transport failure or
+/// a 5xx. A revoked token or a stale company id (401/403) surfaces as an error
+/// instead of invented jobs, candidates and statistics.
 class ApiRecruiterRepository implements IRecruiterRepository {
   final Dio _dio;
   final MockRecruiterRepository _fallbackMock = MockRecruiterRepository();
+  final bool _enableMocks;
   bool _isMock = false;
 
-  ApiRecruiterRepository({Dio? dio}) : _dio = dio ?? DioProvider.instance.dio;
+  ApiRecruiterRepository({Dio? dio, bool? enableMockFallback})
+    : _dio = dio ?? DioProvider.instance.dio,
+      _enableMocks = enableMockFallback ?? kEnableMocks;
 
   @override
   bool get isMock => _isMock;
@@ -55,12 +64,15 @@ class ApiRecruiterRepository implements IRecruiterRepository {
       }
     } on DioException catch (e) {
       debugPrint(
-        '[ApiRecruiterRepository] Gateway candidate applications offline: ${e.message}, falling back to mock.',
+        '[ApiRecruiterRepository] Candidate applications failed: '
+        '${e.response?.statusCode ?? e.type}.',
       );
-    } catch (e) {
-      debugPrint(
-        '[ApiRecruiterRepository] Unexpected error fetching candidate applications: $e',
-      );
+      if (!shouldUseMockFallback(
+        enabled: _enableMocks,
+        statusCode: e.response?.statusCode,
+      )) {
+        rethrow;
+      }
     }
 
     _isMock = true;
@@ -164,12 +176,15 @@ class ApiRecruiterRepository implements IRecruiterRepository {
       }
     } on DioException catch (e) {
       debugPrint(
-        '[ApiRecruiterRepository] Gateway recruiter jobs offline: ${e.message}, falling back to mock.',
+        '[ApiRecruiterRepository] Recruiter jobs failed: '
+        '${e.response?.statusCode ?? e.type}.',
       );
-    } catch (e) {
-      debugPrint(
-        '[ApiRecruiterRepository] Unexpected error fetching recruiter jobs: $e',
-      );
+      if (!shouldUseMockFallback(
+        enabled: _enableMocks,
+        statusCode: e.response?.statusCode,
+      )) {
+        rethrow;
+      }
     }
 
     _isMock = true;
@@ -178,50 +193,46 @@ class ApiRecruiterRepository implements IRecruiterRepository {
 
   @override
   Future<RecruiterStats> getDashboardStats() async {
-    try {
-      final jobs = await getMyJobs();
-      if (!_isMock) {
-        final active = jobs.where((j) => j.isOpen).length;
-        final totalApps = jobs.fold<int>(
-          0,
-          (sum, j) => sum + j.applicationsCount,
-        );
-        final totalViews = jobs.fold<int>(0, (sum, j) => sum + j.viewsCount);
+    // getMyJobs throws when the gateway answered and mocks are off; that error
+    // must reach the screen instead of becoming invented statistics.
+    final jobs = await getMyJobs();
+    if (!_isMock) {
+      final active = jobs.where((j) => j.isOpen).length;
+      final totalApps = jobs.fold<int>(
+        0,
+        (sum, j) => sum + j.applicationsCount,
+      );
+      final totalViews = jobs.fold<int>(0, (sum, j) => sum + j.viewsCount);
 
-        // Compute actual new (pending) and interviewed/shortlisted applications
-        int newApps = totalApps;
-        int shortlistedCount = 0;
-        try {
-          final candidates = await getCandidateApplications();
-          if (candidates.isNotEmpty) {
-            newApps = candidates.where((c) => c.isPending).length;
-            shortlistedCount = candidates
-                .where(
-                  (c) =>
-                      c.isShortlisted ||
-                      c.status == 'Được nhận' ||
-                      c.status.toLowerCase() == 'accepted',
-                )
-                .length;
-          }
-        } catch (_) {
-          // If candidates fetch fails, keep totalApps
+      // Compute actual new (pending) and interviewed/shortlisted applications
+      int newApps = totalApps;
+      int shortlistedCount = 0;
+      try {
+        final candidates = await getCandidateApplications();
+        if (candidates.isNotEmpty) {
+          newApps = candidates.where((c) => c.isPending).length;
+          shortlistedCount = candidates
+              .where(
+                (c) =>
+                    c.isShortlisted ||
+                    c.status == 'Được nhận' ||
+                    c.status.toLowerCase() == 'accepted',
+              )
+              .length;
         }
-
-        return RecruiterStats(
-          activeJobsCount: active,
-          newApplicationsCount: newApps,
-          viewsCount: totalViews,
-          interviewsCount: shortlistedCount,
-        );
+      } catch (_) {
+        // If candidates fetch fails, keep totalApps
       }
-    } catch (e) {
-      debugPrint(
-        '[ApiRecruiterRepository] Error calculating dashboard stats: $e',
+
+      return RecruiterStats(
+        activeJobsCount: active,
+        newApplicationsCount: newApps,
+        viewsCount: totalViews,
+        interviewsCount: shortlistedCount,
       );
     }
 
-    _isMock = true;
+    // getMyJobs already fell back to mock data, so the statistics match it.
     return _fallbackMock.getDashboardStats();
   }
 

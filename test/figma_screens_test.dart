@@ -8,6 +8,7 @@ import 'package:job_platform_mobile/features/ai_copilot/presentation/resume_scor
 import 'package:job_platform_mobile/features/recruiter/presentation/candidate_applications_screen.dart';
 import 'package:job_platform_mobile/features/recruiter/presentation/post_job_screen.dart';
 import 'package:job_platform_mobile/features/recruiter/presentation/recruiter_dashboard_screen.dart';
+import 'package:job_platform_mobile/features/recruiter/data/repositories/mock_recruiter_repository.dart';
 import 'package:job_platform_mobile/features/recruiter/presentation/recruiter_jobs_screen.dart';
 
 void main() {
@@ -92,7 +93,12 @@ void main() {
     testWidgets(
       'RecruiterJobsScreen renders postings and PostJobScreen renders form',
       (tester) async {
-        await tester.pumpWidget(const MaterialApp(home: RecruiterJobsScreen()));
+        // Mock data is opt-in now: inject the mock repository explicitly.
+        await tester.pumpWidget(
+          MaterialApp(
+            home: RecruiterJobsScreen(repository: MockRecruiterRepository()),
+          ),
+        );
         await tester.pumpAndSettle();
 
         expect(find.text('Tin tuyển dụng của tôi'), findsOneWidget);
@@ -112,7 +118,11 @@ void main() {
       'CandidateApplicationsScreen renders candidate reviews and status update',
       (tester) async {
         await tester.pumpWidget(
-          const MaterialApp(home: CandidateApplicationsScreen()),
+          MaterialApp(
+            home: CandidateApplicationsScreen(
+              repository: MockRecruiterRepository(),
+            ),
+          ),
         );
         await tester.pumpAndSettle();
 

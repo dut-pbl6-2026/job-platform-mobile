@@ -11,17 +11,89 @@ void main() {
       expect(repo, isNotNull);
     });
 
-    test('Falls back gracefully to mock when Gateway is offline', () async {
-      final repo = ApiJobRepository(gatewayBaseUrl: 'http://localhost:9999');
+    test(
+      'mocks are used when injected and the gateway is unreachable',
+      () async {
+        final repo = ApiJobRepository(
+          gatewayBaseUrl: 'http://localhost:9999',
+          enableMockFallback: true,
+        );
+        final result = await repo.getJobs(const JobFilterParams());
+        expect(result.items.isNotEmpty, isTrue);
+
+        final job = await repo.getJobById('job-1');
+        expect(job, isNotNull);
+        expect(job!.title, contains('Flutter'));
+
+        final suggestions = await repo.getSearchSuggestions('Flutter');
+        expect(suggestions, contains('Flutter Developer'));
+      },
+    );
+
+    test(
+      'mocks are off by default: an unreachable gateway is an error',
+      () async {
+        final repo = ApiJobRepository(gatewayBaseUrl: 'http://localhost:9999');
+
+        // Mock data is a compile-time opt-in (ENABLE_MOCKS), never the default.
+        await expectLater(
+          repo.getJobs(const JobFilterParams()),
+          throwsA(isA<DioException>()),
+        );
+        await expectLater(
+          repo.getJobById('job-1'),
+          throwsA(isA<DioException>()),
+        );
+      },
+    );
+
+    test('a 401 never yields mock jobs, even with mocks enabled', () async {
+      final dio = Dio(BaseOptions(baseUrl: 'http://unused.invalid'));
+      dio.interceptors.add(
+        InterceptorsWrapper(
+          onRequest: (options, handler) => handler.reject(
+            DioException(
+              requestOptions: options,
+              type: DioExceptionType.badResponse,
+              response: Response(
+                requestOptions: options,
+                statusCode: 401,
+                data: {'title': 'Unauthorized'},
+              ),
+            ),
+          ),
+        ),
+      );
+      final repo = ApiJobRepository(dio: dio, enableMockFallback: true);
+
+      await expectLater(
+        repo.getJobs(const JobFilterParams()),
+        throwsA(isA<DioException>()),
+      );
+      await expectLater(repo.getJobById('job-1'), throwsA(isA<DioException>()));
+    });
+
+    test('a 5xx may still use mocks when they are enabled', () async {
+      final dio = Dio(BaseOptions(baseUrl: 'http://unused.invalid'));
+      dio.interceptors.add(
+        InterceptorsWrapper(
+          onRequest: (options, handler) => handler.reject(
+            DioException(
+              requestOptions: options,
+              type: DioExceptionType.badResponse,
+              response: Response(
+                requestOptions: options,
+                statusCode: 503,
+                data: {'title': 'Service unavailable'},
+              ),
+            ),
+          ),
+        ),
+      );
+      final repo = ApiJobRepository(dio: dio, enableMockFallback: true);
+
       final result = await repo.getJobs(const JobFilterParams());
       expect(result.items.isNotEmpty, isTrue);
-
-      final job = await repo.getJobById('job-1');
-      expect(job, isNotNull);
-      expect(job!.title, contains('Flutter'));
-
-      final suggestions = await repo.getSearchSuggestions('Flutter');
-      expect(suggestions, contains('Flutter Developer'));
     });
 
     group('search filters use backend parameter names and values', () {
