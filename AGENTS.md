@@ -92,6 +92,7 @@ The platform supports 3 primary user groups according to the SRS:
 - **Const Correctness:** Use `const` widgets wherever possible to optimize Flutter rebuild cycles.
 - **Async & Lifecycle:** Always verify `if (!mounted) return;` before calling `setState()` or interacting with `BuildContext` across asynchronous gaps.
 - **Localization & Formatting:**
+  - User-facing copy is Vietnamese and lives in Dart constants under `lib/core/constants/` (for example `CompanySignUpStrings`). There is **no** i18n/localization package in this app: this is an explicit owner decision, not a pending task. Do not add one or promise one.
   - Vietnamese Dong (VND) formatting: `₫` or `VNĐ` with thousand separators (e.g., `15.000.000 ₫`).
   - Vietnamese Date formats: `dd/MM/yyyy` or `dd/MM/yyyy HH:mm`.
 
@@ -142,6 +143,11 @@ flutter analyze
 # Run tests with code coverage
 flutter test --coverage
 ```
+
+### 6.3 Release signing
+- Release packaging reads `ANDROID_KEYSTORE_PATH`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS` and `ANDROID_KEY_PASSWORD` from the environment, or `android/key.properties` (`storeFile`, `storePassword`, `keyAlias`, `keyPassword`, gitignored) as a fallback.
+- If any value is missing, `android/app/build.gradle.kts` fails the release `assemble`/`bundle` task before producing an artifact and lists the missing names. It never falls back to the debug key; debug builds need none of these values.
+- The release build and compatibility report is `docs/release-build-test.md`.
 
 ---
 
