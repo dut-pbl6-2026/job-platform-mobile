@@ -65,4 +65,6 @@ flutter run
   - Follow the security rules (SEC) and the SRS standards (for example: password strength requirements, token encryption, session lifetime, and role-based access for 3 user groups: Admin, Recruiter, User).
 
 ## Deploy (Mobile — TM4 Khoa, excluded from prod)
-- Build: `flutter pub get` `ApiAuthRepository FLUTTER_API_URL=http://10.0.2.2:5000 --dart-define` `AuthSession.load() minSdk 23` `excluded from prod` `backlog.md#2`
+- Build/run: `flutter pub get`, then `flutter run --dart-define=FLUTTER_API_URL=http://10.0.2.2:5000` (Android emulator; use the gateway URL for a device). `minSdk = 31` (Android 12+).
+- Release signing: `flutter build apk|appbundle --release` reads `ANDROID_KEYSTORE_PATH`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS` and `ANDROID_KEY_PASSWORD` from the environment, or `android/key.properties` (`storeFile`, `storePassword`, `keyAlias`, `keyPassword`). When an input is missing the Gradle build fails up front and names it; it never falls back to the debug key.
+- Release build and compatibility report: `docs/release-build-test.md`. Mobile is excluded from prod (`backlog.md#2`).
