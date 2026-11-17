@@ -46,8 +46,9 @@ lib/
     ├── jobs/                      # Job List, Job Detail, Search, Filtering
     ├── applications/              # Application Form, CV Upload, History Tracking
     ├── profile/                   # User Profile, Skills, Experience, Education
-    ├── notifications/             # FCM push notification handlers, notification screen
-    └── ai_copilot/                # AI Chatbot stream and Job Recommendations
+    ├── company/                   # Company Profile, Invite Codes, Join Requests
+    ├── recruiter/                 # Recruiter Dashboard, Job CRUD, Candidate Review
+    └── notifications/             # FCM push notification handlers & device registration
 ```
 
 ### 2.2 Layering Rules
@@ -113,7 +114,7 @@ The platform supports 3 primary user groups according to the SRS:
 | :--- | :--- | :--- | :--- |
 | **Phase 1 (Weeks 1–4)** | **Core MVP (Must-Have)** | `MOB-01-01` to `MOB-01-08`<br>`AUTH-01`, `JOB-01`, `APP-01` | • Login / Register screens & GoRouter auth guards<br>• Job List & Detail screens<br>• Job Application flow with CV Upload<br>• Profile & Application History screens<br>• Gateway (YARP) API integration |
 | **Phase 2 (Weeks 5–8)** | **Enhanced Platform** | `PUSH-01`, `SEARCH-01`<br>`ADMIN-01`, `OFFLINE-01` | • Push Notifications via Firebase Cloud Messaging (FCM)<br>• Advanced Search UI (filters by salary, skills, location)<br>• Local Caching (Hive / SharedPreferences)<br>• Basic Admin read-only dashboard |
-| **Phase 3 (Weeks 9–13)** | **WOW Factor (AI Features)** | `AI-01`, `AI-02`, `AI-03` | • AI Job Copilot Chat screen with SSE / Stream handling<br>• Personalized Job Recommendations widget |
+| **Phase 3 (Weeks 9–13)** | **WOW Factor (AI Features)** | `AI-02`, `AI-03`, `SCORE-01` | • Personalized Job Recommendations widget (`AI-03`)<br>• Recruiter-only CV Match Scoring (`AI-02` / `SCORE-01`; never exposed to Candidates; `AI-01` Copilot removed per `B28`) |
 | **Phase 4 (Weeks 14–16)** | **QA & Production Release** | Section 8.6, NFRs | • Full E2E testing on iOS 16+ & Android 12+<br>• Performance profiling & smooth frame rate (60fps)<br>• Release build packaging (APK/AAB/IPA) & store prep |
 
 ---
