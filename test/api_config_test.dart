@@ -41,6 +41,25 @@ void main() {
       );
     });
 
+    test(
+      'a release build rejects cleartext http:// FLUTTER_API_URL (SEC-02)',
+      () {
+        expect(
+          () => ApiConfig.resolveBaseUrl(
+            envOverride: 'http://api.example.com',
+            isReleaseOverride: true,
+          ),
+          throwsA(
+            isA<StateError>().having(
+              (error) => error.message,
+              'message',
+              contains('https://'),
+            ),
+          ),
+        );
+      },
+    );
+
     test('debug builds keep the local emulator defaults', () {
       expect(
         ApiConfig.resolveBaseUrl(

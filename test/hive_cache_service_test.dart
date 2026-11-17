@@ -111,5 +111,19 @@ void main() {
       final searches = await HiveCacheService.instance.getRecentSearches();
       expect(searches, isEmpty);
     });
+
+    test('encrypts Hive boxes when AES-256 key is provided (SEC-01)', () async {
+      await HiveCacheService.instance.clearAllCache();
+      HiveCacheService.instance.resetState();
+      await Hive.close();
+
+      final aesKey = List<int>.generate(32, (i) => i + 1);
+      await HiveCacheService.instance.init(encryptionKeyOverride: aesKey);
+
+      await HiveCacheService.instance.saveJobs([testJob]);
+      final cached = await HiveCacheService.instance.getCachedJobs();
+      expect(cached.length, 1);
+      expect(cached.first.id, 'test-job-1');
+    });
   });
 }
