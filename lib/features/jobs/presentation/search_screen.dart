@@ -296,7 +296,7 @@ class _SearchScreenState extends State<SearchScreen> {
 
   void _showLocationPicker() {
     showModalBottomSheet<String>(
-      context,
+      context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) {
