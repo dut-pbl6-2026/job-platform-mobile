@@ -81,7 +81,8 @@ class CompanyJoinRequest {
 }
 
 /// The requester's own join request (AUTH-01-13, AUTH-01-14). [canEscalate] is
-/// decided by the server so the client never guesses from the clock.@immutable
+/// decided by the server so the client never guesses from the clock.
+@immutable
 class MyJoinRequest {
   final String id;
   final String companyId;

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/router/app_router.dart';
+import '../../core/services/push_notification_service.dart';
 import '../../core/session/auth_session.dart';
 import '../../core/theme/app_theme.dart';
 import '../auth/data/repositories/api_auth_repository.dart';
@@ -51,13 +52,11 @@ class _SplashScreenState extends State<SplashScreen>
     _navigateAfterInit();
   }
 
-  /// Restore and validate the stored session, then navigate (MOB-01).
-  /// The minimum splash duration runs alongside restore so routing never
-  /// happens before the session state is known.
+  /// Restore and validate the stored session within cold-start SLA (< 3s, PERF-05).
   Future<void> _navigateAfterInit() async {
     await Future.wait([
       _restoreSession(),
-      Future<void>.delayed(const Duration(milliseconds: 2500)),
+      Future<void>.delayed(const Duration(milliseconds: 800)),
     ]);
     if (mounted) {
       final isValidSession =
@@ -65,6 +64,13 @@ class _SplashScreenState extends State<SplashScreen>
           AuthSession.instance.resolvedRole != null;
       final destination = isValidSession ? AppRoutes.home : AppRoutes.login;
       context.go(destination);
+      if (isValidSession) {
+        final pendingRoute = PushNotificationService.instance
+            .consumePendingRoute();
+        if (pendingRoute != null && pendingRoute != AppRoutes.home) {
+          context.push(pendingRoute);
+        }
+      }
     }
   }
 

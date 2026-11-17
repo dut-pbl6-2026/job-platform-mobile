@@ -4,9 +4,11 @@
     <uses-permission android:name="android.permission.VIBRATE"/>
 
     <application
-        android:label="job_platform_mobile"
+        android:label="Job Platform"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:allowBackup="false"
+        android:fullBackupContent="false">
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -27,6 +29,13 @@
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+            <!-- Deep link support for job:// custom scheme (PUSH-01-06, AUTH-01-07/12) -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="job"/>
             </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.

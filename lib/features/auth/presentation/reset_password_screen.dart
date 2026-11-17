@@ -17,6 +17,7 @@ class ResetPasswordScreen extends StatefulWidget {
 
 class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _tokenController = TextEditingController();
   final _pwd = TextEditingController();
   final _confirm = TextEditingController();
   late final IAuthRepository _repo;
@@ -26,6 +27,17 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   void initState() {
     super.initState();
     _repo = widget.authRepository ?? ApiAuthRepository();
+    if (widget.token != null && widget.token!.trim().isNotEmpty) {
+      _tokenController.text = widget.token!.trim();
+    }
+  }
+
+  @override
+  void dispose() {
+    _tokenController.dispose();
+    _pwd.dispose();
+    _confirm.dispose();
+    super.dispose();
   }
 
   String? _validatePwd(String? v) {
@@ -36,8 +48,22 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
     return null;
   }
 
+  String? get _routeOrPropToken {
+    if (widget.token != null && widget.token!.trim().isNotEmpty) {
+      return widget.token!.trim();
+    }
+    final state = GoRouter.maybeOf(context) != null
+        ? GoRouterState.of(context)
+        : null;
+    final queryToken = state?.uri.queryParameters['token']?.trim();
+    return (queryToken != null && queryToken.isNotEmpty) ? queryToken : null;
+  }
+
   String? get _effectiveToken =>
-      widget.token ?? GoRouterState.of(context).uri.queryParameters['token'];
+      _routeOrPropToken ??
+      (_tokenController.text.trim().isNotEmpty
+          ? _tokenController.text.trim()
+          : null);
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) {
@@ -85,49 +111,29 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final token = _effectiveToken;
-    if (token == null || token.isEmpty) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Đặt lại mật khẩu')),
-        body: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(
-                  Icons.error_outline,
-                  size: 48,
-                  color: AppColors.error,
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  'Liên kết không hợp lệ hoặc đã hết hạn',
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 24),
-                SizedBox(
-                  width: double.infinity,
-                  height: 52,
-                  child: ElevatedButton(
-                    onPressed: () => context.go(AppRoutes.login),
-                    child: const Text('Quay về đăng nhập'),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    }
+    final hasPresetToken = _routeOrPropToken != null;
     return Scaffold(
       appBar: AppBar(title: const Text('Đặt lại mật khẩu')),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Form(
           key: _formKey,
           child: Column(
             children: [
+              if (!hasPresetToken) ...[
+                TextFormField(
+                  controller: _tokenController,
+                  validator: (v) => (v == null || v.trim().isEmpty)
+                      ? 'Vui lòng nhập mã khôi phục từ email'
+                      : null,
+                  decoration: const InputDecoration(
+                    labelText: 'Mã khôi phục mật khẩu',
+                    hintText: 'Dán mã token nhận được trong email',
+                    prefixIcon: Icon(Icons.vpn_key_outlined),
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
               TextFormField(
                 controller: _pwd,
                 obscureText: true,
@@ -158,6 +164,11 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                       ? const CircularProgressIndicator(color: Colors.white)
                       : const Text('Đặt lại'),
                 ),
+              ),
+              const SizedBox(height: 12),
+              TextButton(
+                onPressed: () => context.go(AppRoutes.login),
+                child: const Text('Quay về đăng nhập'),
               ),
             ],
           ),
