@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/app_theme.dart';
@@ -54,11 +55,40 @@ class _ApplicationDetailScreenState extends State<ApplicationDetailScreen> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _errorMessage = 'Không thể tải chi tiết đơn ứng tuyển: $e';
+          _errorMessage = e is ApplicationRepositoryException
+              ? e.message
+              : 'Không thể tải chi tiết đơn ứng tuyển lúc này. Vui lòng thử lại.';
           _isLoading = false;
         });
       }
     }
+  }
+
+  Future<void> _handleCopyCvUrl(ApplicationModel app) async {
+    final rawUrl = app.cvUrl.trim();
+    final uri = Uri.tryParse(rawUrl);
+    final isSafeHttps =
+        uri != null &&
+        uri.scheme.toLowerCase() == 'https' &&
+        uri.host.isNotEmpty;
+    if (!isSafeHttps) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Tệp đã nộp: ${app.cvFileName}'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+    await Clipboard.setData(ClipboardData(text: rawUrl));
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Đã sao chép liên kết tải CV: ${app.cvFileName}'),
+        backgroundColor: AppColors.success,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   @override
@@ -269,67 +299,72 @@ class _ApplicationDetailScreenState extends State<ApplicationDetailScreen> {
               const SizedBox(height: 24),
             ],
 
-            // Submitted CV Info
+            // Submitted CV Info (clickable to copy verified HTTPS download link)
             Text(
               'Hồ sơ CV đã nộp',
               style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.border),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(10),
+            InkWell(
+              key: const Key('application_detail_cv_card'),
+              borderRadius: BorderRadius.circular(16),
+              onTap: () => _handleCopyCvUrl(app),
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(
+                        Icons.picture_as_pdf_rounded,
+                        color: AppColors.primary,
+                        size: 26,
+                      ),
                     ),
-                    child: const Icon(
-                      Icons.picture_as_pdf_rounded,
-                      color: AppColors.primary,
-                      size: 26,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          app.cvFileName,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.textPrimary,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        if (app.cvFileSize != null) ...[
-                          const SizedBox(height: 2),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
                           Text(
-                            '${(app.cvFileSize! / 1024).toStringAsFixed(1)} KB',
+                            app.cvFileName,
                             style: const TextStyle(
-                              fontSize: 12,
-                              color: AppColors.textHint,
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textPrimary,
                             ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
+                          if (app.cvFileSize != null) ...[
+                            const SizedBox(height: 2),
+                            Text(
+                              '${(app.cvFileSize! / 1024).toStringAsFixed(1)} KB · Nhấn để sao chép liên kết',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: AppColors.textHint,
+                              ),
+                            ),
+                          ],
                         ],
-                      ],
+                      ),
                     ),
-                  ),
-                  const Icon(
-                    Icons.check_circle,
-                    color: AppColors.success,
-                    size: 20,
-                  ),
-                ],
+                    const Icon(
+                      Icons.download_rounded,
+                      color: AppColors.primary,
+                      size: 20,
+                    ),
+                  ],
+                ),
               ),
             ),
 

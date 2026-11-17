@@ -20,9 +20,14 @@ class ApplicationHistoryScreen extends StatefulWidget {
 }
 
 class _ApplicationHistoryScreenState extends State<ApplicationHistoryScreen> {
+  static const int _pageSize = 20;
+
   late final IApplicationRepository _repository;
   List<ApplicationModel> _applications = [];
   bool _isLoading = true;
+  bool _isLoadingMore = false;
+  bool _hasMore = false;
+  int _currentPage = 0;
   String? _errorMessage;
   ApplicationStatus? _selectedStatus;
 
@@ -42,28 +47,53 @@ class _ApplicationHistoryScreenState extends State<ApplicationHistoryScreen> {
     _fetchApplications();
   }
 
-  Future<void> _fetchApplications() async {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
+  Future<void> _fetchApplications({bool resetPage = true}) async {
+    if (resetPage) {
+      setState(() {
+        _isLoading = true;
+        _errorMessage = null;
+        _currentPage = 0;
+      });
+    }
 
     try {
-      final list = await _repository.getMyApplications(status: _selectedStatus);
+      final list = await _repository.getMyApplications(
+        status: _selectedStatus,
+        page: _currentPage,
+        size: _pageSize,
+      );
       if (mounted) {
         setState(() {
-          _applications = list;
+          if (resetPage) {
+            _applications = list;
+          } else {
+            _applications = [..._applications, ...list];
+          }
+          _hasMore = list.length >= _pageSize;
           _isLoading = false;
+          _isLoadingMore = false;
         });
       }
     } catch (e) {
       if (mounted) {
         setState(() {
-          _errorMessage = 'Không thể tải lịch sử ứng tuyển: $e';
+          _errorMessage = e is ApplicationRepositoryException
+              ? e.message
+              : 'Không thể tải lịch sử ứng tuyển lúc này. Vui lòng thử lại.';
           _isLoading = false;
+          _isLoadingMore = false;
         });
       }
     }
+  }
+
+  Future<void> _loadMore() async {
+    if (_isLoadingMore || !_hasMore) return;
+    setState(() {
+      _isLoadingMore = true;
+      _currentPage += 1;
+    });
+    await _fetchApplications(resetPage: false);
   }
 
   void _onFilterSelected(ApplicationStatus? status) {
@@ -253,8 +283,21 @@ class _ApplicationHistoryScreenState extends State<ApplicationHistoryScreen> {
           top: 16,
           bottom: 90,
         ),
-        itemCount: _applications.length,
+        itemCount: _applications.length + (_hasMore ? 1 : 0),
         itemBuilder: (context, index) {
+          if (index >= _applications.length) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: Center(
+                child: _isLoadingMore
+                    ? const CircularProgressIndicator()
+                    : OutlinedButton(
+                        onPressed: _loadMore,
+                        child: const Text('Tải thêm đơn ứng tuyển'),
+                      ),
+              ),
+            );
+          }
           final app = _applications[index];
           return ApplicationCard(
             application: app,
