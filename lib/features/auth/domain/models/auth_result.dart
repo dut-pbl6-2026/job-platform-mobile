@@ -14,14 +14,27 @@ class AuthResult {
     required this.expiresAt,
   });
 
-  factory AuthResult.fromJson(Map<String, dynamic> json) {
-    // Backend 2026: AuthResponse {accessToken, refreshToken, user:{id,email,fullName,role}} vs mock {token,refreshToken,user,expiresAt}
+  factory AuthResult.fromJson(
+    Map<String, dynamic> json, {
+    UserModel? fallbackUser,
+  }) {
+    // Backend 2026: AuthResponse {accessToken, refreshToken, user:{id,email,fullName,role}}
+    // Token refresh response {accessToken, refreshToken} omits user (SRS 3.2.3).
     final token =
         json['accessToken'] as String? ?? json['token'] as String? ?? '';
     final refresh = json['refreshToken'] as String? ?? '';
-    final userRaw = json['user'] as Map<String, dynamic>?;
+    final userRaw = json['user'] is Map
+        ? Map<String, dynamic>.from(json['user'] as Map)
+        : null;
+    final hasInlineUser =
+        json['userId'] != null ||
+        json['email'] != null ||
+        json['fullName'] != null ||
+        json['name'] != null;
     final user = userRaw != null
         ? UserModel.fromJson(userRaw)
+        : (!hasInlineUser && fallbackUser != null)
+        ? fallbackUser
         : UserModel(
             id: json['userId'] as String? ?? 'unknown',
             name: json['fullName'] as String? ?? json['name'] as String? ?? '',
