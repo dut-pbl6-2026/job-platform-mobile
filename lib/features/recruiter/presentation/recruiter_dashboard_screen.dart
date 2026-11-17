@@ -183,7 +183,7 @@ class _RecruiterDashboardScreenState extends State<RecruiterDashboardScreen> {
                                   color: Colors.white,
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
-                                                                ),
+                                ),
                               ),
                               const SizedBox(height: 2),
                               Row(
