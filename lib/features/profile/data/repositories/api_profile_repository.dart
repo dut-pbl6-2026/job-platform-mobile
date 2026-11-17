@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import '../../../../core/config/mock_fallback.dart';
 import '../../../../core/network/dio_provider.dart';
 import '../../../../core/session/auth_session.dart';
+import '../../../../core/utils/format_utils.dart';
 import '../../domain/models/profile_model.dart';
 import '../../domain/repositories/profile_repository.dart';
 import 'mock_profile_repository.dart';
@@ -107,17 +108,21 @@ class ApiProfileRepository implements IProfileRepository {
           'address': updated.address,
           'headline': updated.headline,
           'summary': updated.summary,
-          'dateOfBirth': updated.dateOfBirth?.toIso8601String(),
+          'dateOfBirth': updated.dateOfBirth != null
+              ? FormatUtils.formatIsoDateOnly(updated.dateOfBirth!)
+              : null,
           'avatarUrl': updated.avatarUrl,
         },
       );
 
-      if (response.statusCode == 200) {
+      if (response.statusCode == 200 || response.statusCode == 204) {
         return updated;
       }
       throw _failure('Không thể cập nhật hồ sơ cá nhân');
     } on DioException catch (e) {
-      debugPrint('[ApiProfileRepository] updateProfile failed: ${e.type}');
+      if (kDebugMode) {
+        debugPrint('[ApiProfileRepository] updateProfile failed: ${e.type}');
+      }
       throw _failure('Không thể cập nhật hồ sơ cá nhân');
     }
   }
@@ -142,7 +147,9 @@ class ApiProfileRepository implements IProfileRepository {
       }
       throw _failure('Không thể thêm kỹ năng mới');
     } on DioException catch (e) {
-      debugPrint('[ApiProfileRepository] addSkill failed: ${e.type}');
+      if (kDebugMode) {
+        debugPrint('[ApiProfileRepository] addSkill failed: ${e.type}');
+      }
       throw _failure('Không thể thêm kỹ năng mới');
     }
   }
@@ -151,11 +158,13 @@ class ApiProfileRepository implements IProfileRepository {
   Future<void> deleteSkill(String skillId) async {
     try {
       final response = await _dio.delete('/api/profiles/skills/$skillId');
-      if (response.statusCode != 200) {
+      if (response.statusCode != 200 && response.statusCode != 204) {
         throw _failure('Không thể xóa kỹ năng');
       }
     } on DioException catch (e) {
-      debugPrint('[ApiProfileRepository] deleteSkill failed: ${e.type}');
+      if (kDebugMode) {
+        debugPrint('[ApiProfileRepository] deleteSkill failed: ${e.type}');
+      }
       throw _failure('Không thể xóa kỹ năng');
     }
   }
@@ -170,8 +179,10 @@ class ApiProfileRepository implements IProfileRepository {
         data: {
           'company': experience.company,
           'title': experience.title,
-          'startDate': experience.startDate.toIso8601String(),
-          'endDate': experience.endDate?.toIso8601String(),
+          'startDate': FormatUtils.formatIsoDateOnly(experience.startDate),
+          'endDate': experience.endDate != null
+              ? FormatUtils.formatIsoDateOnly(experience.endDate!)
+              : null,
           'isCurrent': experience.isCurrent,
           'description': experience.description,
         },
@@ -185,8 +196,40 @@ class ApiProfileRepository implements IProfileRepository {
       }
       throw _failure('Không thể thêm kinh nghiệm làm việc');
     } on DioException catch (e) {
-      debugPrint('[ApiProfileRepository] addExperience failed: ${e.type}');
+      if (kDebugMode) {
+        debugPrint('[ApiProfileRepository] addExperience failed: ${e.type}');
+      }
       throw _failure('Không thể thêm kinh nghiệm làm việc');
+    }
+  }
+
+  @override
+  Future<WorkExperienceModel> updateExperience(
+    WorkExperienceModel experience,
+  ) async {
+    try {
+      final response = await _dio.put(
+        '/api/profiles/experiences/${experience.id}',
+        data: {
+          'company': experience.company,
+          'title': experience.title,
+          'startDate': FormatUtils.formatIsoDateOnly(experience.startDate),
+          'endDate': experience.endDate != null
+              ? FormatUtils.formatIsoDateOnly(experience.endDate!)
+              : null,
+          'isCurrent': experience.isCurrent,
+          'description': experience.description,
+        },
+      );
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        return experience;
+      }
+      throw _failure('Không thể cập nhật kinh nghiệm làm việc');
+    } on DioException catch (e) {
+      if (kDebugMode) {
+        debugPrint('[ApiProfileRepository] updateExperience failed: ${e.type}');
+      }
+      throw _failure('Không thể cập nhật kinh nghiệm làm việc');
     }
   }
 
@@ -196,11 +239,13 @@ class ApiProfileRepository implements IProfileRepository {
       final response = await _dio.delete(
         '/api/profiles/experiences/$experienceId',
       );
-      if (response.statusCode != 200) {
+      if (response.statusCode != 200 && response.statusCode != 204) {
         throw _failure('Không thể xóa kinh nghiệm làm việc');
       }
     } on DioException catch (e) {
-      debugPrint('[ApiProfileRepository] deleteExperience failed: ${e.type}');
+      if (kDebugMode) {
+        debugPrint('[ApiProfileRepository] deleteExperience failed: ${e.type}');
+      }
       throw _failure('Không thể xóa kinh nghiệm làm việc');
     }
   }
@@ -214,8 +259,10 @@ class ApiProfileRepository implements IProfileRepository {
           'institution': education.institution,
           'degree': education.degree,
           'field': education.field,
-          'startDate': education.startDate.toIso8601String(),
-          'endDate': education.endDate?.toIso8601String(),
+          'startDate': FormatUtils.formatIsoDateOnly(education.startDate),
+          'endDate': education.endDate != null
+              ? FormatUtils.formatIsoDateOnly(education.endDate!)
+              : null,
           'grade': education.grade,
         },
       );
@@ -228,8 +275,38 @@ class ApiProfileRepository implements IProfileRepository {
       }
       throw _failure('Không thể thêm thông tin học vấn');
     } on DioException catch (e) {
-      debugPrint('[ApiProfileRepository] addEducation failed: ${e.type}');
+      if (kDebugMode) {
+        debugPrint('[ApiProfileRepository] addEducation failed: ${e.type}');
+      }
       throw _failure('Không thể thêm thông tin học vấn');
+    }
+  }
+
+  @override
+  Future<EducationModel> updateEducation(EducationModel education) async {
+    try {
+      final response = await _dio.put(
+        '/api/profiles/educations/${education.id}',
+        data: {
+          'institution': education.institution,
+          'degree': education.degree,
+          'field': education.field,
+          'startDate': FormatUtils.formatIsoDateOnly(education.startDate),
+          'endDate': education.endDate != null
+              ? FormatUtils.formatIsoDateOnly(education.endDate!)
+              : null,
+          'grade': education.grade,
+        },
+      );
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        return education;
+      }
+      throw _failure('Không thể cập nhật thông tin học vấn');
+    } on DioException catch (e) {
+      if (kDebugMode) {
+        debugPrint('[ApiProfileRepository] updateEducation failed: ${e.type}');
+      }
+      throw _failure('Không thể cập nhật thông tin học vấn');
     }
   }
 
@@ -239,11 +316,13 @@ class ApiProfileRepository implements IProfileRepository {
       final response = await _dio.delete(
         '/api/profiles/educations/$educationId',
       );
-      if (response.statusCode != 200) {
+      if (response.statusCode != 200 && response.statusCode != 204) {
         throw _failure('Không thể xóa thông tin học vấn');
       }
     } on DioException catch (e) {
-      debugPrint('[ApiProfileRepository] deleteEducation failed: ${e.type}');
+      if (kDebugMode) {
+        debugPrint('[ApiProfileRepository] deleteEducation failed: ${e.type}');
+      }
       throw _failure('Không thể xóa thông tin học vấn');
     }
   }

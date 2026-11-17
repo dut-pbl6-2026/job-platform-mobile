@@ -34,11 +34,17 @@ abstract class IProfileRepository {
   /// Add work experience entry (PROFILE-01-03)
   Future<WorkExperienceModel> addExperience(WorkExperienceModel experience);
 
+  /// Update work experience entry (PROFILE-01-03)
+  Future<WorkExperienceModel> updateExperience(WorkExperienceModel experience);
+
   /// Remove work experience entry by id (PROFILE-01-03)
   Future<void> deleteExperience(String experienceId);
 
   /// Add education entry (PROFILE-01-04)
   Future<EducationModel> addEducation(EducationModel education);
+
+  /// Update education entry (PROFILE-01-04)
+  Future<EducationModel> updateEducation(EducationModel education);
 
   /// Remove education entry by id (PROFILE-01-04)
   Future<void> deleteEducation(String educationId);

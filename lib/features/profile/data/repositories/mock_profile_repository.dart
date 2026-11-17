@@ -174,6 +174,21 @@ class MockProfileRepository implements IProfileRepository {
   }
 
   @override
+  Future<WorkExperienceModel> updateExperience(
+    WorkExperienceModel experience,
+  ) async {
+    await Future.delayed(const Duration(milliseconds: 200));
+    final updatedExperiences = _profile.experiences
+        .map((e) => e.id == experience.id ? experience : e)
+        .toList();
+    _profile = _profile.copyWith(
+      experiences: updatedExperiences,
+      updatedAt: DateTime.now(),
+    );
+    return experience;
+  }
+
+  @override
   Future<void> deleteExperience(String experienceId) async {
     await Future.delayed(const Duration(milliseconds: 200));
     final updatedExperiences = _profile.experiences
@@ -199,6 +214,19 @@ class MockProfileRepository implements IProfileRepository {
       updatedAt: DateTime.now(),
     );
     return newEdu;
+  }
+
+  @override
+  Future<EducationModel> updateEducation(EducationModel education) async {
+    await Future.delayed(const Duration(milliseconds: 200));
+    final updatedEducations = _profile.educations
+        .map((e) => e.id == education.id ? education : e)
+        .toList();
+    _profile = _profile.copyWith(
+      educations: updatedEducations,
+      updatedAt: DateTime.now(),
+    );
+    return education;
   }
 
   @override
