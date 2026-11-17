@@ -24,13 +24,14 @@ class RecruiterDashboardScreen extends StatefulWidget {
 class _RecruiterDashboardScreenState extends State<RecruiterDashboardScreen> {
   late final IRecruiterRepository _repository;
   RecruiterStats _stats = const RecruiterStats(
-    activeJobsCount: 6,
-    newApplicationsCount: 28,
-    viewsCount: 120,
-    interviewsCount: 12,
+    activeJobsCount: 0,
+    newApplicationsCount: 0,
+    viewsCount: 0,
+    interviewsCount: 0,
   );
   bool _isLoading = true;
   bool _isMockMode = false;
+  String? _errorMessage;
 
   @override
   void initState() {
@@ -40,6 +41,12 @@ class _RecruiterDashboardScreenState extends State<RecruiterDashboardScreen> {
   }
 
   Future<void> _fetchDashboard() async {
+    if (mounted) {
+      setState(() {
+        _isLoading = true;
+        _errorMessage = null;
+      });
+    }
     try {
       final stats = await _repository.getDashboardStats();
       if (mounted) {
@@ -47,6 +54,7 @@ class _RecruiterDashboardScreenState extends State<RecruiterDashboardScreen> {
           _stats = stats;
           _isLoading = false;
           _isMockMode = widget.isMock ?? _repository.isMock;
+          _errorMessage = null;
         });
       }
     } catch (_) {
@@ -54,6 +62,8 @@ class _RecruiterDashboardScreenState extends State<RecruiterDashboardScreen> {
         setState(() {
           _isLoading = false;
           _isMockMode = widget.isMock ?? _repository.isMock;
+          _errorMessage =
+              'Không thể tải số liệu tuyển dụng lúc này. Vui lòng thử lại.';
         });
       }
     }
@@ -62,9 +72,9 @@ class _RecruiterDashboardScreenState extends State<RecruiterDashboardScreen> {
   @override
   Widget build(BuildContext context) {
     final user = AuthSession.instance.currentUser;
-    final companyName = user != null
+    final companyName = user != null && user.name.trim().isNotEmpty
         ? '${user.name} (Doanh nghiệp)'
-        : 'Badoo Inc.';
+        : 'Doanh nghiệp của tôi';
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -173,7 +183,7 @@ class _RecruiterDashboardScreenState extends State<RecruiterDashboardScreen> {
                                   color: Colors.white,
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
-                                ),
+                                                                ),
                               ),
                               const SizedBox(height: 2),
                               Row(
@@ -222,6 +232,42 @@ class _RecruiterDashboardScreenState extends State<RecruiterDashboardScreen> {
 
               const SizedBox(height: 16),
 
+              if (_errorMessage != null)
+                Container(
+                  margin: const EdgeInsets.only(bottom: 14),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.error.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: AppColors.error.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.error_outline_rounded,
+                        color: AppColors.error,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          _errorMessage!,
+                          style: const TextStyle(
+                            fontSize: 12.5,
+                            color: AppColors.error,
+                          ),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: _fetchDashboard,
+                        child: const Text('Thử lại'),
+                      ),
+                    ],
+                  ),
+                ),
+
               // 2. Metrics Card (Figma #2178:6320)
               Container(
                 width: double.infinity,
@@ -236,25 +282,19 @@ class _RecruiterDashboardScreenState extends State<RecruiterDashboardScreen> {
                     Row(
                       children: [
                         _buildMetricBox(
-                          _isLoading
-                              ? '...'
-                              : '${_stats.activeJobsCount > 0 ? _stats.activeJobsCount : 6}',
+                          _isLoading ? '...' : '${_stats.activeJobsCount}',
                           'Tin đang mở',
                           AppColors.primary,
                         ),
                         const SizedBox(width: 12),
                         _buildMetricBox(
-                          _isLoading
-                              ? '...'
-                              : '${_stats.newApplicationsCount > 0 ? _stats.newApplicationsCount : 28}',
+                          _isLoading ? '...' : '${_stats.newApplicationsCount}',
                           'Hồ sơ mới',
                           AppColors.warning,
                         ),
                         const SizedBox(width: 12),
                         _buildMetricBox(
-                          _isLoading
-                              ? '...'
-                              : '${_stats.interviewsCount > 0 ? _stats.interviewsCount : 12}',
+                          _isLoading ? '...' : '${_stats.interviewsCount}',
                           'Đã tiếp nhận',
                           AppColors.success,
                         ),
@@ -282,7 +322,7 @@ class _RecruiterDashboardScreenState extends State<RecruiterDashboardScreen> {
                 icon: Icons.list_alt_rounded,
                 title: 'Quản lý tin tuyển dụng',
                 subtitle:
-                    'Xem danh sách ${_stats.activeJobsCount > 0 ? _stats.activeJobsCount : 6} tin tuyển dụng đang mở và trạng thái',
+                    'Xem danh sách ${_stats.activeJobsCount} tin tuyển dụng đang mở và trạng thái',
                 onTap: () => context.push(AppRoutes.recruiterJobs),
               ),
               _buildActionTile(
@@ -296,7 +336,7 @@ class _RecruiterDashboardScreenState extends State<RecruiterDashboardScreen> {
                 icon: Icons.people_outline_rounded,
                 title: 'Hồ sơ ứng viên',
                 subtitle:
-                    'Duyệt ${_stats.newApplicationsCount > 0 ? _stats.newApplicationsCount : 28} hồ sơ ứng tuyển, xem CV và cập nhật trạng thái',
+                    'Duyệt ${_stats.newApplicationsCount} hồ sơ ứng tuyển, xem CV và cập nhật trạng thái',
                 onTap: () => context.push(AppRoutes.recruiterCandidates),
               ),
               _buildActionTile(

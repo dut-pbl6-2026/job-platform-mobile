@@ -219,7 +219,9 @@ class ApplicationModel {
       historyList = rawHistory
           .map(
             (item) => ApplicationStatusHistoryItem.fromJson(
-              item as Map<String, dynamic>,
+              item is Map<String, dynamic>
+                  ? item
+                  : Map<String, dynamic>.from(item as Map),
             ),
           )
           .toList();
@@ -321,6 +323,7 @@ class ApplyJobParams {
   final String? cvFilePath;
   final int? cvFileSize;
   final List<int>? cvBytes;
+  final void Function(int sent, int total)? onUploadProgress;
 
   const ApplyJobParams({
     required this.jobId,
@@ -332,5 +335,6 @@ class ApplyJobParams {
     this.cvFilePath,
     this.cvFileSize,
     this.cvBytes,
+    this.onUploadProgress,
   });
 }

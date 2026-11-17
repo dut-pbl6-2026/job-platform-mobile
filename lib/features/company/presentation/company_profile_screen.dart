@@ -417,6 +417,18 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
     ),
   );
 
+  String? _validateHttpsUrl(String? value) {
+    final trimmed = value?.trim() ?? '';
+    if (trimmed.isEmpty) return null;
+    final uri = Uri.tryParse(trimmed);
+    if (uri == null ||
+        uri.scheme.toLowerCase() != 'https' ||
+        uri.host.isEmpty) {
+      return 'Vui lòng nhập liên kết bắt đầu bằng https://';
+    }
+    return null;
+  }
+
   Widget _buildReadOnlyDetails(CompanyProfile company) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -558,6 +570,7 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
                       key: const Key('company_profile_website_field'),
                       controller: _websiteController,
                       keyboardType: TextInputType.url,
+                      validator: _validateHttpsUrl,
                       decoration: const InputDecoration(
                         labelText: CompanyProfileStrings.websiteLabel,
                         hintText: CompanyProfileStrings.websiteHint,
@@ -580,6 +593,7 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
                       key: const Key('company_profile_logo_field'),
                       controller: _logoUrlController,
                       keyboardType: TextInputType.url,
+                      validator: _validateHttpsUrl,
                       decoration: const InputDecoration(
                         labelText: CompanyProfileStrings.logoUrlLabel,
                         hintText: CompanyProfileStrings.logoUrlHint,
