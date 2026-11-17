@@ -23,8 +23,20 @@ class ApiConfig {
     TargetPlatform? platformOverride,
     bool? isReleaseOverride,
   }) {
+    final isRelease = isReleaseOverride ?? kReleaseMode;
     final env = (envOverride ?? envApiUrl).trim();
     if (env.isNotEmpty) {
+      if (isRelease) {
+        final uri = Uri.tryParse(env);
+        if (uri == null ||
+            uri.scheme.toLowerCase() != 'https' ||
+            uri.host.isEmpty) {
+          throw StateError(
+            'FLUTTER_API_URL in a release build must use https:// '
+            '(received "$env").',
+          );
+        }
+      }
       return env;
     }
 
@@ -32,7 +44,7 @@ class ApiConfig {
     // without FLUTTER_API_URL has no reachable gateway (Android 9+ also blocks
     // the cleartext localhost fallback). Fail at startup with a message an
     // engineer can act on instead of shipping a client that cannot connect.
-    if (isReleaseOverride ?? kReleaseMode) {
+    if (isRelease) {
       throw StateError(
         'FLUTTER_API_URL is required in a release build. '
         'Pass --dart-define=FLUTTER_API_URL=https://<gateway-host>.',

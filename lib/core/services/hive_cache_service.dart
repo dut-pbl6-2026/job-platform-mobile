@@ -1,9 +1,11 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../../features/jobs/domain/models/job_model.dart';
 
-/// Offline local caching service powered by Hive (OFFLINE-01)
+/// Offline local caching service powered by Hive with AES-256 encryption (OFFLINE-01, SEC-08)
 class HiveCacheService {
   HiveCacheService._();
   static final HiveCacheService _instance = HiveCacheService._();
@@ -12,20 +14,32 @@ class HiveCacheService {
   static const String jobsBoxName = 'jobs_cache_box';
   static const String jobDetailsBoxName = 'job_details_cache_box';
   static const String recentSearchesBoxName = 'recent_searches_box';
+  static const String _kHiveEncryptionKey = 'hive_cache_aes_key';
 
   static const String _kCachedJobsKey = 'cached_jobs_list';
   static const String _kCachedAtKey = 'cached_at_timestamp';
   static const String _kRecentSearchesKey = 'recent_searches_history';
 
+  final FlutterSecureStorage _secureStorage = const FlutterSecureStorage(
+    aOptions: AndroidOptions(encryptedSharedPreferences: true),
+    iOptions: IOSOptions(
+      accessibility: KeychainAccessibility.first_unlock_this_device,
+    ),
+  );
+
   bool _isInitialized = false;
   bool get isInitialized => _isInitialized;
+  Future<void>? _initFuture;
 
   Box? _jobsBox;
   Box? _jobDetailsBox;
   Box? _recentSearchesBox;
 
-  /// Initialize Hive and open all local cache boxes
-  Future<void> init({HiveInterface? hive}) async {
+  /// Initialize Hive and open all local cache boxes (encrypted at rest when SecureStorage is available)
+  Future<void> init({
+    HiveInterface? hive,
+    List<int>? encryptionKeyOverride,
+  }) async {
     if (_isInitialized &&
         _jobsBox != null &&
         _jobsBox!.isOpen &&
@@ -36,30 +50,96 @@ class HiveCacheService {
       return;
     }
 
+    return _initFuture ??= _doInit(
+      hive: hive,
+      encryptionKeyOverride: encryptionKeyOverride,
+    );
+  }
+
+  Future<void> _doInit({
+    HiveInterface? hive,
+    List<int>? encryptionKeyOverride,
+  }) async {
     try {
       final h = hive ?? Hive;
       try {
         await h.initFlutter();
       } catch (e) {
-        // May occur in non-device test environment where Hive.init(dir) was already invoked
-        debugPrint('[HiveCacheService] initFlutter platform note: $e');
+        if (kDebugMode) {
+          debugPrint('[HiveCacheService] initFlutter platform note: $e');
+        }
       }
 
-      _jobsBox = await h.openBox(jobsBoxName);
-      _jobDetailsBox = await h.openBox(jobDetailsBoxName);
-      _recentSearchesBox = await h.openBox(recentSearchesBoxName);
+      final cipher = await _resolveCipher(h, encryptionKeyOverride);
+      _jobsBox = await _openBoxSafely(h, jobsBoxName, cipher);
+      _jobDetailsBox = await _openBoxSafely(h, jobDetailsBoxName, cipher);
+      _recentSearchesBox = await _openBoxSafely(
+        h,
+        recentSearchesBoxName,
+        cipher,
+      );
 
       _isInitialized = true;
-      debugPrint('[HiveCacheService] Initialized successfully.');
+      if (kDebugMode) {
+        debugPrint('[HiveCacheService] Initialized successfully.');
+      }
     } catch (e) {
-      debugPrint('[HiveCacheService] Initialization fallback: $e');
+      if (kDebugMode) {
+        debugPrint('[HiveCacheService] Initialization fallback: $e');
+      }
       _isInitialized = false;
+    } finally {
+      _initFuture = null;
+    }
+  }
+
+  Future<HiveAesCipher?> _resolveCipher(
+    HiveInterface h,
+    List<int>? keyOverride,
+  ) async {
+    if (keyOverride != null && keyOverride.length == 32) {
+      return HiveAesCipher(keyOverride);
+    }
+    try {
+      final encoded = await _secureStorage.read(key: _kHiveEncryptionKey);
+      if (encoded != null && encoded.isNotEmpty) {
+        final decoded = base64Url.decode(encoded);
+        if (decoded.length == 32) {
+          return HiveAesCipher(decoded);
+        }
+      }
+      final newKey = h.generateSecureKey();
+      await _secureStorage.write(
+        key: _kHiveEncryptionKey,
+        value: base64UrlEncode(newKey),
+      );
+      return HiveAesCipher(newKey);
+    } on MissingPluginException {
+      // Headless unit test without mocked FlutterSecureStorage channel.
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<Box> _openBoxSafely(
+    HiveInterface h,
+    String name,
+    HiveAesCipher? cipher,
+  ) async {
+    try {
+      return await h.openBox(name, encryptionCipher: cipher);
+    } catch (_) {
+      // Automatically wipe stale/unencrypted box on schema or cipher upgrade.
+      await h.deleteBoxFromDisk(name);
+      return await h.openBox(name, encryptionCipher: cipher);
     }
   }
 
   /// Reset internal state (useful in test teardown)
   void resetState() {
     _isInitialized = false;
+    _initFuture = null;
     _jobsBox = null;
     _jobDetailsBox = null;
     _recentSearchesBox = null;
