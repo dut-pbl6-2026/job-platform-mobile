@@ -184,6 +184,65 @@ void main() {
 
       expect(() => repo.getMyProfile(), throwsA(isA<Exception>()));
     });
+
+    test(
+      'accepts 204 No Content on DELETE skill/experience/education and sends YYYY-MM-DD dates (BUG-06)',
+      () async {
+        final requests = <RequestOptions>[];
+        final dio = Dio(BaseOptions(baseUrl: 'http://gateway.test'));
+        dio.interceptors.add(
+          InterceptorsWrapper(
+            onRequest: (options, handler) {
+              requests.add(options);
+              if (options.method == 'DELETE') {
+                return handler.resolve(
+                  Response(requestOptions: options, statusCode: 204),
+                );
+              }
+              return handler.resolve(
+                Response(
+                  requestOptions: options,
+                  statusCode: 200,
+                  data: {'id': 'saved-id'},
+                ),
+              );
+            },
+          ),
+        );
+        final repo = ApiProfileRepository(dio: dio);
+
+        await expectLater(repo.deleteSkill('sk-1'), completes);
+        await expectLater(repo.deleteExperience('exp-1'), completes);
+        await expectLater(repo.deleteEducation('edu-1'), completes);
+
+        await repo.addExperience(
+          WorkExperienceModel(
+            id: '',
+            company: 'FPT Software',
+            title: 'Flutter Dev',
+            startDate: DateTime(2024, 3, 5),
+            endDate: DateTime(2025, 11, 9),
+            isCurrent: false,
+          ),
+        );
+        final postExpData = requests.last.data as Map<String, dynamic>;
+        expect(postExpData['startDate'], '2024-03-05');
+        expect(postExpData['endDate'], '2025-11-09');
+
+        await repo.updateEducation(
+          EducationModel(
+            id: 'edu-1',
+            institution: 'DUT',
+            degree: 'Kỹ sư',
+            field: 'CNTT',
+            startDate: DateTime(2020, 9, 1),
+            endDate: DateTime(2024, 6, 30),
+          ),
+        );
+        expect(requests.last.method, 'PUT');
+        expect(requests.last.path, '/api/profiles/educations/edu-1');
+      },
+    );
   });
 }
 

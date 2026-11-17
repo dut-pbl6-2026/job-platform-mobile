@@ -25,6 +25,10 @@ void main() {
         FormatUtils.formatSalaryRange(max: 30000000),
         'Tới 30.000.000 VNĐ',
       );
+      expect(
+        FormatUtils.formatSalaryRange(min: 1500, max: 2500, currency: 'USD'),
+        '1.500 - 2.500 USD',
+      );
     });
 
     test('timeAgo returns friendly Vietnamese text', () {
@@ -80,6 +84,37 @@ void main() {
       expect(reconstructed.experienceLevel, ExperienceLevel.senior);
       expect(reconstructed.skills, ['Flutter', 'Dart']);
     });
+
+    test(
+      'JobModel.fromJson parses search-svc snake_case fields and salaryCurrency (D1 / BUG-09)',
+      () {
+        final snakeJson = {
+          'id': 'search-job-99',
+          'title': 'Golang Microservices Engineer',
+          'company_name': 'Global Tech Ltd.',
+          'logo_url': 'https://cdn.example.com/logo.png',
+          'location': 'TP. Hồ Chí Minh',
+          'salary_min': 2000,
+          'salary_max': 3500,
+          'salary_currency': 'USD',
+          'category_name': 'Công nghệ thông tin',
+          'employment_type': 'Contract',
+          'experience_level': 'Senior',
+          'created_at': '2026-11-10T08:00:00Z',
+          'verified': false,
+        };
+
+        final parsed = JobModel.fromJson(snakeJson);
+        expect(parsed.companyName, 'Global Tech Ltd.');
+        expect(parsed.companyLogo, 'https://cdn.example.com/logo.png');
+        expect(parsed.salaryMin, 2000);
+        expect(parsed.salaryMax, 3500);
+        expect(parsed.salaryCurrency, 'USD');
+        expect(parsed.jobType, JobType.contract);
+        expect(parsed.experienceLevel, ExperienceLevel.senior);
+        expect(parsed.isCompanyVerified, isFalse);
+      },
+    );
 
     test('fromJson maps the camelCase search item shape', () {
       final job = JobModel.fromJson(_searchItemJson());
