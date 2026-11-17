@@ -22,6 +22,7 @@ import '../../features/jobs/presentation/job_detail_screen.dart';
 import '../../features/jobs/presentation/job_list_screen.dart';
 import '../../features/jobs/presentation/search_screen.dart';
 import '../../features/profile/presentation/profile_detail_screen.dart';
+import '../../features/recruiter/domain/models/recruiter_models.dart';
 import '../../features/recruiter/presentation/candidate_applications_screen.dart';
 import '../../features/recruiter/presentation/invite_code_screen.dart';
 import '../../features/recruiter/presentation/post_job_screen.dart';
@@ -231,7 +232,12 @@ class AppRouter {
         parentNavigatorKey: _rootNavigatorKey,
         path: AppRoutes.recruiterPostJob,
         name: 'recruiter-post-job',
-        builder: (context, state) => const PostJobScreen(),
+        builder: (context, state) {
+          final initialJob = state.extra is RecruiterJob
+              ? state.extra as RecruiterJob
+              : null;
+          return PostJobScreen(initialJob: initialJob);
+        },
       ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,

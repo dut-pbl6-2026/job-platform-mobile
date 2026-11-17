@@ -129,15 +129,17 @@ class ApiRecruiterRepository implements IRecruiterRepository {
         _isMock = false;
         return true;
       }
-      final errorMsg =
-          _extractErrorMessageFromData(response.data) ??
-          'Cập nhật trạng thái thất bại (${response.statusCode})';
-      throw Exception(errorMsg);
+      throw Exception('Cập nhật trạng thái thất bại. Vui lòng thử lại.');
     } on DioException catch (e) {
-      final message =
-          _extractErrorMessage(e) ??
-          'Không thể cập nhật trạng thái ứng viên. Vui lòng thử lại.';
-      debugPrint('[ApiRecruiterRepository] Status update failed: ${e.message}');
+      final message = _extractSafeErrorMessage(
+        e,
+        fallback: 'Không thể cập nhật trạng thái ứng viên. Vui lòng thử lại.',
+      );
+      if (kDebugMode) {
+        debugPrint(
+          '[ApiRecruiterRepository] Status update failed: ${e.message}',
+        );
+      }
       throw Exception(message);
     } catch (e) {
       debugPrint(
@@ -148,13 +150,54 @@ class ApiRecruiterRepository implements IRecruiterRepository {
   }
 
   @override
-  Future<List<RecruiterJob>> getMyJobs({String? status}) async {
+  Future<List<JobCategoryItem>> getCategories() async {
+    try {
+      final response = await _dio.get('/api/categories');
+      if (response.statusCode == 200 && response.data != null) {
+        final raw = response.data;
+        final List items = raw is List
+            ? raw
+            : (raw is Map ? (raw['items'] as List? ?? const []) : const []);
+        return items
+            .whereType<Map>()
+            .map(
+              (e) => JobCategoryItem.fromJson(
+                e is Map<String, dynamic> ? e : Map<String, dynamic>.from(e),
+              ),
+            )
+            .where((c) => c.id.isNotEmpty && c.name.isNotEmpty)
+            .toList();
+      }
+      return const [];
+    } on DioException catch (e) {
+      if (shouldUseMockFallback(
+        enabled: _enableMocks,
+        statusCode: e.response?.statusCode,
+      )) {
+        return _fallbackMock.getCategories();
+      }
+      return const [];
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  @override
+  Future<List<RecruiterJob>> getMyJobs({
+    String? status,
+    int? page,
+    int? pageSize,
+  }) async {
     try {
       // A UI status without a job-svc equivalent is omitted, not guessed.
       final backendStatus = status == null
           ? null
           : _mapJobStatusToBackend(status);
-      final queryParams = <String, dynamic>{'status': ?backendStatus};
+      final queryParams = <String, dynamic>{
+        'status': ?backendStatus,
+        'page': ?page,
+        'pageSize': ?pageSize,
+      };
 
       final response = await _dio.get(
         '/api/jobs/recruiter',
@@ -272,22 +315,7 @@ class ApiRecruiterRepository implements IRecruiterRepository {
         );
       }
 
-      final payload = {
-        'title': params.title,
-        'description': params.description,
-        'companyId': companyId,
-        'location': params.location,
-        if (params.salaryMin != null) 'salaryMin': params.salaryMin,
-        if (params.salaryMax != null) 'salaryMax': params.salaryMax,
-        'salaryCurrency': params.salaryCurrency,
-        if (params.categoryId != null) 'categoryId': params.categoryId,
-        if (params.requirements != null && params.requirements!.isNotEmpty)
-          'requirements': params.requirements,
-        if (params.benefits != null && params.benefits!.isNotEmpty)
-          'benefits': params.benefits,
-        'employmentType': _mapEmploymentTypeToBackend(params.employmentType),
-        'experienceLevel': _mapExperienceLevelToBackend(params.experienceLevel),
-      };
+      final payload = _buildJobPayload(params, companyId: companyId);
 
       final response = await _dio.post('/api/jobs', data: payload);
 
@@ -300,25 +328,118 @@ class ApiRecruiterRepository implements IRecruiterRepository {
         return 'job_created';
       }
 
-      final errorMsg =
-          _extractErrorMessageFromData(response.data) ??
-          'Đăng tin tuyển dụng thất bại (${response.statusCode})';
-      throw Exception(errorMsg);
+      throw Exception('Đăng tin tuyển dụng thất bại. Vui lòng thử lại.');
     } on DioException catch (e) {
-      final message =
-          _extractErrorMessage(e) ??
-          'Không thể kết nối máy chủ để đăng tin. Vui lòng kiểm tra mạng và thử lại.';
-      debugPrint('[ApiRecruiterRepository] Error posting job: ${e.message}');
+      final message = _extractSafeErrorMessage(
+        e,
+        fallback:
+            'Không thể kết nối máy chủ để đăng tin. Vui lòng kiểm tra mạng và thử lại.',
+      );
+      if (kDebugMode) {
+        debugPrint('[ApiRecruiterRepository] Error posting job: ${e.message}');
+      }
       throw Exception(message);
     } catch (e) {
-      debugPrint('[ApiRecruiterRepository] Unexpected error posting job: $e');
+      if (kDebugMode) {
+        debugPrint('[ApiRecruiterRepository] Unexpected error posting job: $e');
+      }
       rethrow;
     }
   }
 
-  String? _extractErrorMessage(DioException e) {
-    if (e.response != null && e.response?.data != null) {
-      return _extractErrorMessageFromData(e.response!.data);
+  @override
+  Future<void> updateJob(String jobId, PostJobParams params) async {
+    try {
+      final companyId =
+          params.companyId ??
+          AuthSession.instance.currentUser?.companyId ??
+          AuthSession.instance.companyId ??
+          '';
+      final payload = _buildJobPayload(
+        params,
+        companyId: companyId.isNotEmpty ? companyId : null,
+      );
+      final response = await _dio.put('/api/jobs/$jobId', data: payload);
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        _isMock = false;
+        return;
+      }
+      throw Exception('Cập nhật tin tuyển dụng thất bại. Vui lòng thử lại.');
+    } on DioException catch (e) {
+      final message = _extractSafeErrorMessage(
+        e,
+        fallback: 'Không thể cập nhật tin tuyển dụng. Vui lòng thử lại.',
+      );
+      if (kDebugMode) {
+        debugPrint('[ApiRecruiterRepository] Error updating job: ${e.message}');
+      }
+      throw Exception(message);
+    }
+  }
+
+  @override
+  Future<void> deleteJob(String jobId) async {
+    try {
+      final response = await _dio.delete('/api/jobs/$jobId');
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        _isMock = false;
+        return;
+      }
+      throw Exception('Không thể xóa tin tuyển dụng. Vui lòng thử lại.');
+    } on DioException catch (e) {
+      final message = _extractSafeErrorMessage(
+        e,
+        fallback: 'Không thể xóa tin tuyển dụng lúc này. Vui lòng thử lại.',
+      );
+      if (kDebugMode) {
+        debugPrint('[ApiRecruiterRepository] Error deleting job: ${e.message}');
+      }
+      throw Exception(message);
+    }
+  }
+
+  Map<String, dynamic> _buildJobPayload(
+    PostJobParams params, {
+    String? companyId,
+  }) {
+    return {
+      'title': params.title,
+      'description': params.description,
+      if (companyId != null && companyId.isNotEmpty) 'companyId': companyId,
+      'location': params.location,
+      if (params.salaryMin != null) 'salaryMin': params.salaryMin,
+      if (params.salaryMax != null) 'salaryMax': params.salaryMax,
+      'salaryCurrency': params.salaryCurrency,
+      if (params.categoryId != null && params.categoryId!.isNotEmpty)
+        'categoryId': params.categoryId,
+      if (params.requirements != null && params.requirements!.isNotEmpty)
+        'requirements': params.requirements,
+      if (params.benefits != null && params.benefits!.isNotEmpty)
+        'benefits': params.benefits,
+      'employmentType': _mapEmploymentTypeToBackend(params.employmentType),
+      'experienceLevel': _mapExperienceLevelToBackend(params.experienceLevel),
+    };
+  }
+
+  String _extractSafeErrorMessage(DioException e, {required String fallback}) {
+    final code = e.response?.statusCode;
+    if (code == 400 || code == 422) {
+      return 'Thông tin tin tuyển dụng chưa hợp lệ. Vui lòng kiểm tra lại.';
+    }
+    if (code == 401) {
+      return 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.';
+    }
+    if (code == 403) {
+      return 'Bạn không có quyền thực hiện thao tác này.';
+    }
+    if (code == 404) {
+      return 'Không tìm thấy tin tuyển dụng hoặc hồ sơ yêu cầu.';
+    }
+    if (code == 429) {
+      return 'Bạn đã gửi yêu cầu quá nhiều lần. Vui lòng thử lại sau.';
+    }
+    if (code != null && code >= 500) {
+      return 'Hệ thống tạm thời gián đoạn. Vui lòng thử lại sau.';
     }
     return switch (e.type) {
       DioExceptionType.connectionTimeout =>
@@ -327,18 +448,9 @@ class ApiRecruiterRepository implements IRecruiterRepository {
       DioExceptionType.receiveTimeout =>
         'Hết thời gian chờ phản hồi từ máy chủ.',
       DioExceptionType.connectionError =>
-        'Không thể kết nối tới máy chủ (Gateway offline).',
-      _ => null,
+        'Không thể kết nối tới máy chủ. Vui lòng kiểm tra mạng.',
+      _ => fallback,
     };
-  }
-
-  String? _extractErrorMessageFromData(dynamic data) {
-    if (data is Map) {
-      return data['message']?.toString() ??
-          data['title']?.toString() ??
-          data['detail']?.toString();
-    }
-    return null;
   }
 
   String _mapStatusToBackend(String uiStatus) {
@@ -386,10 +498,18 @@ class ApiRecruiterRepository implements IRecruiterRepository {
   String _mapEmploymentTypeToBackend(String type) {
     switch (type.trim().toLowerCase()) {
       case 'toàn thời gian':
+      case 'fulltime':
+      case 'full-time':
         return 'FullTime';
       case 'bán thời gian':
+      case 'parttime':
+      case 'part-time':
         return 'PartTime';
+      case 'hợp đồng':
+      case 'contract':
+        return 'Contract';
       case 'thực tập':
+      case 'internship':
         return 'Internship';
     }
     throw Exception('Hình thức làm việc không hợp lệ: $type');

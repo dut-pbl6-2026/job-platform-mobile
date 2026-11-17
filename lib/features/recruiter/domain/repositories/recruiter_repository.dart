@@ -15,11 +15,24 @@ abstract class IRecruiterRepository {
   Future<bool> updateCandidateStatus(String applicationId, String newStatus);
 
   /// Fetch recruiter's own posted jobs.
-  Future<List<RecruiterJob>> getMyJobs({String? status});
+  Future<List<RecruiterJob>> getMyJobs({
+    String? status,
+    int? page,
+    int? pageSize,
+  });
+
+  /// Fetch available job categories (`GET /api/categories`).
+  Future<List<JobCategoryItem>> getCategories();
 
   /// Fetch recruiter overview metrics.
   Future<RecruiterStats> getDashboardStats();
 
-  /// Post a new job posting to job-svc via Gateway.
+  /// Post a new job posting to job-svc via Gateway (`POST /api/jobs`).
   Future<String> postJob(PostJobParams params);
+
+  /// Update an existing job posting (`PUT /api/jobs/{id}`).
+  Future<void> updateJob(String jobId, PostJobParams params);
+
+  /// Delete / close an existing job posting (`DELETE /api/jobs/{id}`).
+  Future<void> deleteJob(String jobId);
 }

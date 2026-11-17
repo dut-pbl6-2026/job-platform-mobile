@@ -144,16 +144,50 @@ class MockRecruiterRepository implements IRecruiterRepository {
     return false;
   }
 
+  static const List<JobCategoryItem> _mockCategories = [
+    JobCategoryItem(
+      id: 'c34d5e6f-0000-0000-0000-000000000001',
+      name: 'Công nghệ thông tin',
+    ),
+    JobCategoryItem(
+      id: 'c34d5e6f-0000-0000-0000-000000000002',
+      name: 'Thiết kế / Sáng tạo',
+    ),
+    JobCategoryItem(
+      id: 'c34d5e6f-0000-0000-0000-000000000003',
+      name: 'Kinh doanh / Marketing',
+    ),
+    JobCategoryItem(
+      id: 'c34d5e6f-0000-0000-0000-000000000004',
+      name: 'Tài chính / Kế toán',
+    ),
+  ];
+
   @override
-  Future<List<RecruiterJob>> getMyJobs({String? status}) async {
+  Future<List<JobCategoryItem>> getCategories() async {
+    await _simulateDelay();
+    return _mockCategories;
+  }
+
+  @override
+  Future<List<RecruiterJob>> getMyJobs({
+    String? status,
+    int? page,
+    int? pageSize,
+  }) async {
     await _simulateDelay();
     var result = List<RecruiterJob>.from(_jobs);
     if (status != null && status.isNotEmpty) {
       result = result.where((j) {
-        if (status == 'Active') return j.isOpen;
-        if (status == 'Closed') return j.isClosed;
+        if (status == 'Active' || status == 'Đang mở') return j.isOpen;
+        if (status == 'Closed' || status == 'Đã đóng') return j.isClosed;
         return j.status == status;
       }).toList();
+    }
+    if (page != null && pageSize != null && pageSize > 0) {
+      final start = (page - 1) * pageSize;
+      if (start >= result.length) return const [];
+      return result.skip(start).take(pageSize).toList();
     }
     return result;
   }
@@ -185,8 +219,48 @@ class MockRecruiterRepository implements IRecruiterRepository {
       location: params.location,
       salary: params.salaryText.isNotEmpty ? params.salaryText : 'Thoả thuận',
       postedDate: DateTime.now().toString().split(' ').first,
+      description: params.description,
+      requirements: params.requirements,
+      benefits: params.benefits,
+      employmentType: params.employmentType,
+      experienceLevel: params.experienceLevel,
+      categoryId: params.categoryId,
+      salaryMin: params.salaryMin,
+      salaryMax: params.salaryMax,
+      salaryCurrency: params.salaryCurrency,
     );
     _jobs.insert(0, newJob);
     return newId;
+  }
+
+  @override
+  Future<void> updateJob(String jobId, PostJobParams params) async {
+    await _simulateDelay();
+    final idx = _jobs.indexWhere((j) => j.id == jobId);
+    if (idx == -1) {
+      throw Exception('Không tìm thấy tin tuyển dụng cần cập nhật.');
+    }
+    _jobs[idx] = _jobs[idx].copyWith(
+      title: params.title,
+      location: params.location,
+      salary: params.salaryText.isNotEmpty
+          ? params.salaryText
+          : _jobs[idx].salary,
+      description: params.description,
+      requirements: params.requirements,
+      benefits: params.benefits,
+      employmentType: params.employmentType,
+      experienceLevel: params.experienceLevel,
+      categoryId: params.categoryId,
+      salaryMin: params.salaryMin,
+      salaryMax: params.salaryMax,
+      salaryCurrency: params.salaryCurrency,
+    );
+  }
+
+  @override
+  Future<void> deleteJob(String jobId) async {
+    await _simulateDelay();
+    _jobs.removeWhere((j) => j.id == jobId);
   }
 }
