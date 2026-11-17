@@ -5,8 +5,13 @@ import '../../domain/models/profile_model.dart';
 /// Modal dialog for adding education background (PROFILE-01-04)
 class AddEducationDialog extends StatefulWidget {
   final ValueChanged<EducationModel> onAdd;
+  final EducationModel? initialEducation;
 
-  const AddEducationDialog({super.key, required this.onAdd});
+  const AddEducationDialog({
+    super.key,
+    required this.onAdd,
+    this.initialEducation,
+  });
 
   @override
   State<AddEducationDialog> createState() => _AddEducationDialogState();
@@ -21,6 +26,7 @@ class _AddEducationDialogState extends State<AddEducationDialog> {
 
   int _startYear = 2018;
   int _endYear = 2022;
+  String? _yearError;
 
   final List<String> _commonDegrees = [
     'Kỹ sư',
@@ -32,6 +38,22 @@ class _AddEducationDialogState extends State<AddEducationDialog> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    final edu = widget.initialEducation;
+    if (edu != null) {
+      _institutionController.text = edu.institution;
+      _degreeController.text = _commonDegrees.contains(edu.degree)
+          ? edu.degree
+          : 'Kỹ sư';
+      _fieldController.text = edu.field;
+      _gradeController.text = edu.grade ?? '';
+      _startYear = edu.startDate.year;
+      _endYear = edu.endDate?.year ?? (_startYear + 4);
+    }
+  }
+
+  @override
   void dispose() {
     _institutionController.dispose();
     _degreeController.dispose();
@@ -41,21 +63,27 @@ class _AddEducationDialogState extends State<AddEducationDialog> {
   }
 
   void _handleSave() {
-    if (_formKey.currentState?.validate() ?? false) {
-      final education = EducationModel(
-        id: '',
-        institution: _institutionController.text.trim(),
-        degree: _degreeController.text.trim(),
-        field: _fieldController.text.trim(),
-        startDate: DateTime(_startYear, 9, 1),
-        endDate: DateTime(_endYear, 6, 30),
-        grade: _gradeController.text.trim().isNotEmpty
-            ? _gradeController.text.trim()
-            : null,
-      );
-      widget.onAdd(education);
-      Navigator.of(context).pop();
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+    if (_endYear < _startYear) {
+      setState(() {
+        _yearError = 'Năm tốt nghiệp phải lớn hơn hoặc bằng năm bắt đầu';
+      });
+      return;
     }
+    setState(() => _yearError = null);
+    final education = EducationModel(
+      id: widget.initialEducation?.id ?? '',
+      institution: _institutionController.text.trim(),
+      degree: _degreeController.text.trim(),
+      field: _fieldController.text.trim(),
+      startDate: DateTime(_startYear, 9, 1),
+      endDate: DateTime(_endYear, 6, 30),
+      grade: _gradeController.text.trim().isNotEmpty
+          ? _gradeController.text.trim()
+          : null,
+    );
+    widget.onAdd(education);
+    Navigator.of(context).pop();
   }
 
   @override
@@ -125,6 +153,7 @@ class _AddEducationDialogState extends State<AddEducationDialog> {
                   ),
                   const SizedBox(height: 6),
                   DropdownButtonFormField<String>(
+                    // ignore: deprecated_member_use
                     value: _degreeController.text,
                     decoration: InputDecoration(
                       isDense: true,
@@ -180,6 +209,7 @@ class _AddEducationDialogState extends State<AddEducationDialog> {
                             ),
                             const SizedBox(height: 4),
                             DropdownButtonFormField<int>(
+                              // ignore: deprecated_member_use
                               value: _startYear,
                               decoration: InputDecoration(
                                 isDense: true,
@@ -215,6 +245,7 @@ class _AddEducationDialogState extends State<AddEducationDialog> {
                             ),
                             const SizedBox(height: 4),
                             DropdownButtonFormField<int>(
+                              // ignore: deprecated_member_use
                               value: _endYear,
                               decoration: InputDecoration(
                                 isDense: true,
@@ -238,6 +269,17 @@ class _AddEducationDialogState extends State<AddEducationDialog> {
                       ),
                     ],
                   ),
+
+                  if (_yearError != null) ...[
+                    const SizedBox(height: 6),
+                    Text(
+                      _yearError!,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.error,
+                      ),
+                    ),
+                  ],
 
                   const SizedBox(height: 12),
 
