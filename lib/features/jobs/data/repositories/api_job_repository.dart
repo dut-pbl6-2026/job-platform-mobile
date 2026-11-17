@@ -81,8 +81,13 @@ class ApiJobRepository implements IJobRepository {
       // search-svc accepts created_at_desc/asc and salary_desc/asc. Mobile's
       // 'newest' and 'relevance' have no exact match, so they are omitted and
       // search-svc applies its default ordering.
-      if (params.sortBy == 'salary_desc') {
-        queryParams['sortBy'] = 'salary_desc';
+      if (const {
+        'created_at_desc',
+        'created_at_asc',
+        'salary_desc',
+        'salary_asc',
+      }.contains(params.sortBy)) {
+        queryParams['sortBy'] = params.sortBy;
       }
 
       final response = await _dio.get(
