@@ -280,6 +280,63 @@ void main() {
 
       expect(AuthSession.instance.isAuthenticated, isFalse);
     });
+
+    test(
+      'deactivated account (isActive: false) clears restored session',
+      () async {
+        await seedStoredSession();
+        await AuthSession.instance.load();
+
+        final repo = ApiAuthRepository(
+          dio: _dioWith(
+            _CannedAdapter(200, {
+              'id': 'usr-1',
+              'email': 'candidate@test.com',
+              'fullName': 'Candidate',
+              'role': 'User',
+              'isActive': false,
+            }),
+          ),
+        );
+        await repo.validateRestoredSession();
+
+        expect(AuthSession.instance.isAuthenticated, isFalse);
+      },
+    );
+
+    test(
+      'validateRestoredSession syncs updated server user profile and migrates SharedPreferences',
+      () async {
+        await seedStoredSession();
+        await AuthSession.instance.load();
+
+        final prefs = await SharedPreferences.getInstance();
+        expect(prefs.getString('auth_user'), isNull);
+        expect(
+          await const FlutterSecureStorage().containsKey(key: 'auth_user'),
+          isTrue,
+        );
+
+        final repo = ApiAuthRepository(
+          dio: _dioWith(
+            _CannedAdapter(200, {
+              'id': 'usr-1',
+              'email': 'candidate@test.com',
+              'fullName': 'Promoted Recruiter',
+              'role': 'Recruiter',
+              'companyId': 'comp-99',
+              'isActive': true,
+            }),
+          ),
+        );
+        await repo.validateRestoredSession();
+
+        expect(AuthSession.instance.isAuthenticated, isTrue);
+        expect(AuthSession.instance.currentUser?.name, 'Promoted Recruiter');
+        expect(AuthSession.instance.currentUser?.role, UserRole.recruiter);
+        expect(AuthSession.instance.companyId, 'comp-99');
+      },
+    );
   });
 
   group('Register response contract (auth-svc PR #44)', () {
