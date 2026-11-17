@@ -44,8 +44,12 @@ class _SearchScreenState extends State<SearchScreen> {
   JobFilterParams _filterParams = const JobFilterParams(pageSize: 20);
 
   bool _isLoading = false;
+  bool _isLoadingMore = false;
+  bool _hasNextPage = false;
+  int _currentPage = 0;
   String? _errorMessage;
   List<JobModel> _results = [];
+  List<String> _remoteSuggestions = [];
   int _totalResults = 0;
   bool _hasSearched = false;
   bool _showSuggestions = false;
@@ -128,10 +132,14 @@ class _SearchScreenState extends State<SearchScreen> {
     final trimmed = query.trim().toLowerCase();
     if (trimmed.isEmpty) return [];
 
-    return _suggestionPool
-        .where((item) => item.toLowerCase().contains(trimmed))
-        .take(6)
-        .toList();
+    final merged = <String>[..._remoteSuggestions];
+    for (final item in _suggestionPool) {
+      if (item.toLowerCase().contains(trimmed) &&
+          !merged.any((m) => m.toLowerCase() == item.toLowerCase())) {
+        merged.add(item);
+      }
+    }
+    return merged.take(6).toList();
   }
 
   void _onSearchChanged(String query) {
@@ -140,10 +148,13 @@ class _SearchScreenState extends State<SearchScreen> {
     if (query.trim().isEmpty) {
       setState(() {
         _showSuggestions = false;
-        _hasSearched = false;
-        _results = [];
-        _totalResults = 0;
-        _isLoading = false;
+        _remoteSuggestions = [];
+        if (_selectedLocation.isEmpty && _filterParams.activeFilterCount == 0) {
+          _hasSearched = false;
+          _results = [];
+          _totalResults = 0;
+          _isLoading = false;
+        }
       });
       return;
     }
@@ -152,8 +163,18 @@ class _SearchScreenState extends State<SearchScreen> {
       _showSuggestions = true;
     });
 
-    _debounceTimer = Timer(const Duration(milliseconds: 350), () {
-      _performSearch(query, keepSuggestions: true);
+    _debounceTimer = Timer(const Duration(milliseconds: 350), () async {
+      try {
+        final suggestions = await _jobRepository.getSearchSuggestions(
+          query.trim(),
+        );
+        if (mounted) {
+          setState(() => _remoteSuggestions = suggestions);
+        }
+      } catch (_) {}
+      if (mounted) {
+        _performSearch(query, keepSuggestions: true);
+      }
     });
   }
 
@@ -162,12 +183,17 @@ class _SearchScreenState extends State<SearchScreen> {
     bool keepSuggestions = false,
   }) async {
     final trimmed = query.trim();
-    if (trimmed.isEmpty && _selectedLocation.isEmpty) return;
+    if (trimmed.isEmpty &&
+        _selectedLocation.isEmpty &&
+        _filterParams.activeFilterCount == 0) {
+      return;
+    }
 
     setState(() {
       _isLoading = true;
       _errorMessage = null;
       _hasSearched = true;
+      _currentPage = 0;
       if (!keepSuggestions) {
         _showSuggestions = false;
       }
@@ -192,6 +218,8 @@ class _SearchScreenState extends State<SearchScreen> {
         setState(() {
           _results = result.items;
           _totalResults = result.total;
+          _currentPage = result.page;
+          _hasNextPage = result.hasNextPage;
           _isLoading = false;
         });
       }
@@ -201,6 +229,29 @@ class _SearchScreenState extends State<SearchScreen> {
           _errorMessage = 'Không thể tìm kiếm lúc này. Vui lòng thử lại.';
           _isLoading = false;
         });
+      }
+    }
+  }
+
+  Future<void> _loadMoreResults() async {
+    if (_isLoadingMore || !_hasNextPage) return;
+    setState(() => _isLoadingMore = true);
+    try {
+      final nextPage = _currentPage + 1;
+      final result = await _jobRepository.getJobs(
+        _filterParams.copyWith(page: nextPage),
+      );
+      if (mounted) {
+        setState(() {
+          _results = [..._results, ...result.items];
+          _currentPage = result.page;
+          _hasNextPage = result.hasNextPage;
+          _isLoadingMore = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _isLoadingMore = false);
       }
     }
   }
@@ -245,7 +296,7 @@ class _SearchScreenState extends State<SearchScreen> {
 
   void _showLocationPicker() {
     showModalBottomSheet<String>(
-      context: context,
+      context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) {
@@ -1073,9 +1124,22 @@ class _SearchScreenState extends State<SearchScreen> {
               top: 16,
               bottom: 90,
             ),
-            itemCount: _results.length,
+            itemCount: _results.length + (_hasNextPage ? 1 : 0),
             separatorBuilder: (context, index) => const SizedBox(height: 12),
             itemBuilder: (context, index) {
+              if (index >= _results.length) {
+                return Center(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: _isLoadingMore
+                        ? const CircularProgressIndicator()
+                        : OutlinedButton(
+                            onPressed: _loadMoreResults,
+                            child: const Text('Xem thêm kết quả'),
+                          ),
+                  ),
+                );
+              }
               final job = _results[index];
               return FadeSlideTransition(
                 index: index,
