@@ -179,19 +179,46 @@ void main() {
         );
       }
 
-      test('maps form labels to FullTime, PartTime and Internship', () async {
-        final expected = {
-          'Toàn thời gian': 'FullTime',
-          'Bán thời gian': 'PartTime',
-          'Thực tập': 'Internship',
-        };
-        for (final entry in expected.entries) {
-          final body = await capturePayload(
-            build(employment: entry.key, experience: 'Mid'),
+      test(
+        'maps form labels to FullTime, PartTime, Contract and Internship',
+        () async {
+          final expected = {
+            'Toàn thời gian': 'FullTime',
+            'Bán thời gian': 'PartTime',
+            'Hợp đồng': 'Contract',
+            'Thực tập': 'Internship',
+          };
+          for (final entry in expected.entries) {
+            final body = await capturePayload(
+              build(employment: entry.key, experience: 'Mid'),
+            );
+            expect(body['employmentType'], entry.value);
+          }
+        },
+      );
+
+      test(
+        'PostJobParams.parseSalaryInput parses numeric ranges and detects inverted bounds',
+        () {
+          final vnd = PostJobParams.parseSalaryInput(
+            '15.000.000 – 25.000.000 ₫',
           );
-          expect(body['employmentType'], entry.value);
-        }
-      });
+          expect(vnd.min, 15000000);
+          expect(vnd.max, 25000000);
+          expect(vnd.currency, 'VND');
+          expect(vnd.isInvalidRange, isFalse);
+
+          final usd = PostJobParams.parseSalaryInput('1500 - 2500 USD');
+          expect(usd.min, 1500);
+          expect(usd.max, 2500);
+          expect(usd.currency, 'USD');
+
+          final inverted = PostJobParams.parseSalaryInput(
+            '30.000.000 - 15.000.000',
+          );
+          expect(inverted.isInvalidRange, isTrue);
+        },
+      );
 
       test('sends the canonical experience level unchanged', () async {
         for (final level in ['Entry', 'Mid', 'Senior', 'Lead']) {

@@ -76,7 +76,7 @@ void main() {
       // Experience level has no default and must be chosen
       await tester.tap(find.byType(DropdownButtonFormField<String>).last);
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Mid').last);
+      await tester.tap(find.text('Trung cấp (Mid)').last);
       await tester.pumpAndSettle();
 
       // Submit form
@@ -184,6 +184,45 @@ void main() {
         expect(find.text('Quản lý tin tuyển dụng'), findsOneWidget);
         expect(find.text('Đăng tin mới'), findsOneWidget);
         expect(find.text('Hồ sơ ứng viên'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'RecruiterJobsScreen deletes a job after confirmation and CandidateApplicationsScreen supports Phù hợp status (BUG-05, BUG-10)',
+      (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: AppTheme.lightTheme,
+            home: RecruiterJobsScreen(repository: mockRepo, isMock: true),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('UI/UX Designer'), findsOneWidget);
+        await tester.tap(
+          find.byKey(const Key('delete_recruiter_job_rec_job_1')),
+        );
+        await tester.pumpAndSettle();
+        expect(find.text('Xác nhận xóa tin tuyển dụng'), findsOneWidget);
+        await tester.tap(find.text('Xóa tin'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('UI/UX Designer'), findsNothing);
+
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: AppTheme.lightTheme,
+            home: CandidateApplicationsScreen(
+              repository: mockRepo,
+              isMock: true,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Xem hồ sơ Khoa Phạm'));
+        await tester.pumpAndSettle();
+        expect(find.widgetWithText(ChoiceChip, 'Phù hợp'), findsOneWidget);
       },
     );
   });

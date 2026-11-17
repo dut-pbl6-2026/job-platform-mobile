@@ -290,9 +290,9 @@ class _CandidateApplicationsScreenState
     final rawUrl = cand.cvUrl?.trim() ?? '';
     final uri = Uri.tryParse(rawUrl);
     final hasSafeUrl =
-      uri != null &&
-      uri.scheme.toLowerCase() == 'https' &&
-      uri.host.isNotEmpty;
+        uri != null &&
+        uri.scheme.toLowerCase() == 'https' &&
+        uri.host.isNotEmpty;
 
     if (!hasSafeUrl) {
       ScaffoldMessenger.of(context).showSnackBar(
