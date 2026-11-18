@@ -5,7 +5,9 @@ import 'package:job_platform_mobile/core/theme/app_theme.dart';
 import 'package:job_platform_mobile/features/auth/domain/models/auth_result.dart';
 import 'package:job_platform_mobile/features/auth/domain/models/user_model.dart';
 import 'package:job_platform_mobile/features/jobs/data/repositories/mock_job_repository.dart';
+import 'package:job_platform_mobile/features/jobs/domain/models/job_model.dart';
 import 'package:job_platform_mobile/features/jobs/presentation/job_detail_screen.dart';
+import 'package:job_platform_mobile/features/jobs/presentation/widgets/job_detail_bottom_bar.dart';
 
 void main() {
   late MockJobRepository mockRepo;
@@ -103,4 +105,37 @@ void main() {
     );
     expect(find.text('Quay lại danh sách'), findsOneWidget);
   });
+
+  testWidgets(
+    'JobDetailBottomBar disables direct apply CTA for crawled sha256 jobs',
+    (tester) async {
+      final crawledJob = JobModel(
+        id: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+        title: 'External Mobile Dev',
+        companyName: 'External Corp',
+        location: 'Hà Nội',
+        category: 'IT',
+        description: 'Desc',
+        requirements: 'Req',
+        postedAt: DateTime(2026),
+      );
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.lightTheme,
+          home: Scaffold(
+            bottomNavigationBar: JobDetailBottomBar(
+              job: crawledJob,
+              onShare: () {},
+              onPrimaryAction: () {},
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Tin tổng hợp ngoài hệ thống'), findsOneWidget);
+      final button = tester.widget<ElevatedButton>(find.byType(ElevatedButton));
+      expect(button.onPressed, isNull);
+    },
+  );
 }

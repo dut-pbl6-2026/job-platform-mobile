@@ -16,6 +16,7 @@ class JobCard extends StatelessWidget {
       min: job.salaryMin,
       max: job.salaryMax,
       isNegotiable: job.isSalaryNegotiable,
+      currency: job.salaryCurrency,
     );
 
     final timeAgoText = FormatUtils.timeAgo(job.postedAt);
@@ -73,12 +74,14 @@ class JobCard extends StatelessWidget {
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
-                            const SizedBox(width: 4),
-                            const Icon(
-                              Icons.verified_rounded,
-                              size: 14,
-                              color: AppColors.primary,
-                            ),
+                            if (job.isCompanyVerified) ...[
+                              const SizedBox(width: 4),
+                              const Icon(
+                                Icons.verified_rounded,
+                                size: 14,
+                                color: AppColors.primary,
+                              ),
+                            ],
                           ],
                         ),
                       ],
@@ -237,9 +240,24 @@ class JobCard extends StatelessWidget {
   }
 
   Widget _buildCompanyLogo(BuildContext context) {
-    final initial = job.companyName.isNotEmpty
-        ? job.companyName[0].toUpperCase()
+    final initial = job.companyName.trim().isNotEmpty
+        ? job.companyName.trim()[0].toUpperCase()
         : 'C';
+    final rawLogo = job.companyLogo?.trim() ?? '';
+    final logoUri = Uri.tryParse(rawLogo);
+    final hasValidLogo =
+        logoUri != null &&
+        logoUri.scheme.toLowerCase() == 'https' &&
+        logoUri.host.isNotEmpty;
+
+    Widget fallbackText() => Text(
+      initial,
+      style: const TextStyle(
+        fontSize: 20,
+        fontWeight: FontWeight.bold,
+        color: AppColors.primary,
+      ),
+    );
 
     return Container(
       width: 46,
@@ -252,15 +270,17 @@ class JobCard extends StatelessWidget {
           width: 1,
         ),
       ),
+      clipBehavior: Clip.antiAlias,
       alignment: Alignment.center,
-      child: Text(
-        initial,
-        style: const TextStyle(
-          fontSize: 20,
-          fontWeight: FontWeight.bold,
-          color: AppColors.primary,
-        ),
-      ),
+      child: hasValidLogo
+          ? Image.network(
+              rawLogo,
+              width: 46,
+              height: 46,
+              fit: BoxFit.cover,
+              errorBuilder: (_, _, _) => fallbackText(),
+            )
+          : fallbackText(),
     );
   }
 

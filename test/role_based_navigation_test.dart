@@ -333,12 +333,19 @@ void main() {
         );
         expect(redirectApps, equals(AppRoutes.login));
 
-        // When on login, should not be forwarded to home
+        // When already on /login, stay on /login without creating a redirect loop (BUG-08)
         final redirectLogin = AppRouter.router.configuration.topRedirect(
           TestBuildContext(),
           TestGoRouterState('/login'),
         );
-        expect(redirectLogin, equals(AppRoutes.login));
+        expect(redirectLogin, isNull);
+
+        // When on /register with unknown role, redirect once to /login
+        final redirectRegister = AppRouter.router.configuration.topRedirect(
+          TestBuildContext(),
+          TestGoRouterState('/register'),
+        );
+        expect(redirectRegister, equals(AppRoutes.login));
       },
     );
 
@@ -529,6 +536,48 @@ void main() {
     test('Tìm kiếm is not mapped to the Việc làm branch', () {
       expect(byLabel('Tìm kiếm').branchIndex, isNull);
     });
+
+    testWidgets(
+      'AppRouter StatefulShellRoute renders role NavigationBar and tapping Ứng tuyển does not throw RangeError (BUG-01)',
+      (tester) async {
+        await AuthSession.instance.setSession(
+          AuthResult(
+            user: UserModel(
+              id: 'cand-shell-1',
+              name: 'Shell Candidate',
+              email: 'shell@test.com',
+              role: UserRole.user,
+              createdAt: DateTime.now(),
+            ),
+            token: createTestJwt('User'),
+            refreshToken: 'refresh-token',
+            expiresAt: DateTime.now().add(const Duration(hours: 1)),
+          ),
+        );
+
+        AppRouter.router.go(AppRoutes.home);
+        await tester.pumpWidget(
+          MaterialApp.router(
+            theme: AppTheme.lightTheme,
+            routerConfig: AppRouter.router,
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+
+        expect(find.byType(NavigationBar), findsOneWidget);
+        expect(findNavTab('Trang chủ'), findsOneWidget);
+        expect(findNavTab('Tìm kiếm'), findsOneWidget);
+        expect(findNavTab('Ứng tuyển'), findsOneWidget);
+
+        await tester.tap(findNavTab('Ứng tuyển'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+
+        expect(tester.takeException(), isNull);
+        expect(find.byType(ApplicationHistoryScreen), findsOneWidget);
+      },
+    );
   });
 }
 

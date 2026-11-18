@@ -9,6 +9,7 @@ import '../applications/presentation/application_history_screen.dart';
 import '../auth/domain/models/user_model.dart';
 import '../jobs/presentation/job_list_screen.dart';
 import '../jobs/presentation/search_screen.dart';
+import '../recruiter/presentation/recruiter_jobs_screen.dart';
 import 'home_screen.dart';
 
 /// Navigation destination descriptor for role-based tabs (MOB-01-07)
@@ -105,9 +106,8 @@ class MainNavigationScreen extends StatefulWidget {
             label: 'Tin tuyển dụng',
             icon: Icons.work_outline_rounded,
             selectedIcon: Icons.work_rounded,
-            routePath: AppRoutes.jobs,
-            branchIndex: 1,
-            screenBuilder: _buildJobListScreen,
+            routePath: AppRoutes.recruiterJobs,
+            screenBuilder: _buildRecruiterJobsScreen,
           ),
         ];
 
@@ -139,7 +139,7 @@ class MainNavigationScreen extends StatefulWidget {
   static Widget _buildSearchScreen() => const SearchScreen();
   static Widget _buildApplicationHistoryScreen() =>
       const ApplicationHistoryScreen();
-  static Widget _buildJobListScreen() => const JobListScreen();
+  static Widget _buildRecruiterJobsScreen() => const RecruiterJobsScreen();
 }
 
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
@@ -169,7 +169,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   void _select(int index) {
     final shell = widget.navigationShell;
     if (shell != null) {
-      shell.goBranch(index, initialLocation: index == shell.currentIndex);
+      if (index >= 0 && index < shell.route.branches.length) {
+        shell.goBranch(index, initialLocation: index == shell.currentIndex);
+      } else if (index == 2) {
+        context.push(AppRoutes.applications);
+      }
     } else {
       setState(() {
         _currentIndex = index;
@@ -187,13 +191,15 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
     if (widget.navigationShell != null) {
       final branch = item.branchIndex;
-      if (branch != null) {
+      if (branch != null &&
+          branch >= 0 &&
+          branch < widget.navigationShell!.route.branches.length) {
         widget.navigationShell!.goBranch(
           branch,
           initialLocation: branch == widget.navigationShell!.currentIndex,
         );
       } else {
-        context.go(item.routePath);
+        context.push(item.routePath);
       }
     } else {
       setState(() {
@@ -218,16 +224,27 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (widget.body != null) {
+    if (widget.body != null || widget.navigationShell != null) {
       final currentRole = AuthSession.instance.resolvedRole;
       final destinations = MainNavigationScreen.getDestinationsForRole(
         currentRole,
       );
       final selectedIndex = _calculateRoleSelectedIndex(destinations);
       final showNavBar = destinations.length >= 2;
+      final shellIndex = widget.navigationShell?.currentIndex ?? 0;
+      final Widget resolvedBody;
+      if (widget.body != null) {
+        resolvedBody = widget.body!;
+      } else if (widget.children != null &&
+          shellIndex >= 0 &&
+          shellIndex < widget.children!.length) {
+        resolvedBody = widget.children![shellIndex];
+      } else {
+        resolvedBody = widget.navigationShell!;
+      }
 
       return Scaffold(
-        body: widget.body,
+        body: resolvedBody,
         bottomNavigationBar: showNavBar
             ? NavigationBar(
                 selectedIndex: selectedIndex,

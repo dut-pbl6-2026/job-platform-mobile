@@ -34,10 +34,7 @@ class SkillModel {
       id: json['id']?.toString() ?? '',
       name: json['name']?.toString() ?? '',
       proficiency: json['proficiency'] as int? ?? 3,
-      yearsOfExperience:
-          json['yearsOfExperience'] as int? ??
-          json['years_of_experience'] as int? ??
-          1,
+      yearsOfExperience: json['yearsOfExperience'] as int? ?? 1,
     );
   }
 
@@ -111,17 +108,11 @@ class WorkExperienceModel {
       title: json['title']?.toString() ?? '',
       startDate: json['startDate'] != null
           ? DateTime.tryParse(json['startDate'].toString()) ?? DateTime.now()
-          : (json['start_date'] != null
-                ? DateTime.tryParse(json['start_date'].toString()) ??
-                      DateTime.now()
-                : DateTime.now()),
+          : DateTime.now(),
       endDate: json['endDate'] != null
           ? DateTime.tryParse(json['endDate'].toString())
-          : (json['end_date'] != null
-                ? DateTime.tryParse(json['end_date'].toString())
-                : null),
-      isCurrent:
-          json['isCurrent'] as bool? ?? json['is_current'] as bool? ?? false,
+          : null,
+      isCurrent: json['isCurrent'] as bool? ?? false,
       description: json['description'] as String?,
     );
   }
@@ -195,15 +186,10 @@ class EducationModel {
       field: json['field']?.toString() ?? '',
       startDate: json['startDate'] != null
           ? DateTime.tryParse(json['startDate'].toString()) ?? DateTime.now()
-          : (json['start_date'] != null
-                ? DateTime.tryParse(json['start_date'].toString()) ??
-                      DateTime.now()
-                : DateTime.now()),
+          : DateTime.now(),
       endDate: json['endDate'] != null
           ? DateTime.tryParse(json['endDate'].toString())
-          : (json['end_date'] != null
-                ? DateTime.tryParse(json['end_date'].toString())
-                : null),
+          : null,
       grade: json['grade'] as String?,
     );
   }
@@ -305,63 +291,69 @@ class ProfileModel {
   }
 
   factory ProfileModel.fromJson(Map<String, dynamic> json) {
-    var rawSkills = json['skills'];
+    final rawSkills = json['skills'];
     List<SkillModel> skillsList = [];
     if (rawSkills is List) {
       skillsList = rawSkills
-          .map((item) => SkillModel.fromJson(item as Map<String, dynamic>))
-          .toList();
-    }
-
-    var rawExp = json['experiences'] ?? json['work_experiences'];
-    List<WorkExperienceModel> expList = [];
-    if (rawExp is List) {
-      expList = rawExp
           .map(
-            (item) =>
-                WorkExperienceModel.fromJson(item as Map<String, dynamic>),
+            (item) => SkillModel.fromJson(
+              item is Map<String, dynamic>
+                  ? item
+                  : Map<String, dynamic>.from(item as Map),
+            ),
           )
           .toList();
     }
 
-    var rawEdu = json['educations'] ?? json['education_history'];
+    final rawExp = json['experiences'];
+    List<WorkExperienceModel> expList = [];
+    if (rawExp is List) {
+      expList = rawExp
+          .map(
+            (item) => WorkExperienceModel.fromJson(
+              item is Map<String, dynamic>
+                  ? item
+                  : Map<String, dynamic>.from(item as Map),
+            ),
+          )
+          .toList();
+    }
+
+    final rawEdu = json['educations'];
     List<EducationModel> eduList = [];
     if (rawEdu is List) {
       eduList = rawEdu
-          .map((item) => EducationModel.fromJson(item as Map<String, dynamic>))
+          .map(
+            (item) => EducationModel.fromJson(
+              item is Map<String, dynamic>
+                  ? item
+                  : Map<String, dynamic>.from(item as Map),
+            ),
+          )
           .toList();
     }
 
     return ProfileModel(
       id: json['id']?.toString() ?? '',
-      userId: json['userId']?.toString() ?? json['user_id']?.toString() ?? '',
-      fullName:
-          json['fullName']?.toString() ?? json['full_name']?.toString() ?? '',
+      userId: json['userId']?.toString() ?? '',
+      fullName: json['fullName']?.toString() ?? '',
       phone: json['phone'] as String?,
       address: json['address'] as String?,
       headline: json['headline'] as String?,
       summary: json['summary'] as String?,
-      avatarUrl: json['avatarUrl'] as String? ?? json['avatar_url'] as String?,
+      avatarUrl: json['avatarUrl'] as String?,
       dateOfBirth: json['dateOfBirth'] != null
           ? DateTime.tryParse(json['dateOfBirth'].toString())
-          : (json['date_of_birth'] != null
-                ? DateTime.tryParse(json['date_of_birth'].toString())
-                : null),
+          : null,
       skills: skillsList,
       experiences: expList,
       educations: eduList,
       createdAt: json['createdAt'] != null
           ? DateTime.tryParse(json['createdAt'].toString()) ?? DateTime.now()
-          : (json['created_at'] != null
-                ? DateTime.tryParse(json['created_at'].toString()) ??
-                      DateTime.now()
-                : DateTime.now()),
+          : DateTime.now(),
       updatedAt: json['updatedAt'] != null
           ? DateTime.tryParse(json['updatedAt'].toString()) ?? DateTime.now()
-          : (json['updated_at'] != null
-                ? DateTime.tryParse(json['updated_at'].toString()) ??
-                      DateTime.now()
-                : DateTime.now()),
+          : DateTime.now(),
     );
   }
 

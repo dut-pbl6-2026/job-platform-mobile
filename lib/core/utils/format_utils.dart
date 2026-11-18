@@ -22,9 +22,19 @@ class FormatUtils {
     return '$prefix$buffer VNĐ';
   }
 
+  /// Formats a single numeric amount with currency unit (`VNĐ` or `USD`).
+  static String formatCurrency(num amount, {String currency = 'VND'}) {
+    if (currency.trim().toUpperCase() == 'USD') {
+      final formatted = formatNumber(amount);
+      return '$formatted USD';
+    }
+    return formatVND(amount);
+  }
+
   /// Formats salary range into user-friendly Vietnamese text.
   /// Examples:
   /// - `min = 15_000_000, max = 25_000_000` -> `15.000.000 - 25.000.000 VNĐ`
+  /// - `min = 1500, max = 2500, currency = 'USD'` -> `1.500 - 2.500 USD`
   /// - `min = 20_000_000, max = null` -> `Từ 20.000.000 VNĐ`
   /// - `min = null, max = 30_000_000` -> `Tới 30.000.000 VNĐ`
   /// - `isNegotiable = true` or both null -> `Thỏa thuận`
@@ -32,6 +42,7 @@ class FormatUtils {
     num? min,
     num? max,
     bool isNegotiable = false,
+    String currency = 'VND',
   }) {
     if (isNegotiable || (min == null && max == null)) {
       return 'Thỏa thuận';
@@ -39,16 +50,16 @@ class FormatUtils {
 
     if (min != null && max != null) {
       if (min == max) {
-        return formatVND(min);
+        return formatCurrency(min, currency: currency);
       }
-      return '${formatNumber(min)} - ${formatVND(max)}';
+      return '${formatNumber(min)} - ${formatCurrency(max, currency: currency)}';
     }
 
     if (min != null) {
-      return 'Từ ${formatVND(min)}';
+      return 'Từ ${formatCurrency(min, currency: currency)}';
     }
 
-    return 'Tới ${formatVND(max!)}';
+    return 'Tới ${formatCurrency(max!, currency: currency)}';
   }
 
   /// Formats a number with dot thousand separators (without currency symbol)
@@ -105,5 +116,13 @@ class FormatUtils {
     final month = dateTime.month.toString().padLeft(2, '0');
     final year = dateTime.year.toString();
     return '$day/$month/$year';
+  }
+
+  /// Formats a [DateTime] into API date-only `YYYY-MM-DD` (api-conventions §3.2).
+  static String formatIsoDateOnly(DateTime dateTime) {
+    final year = dateTime.year.toString().padLeft(4, '0');
+    final month = dateTime.month.toString().padLeft(2, '0');
+    final day = dateTime.day.toString().padLeft(2, '0');
+    return '$year-$month-$day';
   }
 }

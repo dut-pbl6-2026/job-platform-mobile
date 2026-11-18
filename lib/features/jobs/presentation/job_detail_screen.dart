@@ -96,34 +96,45 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
   void _handlePrimaryAction() {
     if (_job == null) return;
 
-    final user = AuthSession.instance.currentUser;
+    final role = AuthSession.instance.resolvedRole;
     final isAuthenticated = AuthSession.instance.isAuthenticated;
 
-    // 1. If Recruiter: Show application management preview
-    if (user?.role == UserRole.recruiter) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Quản lý ${_job!.applicationCount} hồ sơ ứng tuyển (Chức năng Tuần 3)',
-          ),
-        ),
+    // 1. If Recruiter: Navigate directly to candidate applications for this job (APP-01-05)
+    if (role == UserRole.recruiter) {
+      context.push(
+        Uri(
+          path: AppRoutes.recruiterCandidates,
+          queryParameters: {'jobId': _job!.id},
+        ).toString(),
       );
       return;
     }
 
-    // 2. If Admin: Show moderation preview (ADMIN-01)
-    if (user?.role == UserRole.admin) {
+    // 2. If Admin: Read-only notice on mobile (moderation is managed via Web Admin portal)
+    if (role == UserRole.admin) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
-            'Chức năng kiểm duyệt tin tuyển dụng thuộc cổng Quản trị (ADMIN-01)',
+            'Chức năng kiểm duyệt tin tuyển dụng thuộc cổng Quản trị Web.',
           ),
         ),
       );
       return;
     }
 
-    // 3. If unauthenticated: prompt login
+    // 3. Crawled external jobs are read-only summaries (no job-svc GUID).
+    if (_job!.isExternalCrawledJob) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Tin tổng hợp ngoài hệ thống hiện chưa hỗ trợ nộp hồ sơ trực tiếp.',
+          ),
+        ),
+      );
+      return;
+    }
+
+    // 4. If unauthenticated: prompt login
     if (!isAuthenticated) {
       showDialog(
         context: context,
@@ -151,7 +162,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
     }
 
     // 3. If Candidate (UserRole.user): Navigate to application flow (MOB-01-04)
-    if (user?.role == UserRole.user) {
+    if (role == UserRole.user) {
       _showApplyBottomSheet();
     }
   }

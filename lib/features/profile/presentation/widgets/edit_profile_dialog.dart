@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/utils/format_utils.dart';
 import '../../domain/models/profile_model.dart';
 
 /// Modal dialog for editing personal information (PROFILE-01-01)
@@ -24,7 +25,9 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
   late final TextEditingController _headlineController;
   late final TextEditingController _phoneController;
   late final TextEditingController _addressController;
+  late final TextEditingController _avatarUrlController;
   late final TextEditingController _summaryController;
+  DateTime? _dateOfBirth;
 
   @override
   void initState() {
@@ -37,9 +40,13 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
     _addressController = TextEditingController(
       text: widget.profile.address ?? '',
     );
+    _avatarUrlController = TextEditingController(
+      text: widget.profile.avatarUrl ?? '',
+    );
     _summaryController = TextEditingController(
       text: widget.profile.summary ?? '',
     );
+    _dateOfBirth = widget.profile.dateOfBirth;
   }
 
   @override
@@ -48,26 +55,47 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
     _headlineController.dispose();
     _phoneController.dispose();
     _addressController.dispose();
+    _avatarUrlController.dispose();
     _summaryController.dispose();
     super.dispose();
   }
 
+  Future<void> _pickDateOfBirth() async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _dateOfBirth ?? DateTime(now.year - 22, 1, 1),
+      firstDate: DateTime(1940),
+      lastDate: DateTime(now.year - 15, 12, 31),
+    );
+    if (picked != null && mounted) {
+      setState(() => _dateOfBirth = picked);
+    }
+  }
+
   void _handleSave() {
     if (_formKey.currentState?.validate() ?? false) {
-      final updated = widget.profile.copyWith(
+      final headline = _headlineController.text.trim();
+      final phone = _phoneController.text.trim();
+      final address = _addressController.text.trim();
+      final avatarUrl = _avatarUrlController.text.trim();
+      final summary = _summaryController.text.trim();
+
+      final updated = ProfileModel(
+        id: widget.profile.id,
+        userId: widget.profile.userId,
         fullName: _nameController.text.trim(),
-        headline: _headlineController.text.trim().isNotEmpty
-            ? _headlineController.text.trim()
-            : null,
-        phone: _phoneController.text.trim().isNotEmpty
-            ? _phoneController.text.trim()
-            : null,
-        address: _addressController.text.trim().isNotEmpty
-            ? _addressController.text.trim()
-            : null,
-        summary: _summaryController.text.trim().isNotEmpty
-            ? _summaryController.text.trim()
-            : null,
+        phone: phone.isNotEmpty ? phone : null,
+        address: address.isNotEmpty ? address : null,
+        headline: headline.isNotEmpty ? headline : null,
+        summary: summary.isNotEmpty ? summary : null,
+        avatarUrl: avatarUrl.isNotEmpty ? avatarUrl : null,
+        dateOfBirth: _dateOfBirth,
+        skills: widget.profile.skills,
+        experiences: widget.profile.experiences,
+        educations: widget.profile.educations,
+        createdAt: widget.profile.createdAt,
+        updatedAt: DateTime.now(),
       );
 
       widget.onSave(updated);
@@ -136,12 +164,106 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
                           label: 'Số điện thoại',
                           hint: 'VD: 0905 123 456',
                           keyboardType: TextInputType.phone,
+                          validator: (v) {
+                            final raw = v?.trim() ?? '';
+                            if (raw.isEmpty) return null;
+                            final digits = raw.replaceAll(
+                              RegExp(r'[\s\-\.]'),
+                              '',
+                            );
+                            if (!RegExp(
+                              r'^(\+?84|0)\d{8,10}$',
+                            ).hasMatch(digits)) {
+                              return 'Số điện thoại không đúng định dạng';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 14),
+                        const Text(
+                          'Ngày sinh',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        InkWell(
+                          onTap: _pickDateOfBirth,
+                          borderRadius: BorderRadius.circular(12),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 12,
+                            ),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: AppColors.border),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(
+                                  Icons.calendar_today_outlined,
+                                  size: 16,
+                                  color: AppColors.textSecondary,
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    _dateOfBirth != null
+                                        ? FormatUtils.formatDate(_dateOfBirth!)
+                                        : 'Chọn ngày sinh (dd/MM/yyyy)',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: _dateOfBirth != null
+                                          ? AppColors.textPrimary
+                                          : AppColors.textHint,
+                                    ),
+                                  ),
+                                ),
+                                if (_dateOfBirth != null)
+                                  IconButton(
+                                    key: const Key('clear_dob_button'),
+                                    icon: const Icon(
+                                      Icons.close_rounded,
+                                      size: 18,
+                                      color: AppColors.textSecondary,
+                                    ),
+                                    padding: EdgeInsets.zero,
+                                    constraints: const BoxConstraints(),
+                                    tooltip: 'Xóa ngày sinh',
+                                    onPressed: () {
+                                      setState(() => _dateOfBirth = null);
+                                    },
+                                  ),
+                              ],
+                            ),
+                          ),
                         ),
                         const SizedBox(height: 14),
                         _buildTextField(
                           controller: _addressController,
                           label: 'Địa chỉ nơi ở',
                           hint: 'VD: Hải Châu, Đà Nẵng',
+                        ),
+                        const SizedBox(height: 14),
+                        _buildTextField(
+                          controller: _avatarUrlController,
+                          label: 'Ảnh đại diện (URL HTTPS)',
+                          hint: 'https://...',
+                          keyboardType: TextInputType.url,
+                          validator: (v) {
+                            final trimmed = v?.trim() ?? '';
+                            if (trimmed.isEmpty) return null;
+                            final uri = Uri.tryParse(trimmed);
+                            if (uri == null ||
+                                uri.scheme.toLowerCase() != 'https' ||
+                                uri.host.isEmpty) {
+                              return 'Vui lòng nhập liên kết ảnh https:// hợp lệ';
+                            }
+                            return null;
+                          },
                         ),
                         const SizedBox(height: 14),
                         _buildTextField(

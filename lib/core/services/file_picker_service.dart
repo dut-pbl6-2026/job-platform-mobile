@@ -4,6 +4,9 @@ import 'package:flutter/foundation.dart';
 /// Representation of a selected CV file for job application
 @immutable
 class SelectedCvFile {
+  /// Maximum allowed CV size per SRS STORE-01-01 (5 MB).
+  static const int maxCvBytes = 5 * 1024 * 1024;
+
   final String name;
   final String? path;
   final int size; // size in bytes
@@ -15,6 +18,9 @@ class SelectedCvFile {
     required this.size,
     this.bytes,
   });
+
+  /// Whether the file size satisfies `0 < size <= 5 MB` (STORE-01-01).
+  bool get isWithinSizeLimit => size > 0 && size <= maxCvBytes;
 
   /// Formatted size in KB or MB
   String get formattedSize {
@@ -77,7 +83,7 @@ class DeviceCvPickerService implements ICvPickerService {
       final result = await FilePicker.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['pdf', 'doc', 'docx'],
-        withData: kIsWeb,
+        withData: true,
       );
 
       if (result != null && result.files.isNotEmpty) {
@@ -90,7 +96,9 @@ class DeviceCvPickerService implements ICvPickerService {
         );
       }
     } catch (e) {
-      debugPrint('[DeviceCvPickerService] Error picking CV file: $e');
+      if (kDebugMode) {
+        debugPrint('[DeviceCvPickerService] Error picking CV file: $e');
+      }
     }
     return null;
   }

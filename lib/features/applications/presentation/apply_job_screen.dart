@@ -43,6 +43,7 @@ class _ApplyJobScreenState extends State<ApplyJobScreen> {
   final TextEditingController _coverLetterController = TextEditingController();
   SelectedCvFile? _selectedFile;
   bool _isSubmitting = false;
+  double? _uploadProgress;
   String? _errorMessage;
 
   String? _candidateName;
@@ -99,21 +100,48 @@ class _ApplyJobScreenState extends State<ApplyJobScreen> {
     super.dispose();
   }
 
+  String? _validateCvFile(SelectedCvFile file) {
+    if (!file.isValidCvFormat) {
+      return 'Định dạng file không được hỗ trợ. Vui lòng chọn tệp PDF, DOC hoặc DOCX.';
+    }
+    if (file.size <= 0) {
+      return 'File CV trống hoặc không hợp lệ. Vui lòng chọn tệp khác.';
+    }
+    if (!file.isWithinSizeLimit) {
+      return 'Dung lượng file CV vượt quá giới hạn 5MB (${file.formattedSize}). Vui lòng chọn tệp nhỏ hơn 5MB.';
+    }
+    final hasReadableData =
+        (file.bytes != null && file.bytes!.isNotEmpty) ||
+        (file.path != null && file.path!.isNotEmpty);
+    if (!hasReadableData) {
+      return 'Không thể đọc dữ liệu file CV từ thiết bị. Vui lòng chọn lại.';
+    }
+    return null;
+  }
+
   Future<void> _handlePickCv() async {
     try {
       final file = await _cvPicker.pickCvFile();
       if (file != null && mounted) {
+        final validationError = _validateCvFile(file);
+        if (validationError != null) {
+          setState(() {
+            _selectedFile = null;
+            _errorMessage = validationError;
+          });
+          return;
+        }
         setState(() {
           _selectedFile = file;
           _errorMessage = null;
         });
       }
-    } catch (e) {
+    } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
+          const SnackBar(
             backgroundColor: AppColors.error,
-            content: Text('Lỗi khi chọn file: $e'),
+            content: Text('Không thể chọn file CV lúc này. Vui lòng thử lại.'),
           ),
         );
       }
@@ -128,8 +156,17 @@ class _ApplyJobScreenState extends State<ApplyJobScreen> {
       return;
     }
 
+    final fileError = _validateCvFile(_selectedFile!);
+    if (fileError != null) {
+      setState(() {
+        _errorMessage = fileError;
+      });
+      return;
+    }
+
     setState(() {
       _isSubmitting = true;
+      _uploadProgress = 0.0;
       _errorMessage = null;
     });
 
@@ -144,6 +181,13 @@ class _ApplyJobScreenState extends State<ApplyJobScreen> {
         cvFilePath: _selectedFile!.path,
         cvFileSize: _selectedFile!.size,
         cvBytes: _selectedFile!.bytes,
+        onUploadProgress: (sent, total) {
+          if (mounted && total > 0) {
+            setState(() {
+              _uploadProgress = (sent / total).clamp(0.0, 1.0);
+            });
+          }
+        },
       );
 
       await _repository.applyJob(params);
@@ -222,15 +266,23 @@ class _ApplyJobScreenState extends State<ApplyJobScreen> {
       );
     } catch (e) {
       if (!mounted) return;
-      final errorStr = e.toString();
       setState(() {
-        _errorMessage = errorStr.contains('Exception: ')
-            ? errorStr.replaceAll('Exception: ', '')
-            : 'Đã có lỗi xảy ra khi nộp hồ sơ. Vui lòng thử lại.';
+        if (e is ApplicationRepositoryException) {
+          _errorMessage = e.message;
+        } else {
+          final cleaned = e.toString().replaceFirst('Exception: ', '').trim();
+          _errorMessage =
+              cleaned.isNotEmpty && !cleaned.contains('DioException')
+              ? cleaned
+              : 'Đã có lỗi xảy ra khi nộp hồ sơ. Vui lòng thử lại.';
+        }
       });
     } finally {
       if (mounted) {
-        setState(() => _isSubmitting = false);
+        setState(() {
+          _isSubmitting = false;
+          _uploadProgress = null;
+        });
       }
     }
   }
@@ -391,7 +443,7 @@ class _ApplyJobScreenState extends State<ApplyJobScreen> {
               ),
               const SizedBox(height: 4),
               const Text(
-                'Hỗ trợ định dạng PDF, DOC, DOCX (Dung lượng tối đa 10MB)',
+                'Hỗ trợ định dạng PDF, DOC, DOCX (Dung lượng tối đa 5MB)',
                 style: TextStyle(fontSize: 12, color: AppColors.textHint),
               ),
               const SizedBox(height: 10),
@@ -625,6 +677,32 @@ class _ApplyJobScreenState extends State<ApplyJobScreen> {
                       ),
                     ],
                   ),
+                ),
+              ],
+
+              if (_isSubmitting && _uploadProgress != null) ...[
+                const SizedBox(height: 16),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    LinearProgressIndicator(
+                      value: _uploadProgress! > 0 ? _uploadProgress : null,
+                      backgroundColor: AppColors.border,
+                      color: AppColors.primary,
+                      minHeight: 6,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      _uploadProgress! > 0
+                          ? 'Đang tải lên CV... ${(_uploadProgress! * 100).round()}%'
+                          : 'Đang gửi hồ sơ ứng tuyển...',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
                 ),
               ],
 

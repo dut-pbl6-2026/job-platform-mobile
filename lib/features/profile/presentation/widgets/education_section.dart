@@ -6,12 +6,14 @@ import '../../domain/models/profile_model.dart';
 class EducationSection extends StatelessWidget {
   final List<EducationModel> educations;
   final VoidCallback onAddEducation;
+  final ValueChanged<EducationModel>? onEditEducation;
   final ValueChanged<String> onDeleteEducation;
 
   const EducationSection({
     super.key,
     required this.educations,
     required this.onAddEducation,
+    this.onEditEducation,
     required this.onDeleteEducation,
   });
 
@@ -97,6 +99,16 @@ class EducationSection extends StatelessWidget {
                                   ),
                                 ),
                               ),
+                              if (onEditEducation != null)
+                                IconButton(
+                                  icon: const Icon(
+                                    Icons.mode_edit_outline_rounded,
+                                    size: 18,
+                                    color: AppColors.primary,
+                                  ),
+                                  tooltip: 'Chỉnh sửa học vấn',
+                                  onPressed: () => onEditEducation!(edu),
+                                ),
                               IconButton(
                                 icon: const Icon(
                                   Icons.delete_outline_rounded,

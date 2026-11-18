@@ -39,13 +39,17 @@ class ApiNotificationRepository implements INotificationRepository {
         enabled: _enableMocks,
         statusCode: e.response?.statusCode,
       )) {
-        debugPrint(
-          'Device token registration through Gateway failed '
-          '(${e.response?.statusCode ?? e.type}).',
-        );
+        if (kDebugMode) {
+          debugPrint(
+            'Device token registration through Gateway failed '
+            '(${e.response?.statusCode ?? e.type}).',
+          );
+        }
         rethrow;
       }
-      debugPrint('Device token registration unavailable, recording locally.');
+      if (kDebugMode) {
+        debugPrint('Device token registration unavailable, recording locally.');
+      }
       await _fallbackMockRepository.registerDeviceToken(
         token: token,
         platform: platform,
@@ -56,16 +60,19 @@ class ApiNotificationRepository implements INotificationRepository {
   @override
   Future<void> unregisterDeviceToken(String token) async {
     try {
-      await _dio.delete('/api/notifications/devices/$token');
+      final encodedToken = Uri.encodeComponent(token);
+      await _dio.delete('/api/notifications/devices/$encodedToken');
     } on DioException catch (e) {
       if (!shouldUseMockFallback(
         enabled: _enableMocks,
         statusCode: e.response?.statusCode,
       )) {
-        debugPrint(
-          'Device token unregistration failed '
-          '(${e.response?.statusCode ?? e.type}).',
-        );
+        if (kDebugMode) {
+          debugPrint(
+            'Device token unregistration failed '
+            '(${e.response?.statusCode ?? e.type}).',
+          );
+        }
         rethrow;
       }
       await _fallbackMockRepository.unregisterDeviceToken(token);
@@ -176,7 +183,7 @@ class ApiNotificationRepository implements INotificationRepository {
       final response = await _dio.get('/api/notifications/unread-count');
       if (response.statusCode == 200 && response.data != null) {
         if (response.data is Map) {
-          return (response.data['count'] ?? response.data['unread_count'] ?? 0)
+          return (response.data['count'] ?? response.data['unreadCount'] ?? 0)
               as int;
         } else if (response.data is int) {
           return response.data as int;
