@@ -66,6 +66,42 @@ class _ApplicationDetailScreenState extends State<ApplicationDetailScreen> {
 
   Future<void> _handleCopyCvUrl(ApplicationModel app) async {
     final rawUrl = app.cvUrl.trim();
+    if (ApiApplicationRepository.isGatewayCvPath(rawUrl)) {
+      try {
+        final bytes = await _repository.downloadCvBytes(rawUrl);
+        if (!mounted) return;
+        await showDialog<void>(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            title: const Text('Đã tải CV đã nộp'),
+            content: Text(
+              'Tệp: ${app.cvFileName}\n'
+              'Dung lượng: ${(bytes.length / 1024).toStringAsFixed(1)} KB',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                child: const Text('Đóng'),
+              ),
+            ],
+          ),
+        );
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              e is ApplicationRepositoryException
+                  ? e.message
+                  : 'Không thể tải tệp CV: ${app.cvFileName}',
+            ),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+      return;
+    }
+
     final uri = Uri.tryParse(rawUrl);
     final isSafeHttps =
         uri != null &&

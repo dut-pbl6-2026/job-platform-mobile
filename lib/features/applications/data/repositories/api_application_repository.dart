@@ -295,6 +295,71 @@ class ApiApplicationRepository implements IApplicationRepository {
       return false;
     }
   }
+
+  /// Whether [cvUrl] targets an authenticated Gateway CV download route.
+  static bool isGatewayCvPath(String cvUrl) {
+    final trimmed = cvUrl.trim();
+    if (!trimmed.startsWith('/api/applications/cv/') ||
+        trimmed.startsWith('//') ||
+        trimmed.contains('..') ||
+        trimmed.contains('\\')) {
+      return false;
+    }
+    final uri = Uri.tryParse(trimmed);
+    return uri != null && !uri.hasScheme && !uri.hasAuthority;
+  }
+
+  /// Downloads CV bytes through [dio] so Bearer auth headers attach automatically.
+  static Future<Uint8List> downloadCvWithDio(Dio dio, String cvUrl) async {
+    final trimmed = cvUrl.trim();
+    final uri = Uri.tryParse(trimmed);
+    final isSafeHttps =
+        uri != null &&
+        uri.scheme.toLowerCase() == 'https' &&
+        uri.host.isNotEmpty;
+    if (!isGatewayCvPath(trimmed) && !isSafeHttps) {
+      throw const ApplicationRepositoryException(
+        'Liên kết tải CV không hợp lệ.',
+      );
+    }
+    try {
+      final response = await dio.get<List<int>>(
+        trimmed,
+        options: Options(responseType: ResponseType.bytes),
+      );
+      final data = response.data;
+      if (response.statusCode == 200 && data != null) {
+        return Uint8List.fromList(data);
+      }
+      throw const ApplicationRepositoryException(
+        'Không thể tải tệp CV lúc này. Vui lòng thử lại.',
+      );
+    } on DioException catch (e) {
+      if (e.response == null) {
+        throw const ApplicationRepositoryException(
+          'Không thể kết nối tới máy chủ để tải CV.',
+        );
+      }
+      final code = e.response?.statusCode;
+      if (code == 401 || code == 403) {
+        throw const ApplicationRepositoryException(
+          'Bạn không có quyền tải tệp CV này.',
+        );
+      }
+      if (code == 404) {
+        throw const ApplicationRepositoryException(
+          'Không tìm thấy tệp CV trên hệ thống.',
+        );
+      }
+      throw const ApplicationRepositoryException(
+        'Không thể tải tệp CV lúc này. Vui lòng thử lại.',
+      );
+    }
+  }
+
+  @override
+  Future<Uint8List> downloadCvBytes(String cvUrl) =>
+      downloadCvWithDio(_dio, cvUrl);
 }
 
 /// Clean user-facing exception for application operations (never exposes raw Dio/ProblemDetails).

@@ -262,5 +262,46 @@ void main() {
         expect(result.cvUrl, '/api/applications/cv/cv.pdf');
       },
     );
+
+    test(
+      'downloadCvBytes fetches gateway-relative path and rejects unsafe URLs',
+      () async {
+        final dio = Dio(BaseOptions(baseUrl: 'https://gateway.test'));
+        String? requestedPath;
+        ResponseType? requestedResponseType;
+        dio.interceptors.add(
+          InterceptorsWrapper(
+            onRequest: (options, handler) {
+              requestedPath = options.path;
+              requestedResponseType = options.responseType;
+              handler.resolve(
+                Response<List<int>>(
+                  requestOptions: options,
+                  statusCode: 200,
+                  data: const [37, 80, 68, 70],
+                ),
+              );
+            },
+          ),
+        );
+
+        final repo = ApiApplicationRepository(dio: dio);
+        final bytes = await repo.downloadCvBytes(
+          '/api/applications/cv/resume.pdf',
+        );
+        expect(requestedPath, '/api/applications/cv/resume.pdf');
+        expect(requestedResponseType, ResponseType.bytes);
+        expect(bytes, [37, 80, 68, 70]);
+
+        await expectLater(
+          repo.downloadCvBytes('/api/applications/cv/../secret.pdf'),
+          throwsA(isA<ApplicationRepositoryException>()),
+        );
+        await expectLater(
+          repo.downloadCvBytes('http://evil.example/cv.pdf'),
+          throwsA(isA<ApplicationRepositoryException>()),
+        );
+      },
+    );
   });
 }

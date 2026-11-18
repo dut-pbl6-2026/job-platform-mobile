@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import '../models/recruiter_models.dart';
 
 /// Abstract repository interface for Recruiter features (JOB-01, APP-01).
@@ -13,6 +15,9 @@ abstract class IRecruiterRepository {
 
   /// Update a candidate's application status (pending, reviewed, shortlisted, accepted, rejected).
   Future<bool> updateCandidateStatus(String applicationId, String newStatus);
+
+  /// Download CV bytes via authenticated gateway path or verified HTTPS URL.
+  Future<Uint8List> downloadCvBytes(String cvUrl);
 
   /// Fetch recruiter's own posted jobs.
   Future<List<RecruiterJob>> getMyJobs({

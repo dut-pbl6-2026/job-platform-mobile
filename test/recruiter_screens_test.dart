@@ -1,7 +1,10 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:job_platform_mobile/core/theme/app_theme.dart';
 import 'package:job_platform_mobile/features/recruiter/data/repositories/mock_recruiter_repository.dart';
+import 'package:job_platform_mobile/features/recruiter/domain/models/recruiter_models.dart';
 import 'package:job_platform_mobile/features/recruiter/presentation/candidate_applications_screen.dart';
 import 'package:job_platform_mobile/features/recruiter/presentation/post_job_screen.dart';
 import 'package:job_platform_mobile/features/recruiter/presentation/recruiter_dashboard_screen.dart';
@@ -225,5 +228,72 @@ void main() {
         expect(find.widgetWithText(ChoiceChip, 'Phù hợp'), findsOneWidget);
       },
     );
+
+    testWidgets(
+      'CandidateApplicationsScreen shows pending AI score text and downloads gateway CV',
+      (tester) async {
+        final pendingRepo = _PendingCvMockRepo();
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: AppTheme.lightTheme,
+            home: CandidateApplicationsScreen(
+              repository: pendingRepo,
+              isMock: false,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Đang chấm điểm AI...'), findsOneWidget);
+        expect(find.textContaining('0%'), findsNothing);
+
+        await tester.tap(find.text('Xem hồ sơ Trần Thị Bình'));
+        await tester.pumpAndSettle();
+        await tester.tap(
+          find.byKey(const Key('open_candidate_cv_cand_pending')),
+        );
+        await tester.pumpAndSettle();
+
+        expect(
+          pendingRepo.lastDownloadedCvUrl,
+          '/api/applications/cv/binh.pdf',
+        );
+        expect(find.text('Đã tải CV ứng viên'), findsOneWidget);
+      },
+    );
   });
+}
+
+class _PendingCvMockRepo extends MockRecruiterRepository {
+  String? lastDownloadedCvUrl;
+
+  @override
+  bool get isMock => false;
+
+  @override
+  Future<List<CandidateApplication>> getCandidateApplications({
+    String? jobId,
+    String? status,
+  }) async {
+    return const [
+      CandidateApplication(
+        id: 'cand_pending',
+        jobId: 'job-1',
+        name: 'Trần Thị Bình',
+        title: 'Flutter Engineer',
+        status: 'Chờ xem',
+        cvName: 'binh.pdf',
+        cvUrl: '/api/applications/cv/binh.pdf',
+        appliedDate: '2026-11-18',
+        matchScore: null,
+        scoreStatus: 'pending',
+      ),
+    ];
+  }
+
+  @override
+  Future<Uint8List> downloadCvBytes(String cvUrl) async {
+    lastDownloadedCvUrl = cvUrl;
+    return Uint8List.fromList(const [37, 80, 68, 70]);
+  }
 }

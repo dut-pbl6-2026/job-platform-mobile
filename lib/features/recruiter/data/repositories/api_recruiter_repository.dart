@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import '../../../../core/config/mock_fallback.dart';
 import '../../../../core/network/dio_provider.dart';
 import '../../../../core/session/auth_session.dart';
+import '../../../applications/data/repositories/api_application_repository.dart';
 import '../../domain/models/recruiter_models.dart';
 import '../../domain/repositories/recruiter_repository.dart';
 import 'mock_recruiter_repository.dart';
@@ -196,7 +197,7 @@ class ApiRecruiterRepository implements IRecruiterRepository {
       final queryParams = <String, dynamic>{
         'status': ?backendStatus,
         'page': ?page,
-        'pageSize': ?pageSize,
+        'size': ?pageSize,
       };
 
       final response = await _dio.get(
@@ -279,41 +280,36 @@ class ApiRecruiterRepository implements IRecruiterRepository {
     return _fallbackMock.getDashboardStats();
   }
 
+  Future<String> _resolveCompanyId(String? explicit) async {
+    final trimmed = explicit?.trim() ?? '';
+    if (trimmed.isNotEmpty) return trimmed;
+
+    final fromUser = AuthSession.instance.currentUser?.companyId?.trim() ?? '';
+    if (fromUser.isNotEmpty) return fromUser;
+
+    final fromJwt = AuthSession.instance.companyId?.trim() ?? '';
+    if (fromJwt.isNotEmpty) return fromJwt;
+
+    try {
+      final res = await _dio.get('/api/companies/mine');
+      if (res.statusCode == 200 && res.data is Map) {
+        final companyId = (res.data as Map)['id']?.toString().trim() ?? '';
+        if (companyId.isNotEmpty) return companyId;
+      }
+    } catch (_) {
+      // Handled by empty-companyId error below.
+    }
+
+    throw Exception(
+      'Không tìm thấy thông tin doanh nghiệp của nhà tuyển dụng. Vui lòng cập nhật hồ sơ doanh nghiệp trước khi đăng tin.',
+    );
+  }
+
   @override
   Future<String> postJob(PostJobParams params) async {
     try {
-      // Resolve recruiter's own companyId (never take random public company)
-      String companyId = params.companyId ?? '';
-      if (companyId.isEmpty) {
-        companyId = AuthSession.instance.currentUser?.companyId ?? '';
-      }
-      if (companyId.isEmpty) {
-        final jwtCompId = AuthSession.instance.companyId;
-        if (jwtCompId != null && jwtCompId.isNotEmpty) {
-          companyId = jwtCompId;
-        }
-      }
-      if (companyId.isEmpty) {
-        // Try fetching user profile from /api/profiles/me
-        try {
-          final profileRes = await _dio.get('/api/profiles/me');
-          if (profileRes.statusCode == 200 && profileRes.data is Map) {
-            final pData = profileRes.data as Map;
-            companyId =
-                pData['companyId']?.toString() ??
-                pData['company_id']?.toString() ??
-                '';
-          }
-        } catch (_) {
-          // Profile fetch error
-        }
-      }
-
-      if (companyId.isEmpty) {
-        throw Exception(
-          'Không tìm thấy thông tin doanh nghiệp của nhà tuyển dụng. Vui lòng cập nhật hồ sơ doanh nghiệp trước khi đăng tin.',
-        );
-      }
+      // Resolve recruiter's own companyId via explicit param, JWT/session, or /api/companies/mine.
+      final companyId = await _resolveCompanyId(params.companyId);
 
       final payload = _buildJobPayload(params, companyId: companyId);
 
@@ -350,15 +346,8 @@ class ApiRecruiterRepository implements IRecruiterRepository {
   @override
   Future<void> updateJob(String jobId, PostJobParams params) async {
     try {
-      final companyId =
-          params.companyId ??
-          AuthSession.instance.currentUser?.companyId ??
-          AuthSession.instance.companyId ??
-          '';
-      final payload = _buildJobPayload(
-        params,
-        companyId: companyId.isNotEmpty ? companyId : null,
-      );
+      final companyId = await _resolveCompanyId(params.companyId);
+      final payload = _buildJobPayload(params, companyId: companyId);
       final response = await _dio.put('/api/jobs/$jobId', data: payload);
       if (response.statusCode == 200 || response.statusCode == 204) {
         _isMock = false;
@@ -514,6 +503,10 @@ class ApiRecruiterRepository implements IRecruiterRepository {
     }
     throw Exception('Hình thức làm việc không hợp lệ: $type');
   }
+
+  @override
+  Future<Uint8List> downloadCvBytes(String cvUrl) =>
+      ApiApplicationRepository.downloadCvWithDio(_dio, cvUrl);
 
   /// Accepts only the canonical job-svc experience levels. Null or unknown
   /// input throws; the form requires a choice, and no level is guessed.

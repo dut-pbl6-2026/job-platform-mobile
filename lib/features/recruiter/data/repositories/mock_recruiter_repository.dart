@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import '../../domain/models/recruiter_models.dart';
 import '../../domain/repositories/recruiter_repository.dart';
 
@@ -262,5 +265,11 @@ class MockRecruiterRepository implements IRecruiterRepository {
   Future<void> deleteJob(String jobId) async {
     await _simulateDelay();
     _jobs.removeWhere((j) => j.id == jobId);
+  }
+
+  @override
+  Future<Uint8List> downloadCvBytes(String cvUrl) async {
+    await _simulateDelay();
+    return Uint8List.fromList(utf8.encode('%PDF-1.4\nMock CV ($cvUrl)\n'));
   }
 }

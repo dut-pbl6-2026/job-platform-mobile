@@ -305,5 +305,167 @@ void main() {
     test('omits status for a UI value with no backend equivalent', () async {
       expect((await captureJobsQuery('Nháp')).containsKey('status'), isFalse);
     });
+
+    test(
+      'getMyJobs sends canonical size parameter instead of pageSize',
+      () async {
+        late Map<String, dynamic> query;
+        final dio = Dio(BaseOptions(baseUrl: 'http://unused.invalid'));
+        dio.interceptors.add(
+          InterceptorsWrapper(
+            onRequest: (options, handler) {
+              query = Map<String, dynamic>.from(options.queryParameters);
+              handler.resolve(
+                Response(
+                  requestOptions: options,
+                  statusCode: 200,
+                  data: {'items': <dynamic>[]},
+                ),
+              );
+            },
+          ),
+        );
+        await ApiRecruiterRepository(dio: dio).getMyJobs(page: 1, pageSize: 15);
+        expect(query['page'], 1);
+        expect(query['size'], 15);
+        expect(query.containsKey('pageSize'), isFalse);
+      },
+    );
+  });
+
+  group('Recruiter camelCase DTOs, companyId resolution, and CV download', () {
+    test(
+      'CandidateApplication enforces camelCase and null pending matchScore',
+      () {
+        final pending = CandidateApplication.fromJson({
+          'id': 'app-1',
+          'jobId': 'job-1',
+          'applicantId': 'usr-1',
+          'applicantName': 'An',
+          'jobTitle': 'Mobile',
+          'status': 'Pending',
+          'cvUrl': '/api/applications/cv/an.pdf',
+          'scoreStatus': 'pending',
+        });
+        expect(pending.jobId, 'job-1');
+        expect(pending.applicantId, 'usr-1');
+        expect(pending.cvUrl, '/api/applications/cv/an.pdf');
+        expect(pending.matchScore, isNull);
+        expect(pending.isScorePending, isTrue);
+
+        final snakeOnly = CandidateApplication.fromJson({
+          'id': 'app-2',
+          'job_id': 'job-snake',
+          'applicant_id': 'usr-snake',
+          'cv_url': '/api/applications/cv/snake.pdf',
+          'match_score': 88,
+        });
+        expect(snakeOnly.jobId, isEmpty);
+        expect(snakeOnly.applicantId, isEmpty);
+        expect(snakeOnly.cvUrl, isNull);
+        expect(snakeOnly.matchScore, isNull);
+      },
+    );
+
+    test('RecruiterJob.fromJson enforces camelCase contract', () {
+      final job = RecruiterJob.fromJson({
+        'id': 'job-1',
+        'title': 'Flutter Dev',
+        'status': 'Active',
+        'applicationsCount': 4,
+        'viewCount': 99,
+        'location': 'Đà Nẵng',
+        'salaryMin': 1500,
+        'salaryMax': 2500,
+        'salaryCurrency': 'USD',
+        'createdAt': '2026-11-18T00:00:00Z',
+        'employmentType': 'FullTime',
+        'experienceLevel': 'Senior',
+        'categoryId': 'cat-1',
+      });
+      expect(job.applicationsCount, 4);
+      expect(job.viewsCount, 99);
+      expect(job.salaryMin, 1500);
+      expect(job.salaryCurrency, 'USD');
+      expect(job.employmentType, 'FullTime');
+      expect(job.categoryId, 'cat-1');
+
+      final snakeOnly = RecruiterJob.fromJson({
+        'id': 'job-2',
+        'title': 'Snake',
+        'salary_min': 1000,
+        'applications_count': 5,
+        'view_count': 10,
+        'employment_type': 'FullTime',
+        'category_id': 'cat-snake',
+      });
+      expect(snakeOnly.salaryMin, isNull);
+      expect(snakeOnly.applicationsCount, 0);
+      expect(snakeOnly.viewsCount, 0);
+      expect(snakeOnly.employmentType, isNull);
+      expect(snakeOnly.categoryId, isNull);
+    });
+
+    test(
+      'postJob and updateJob resolve companyId via /api/companies/mine (never /api/profiles/me)',
+      () async {
+        final paths = <String>[];
+        late Map<String, dynamic> postBody;
+        late Map<String, dynamic> putBody;
+
+        final dio = Dio(BaseOptions(baseUrl: 'http://unused.invalid'));
+        dio.interceptors.add(
+          InterceptorsWrapper(
+            onRequest: (options, handler) {
+              paths.add('${options.method} ${options.path}');
+              if (options.path == '/api/companies/mine') {
+                handler.resolve(
+                  Response(
+                    requestOptions: options,
+                    statusCode: 200,
+                    data: {'id': 'comp-from-mine', 'name': 'Acme'},
+                  ),
+                );
+                return;
+              }
+              if (options.method == 'POST' && options.path == '/api/jobs') {
+                postBody = Map<String, dynamic>.from(options.data as Map);
+                handler.resolve(
+                  Response(
+                    requestOptions: options,
+                    statusCode: 201,
+                    data: {'id': 'job-created'},
+                  ),
+                );
+                return;
+              }
+              if (options.method == 'PUT' &&
+                  options.path == '/api/jobs/job-created') {
+                putBody = Map<String, dynamic>.from(options.data as Map);
+                handler.resolve(
+                  Response(requestOptions: options, statusCode: 200),
+                );
+                return;
+              }
+              handler.reject(DioException(requestOptions: options));
+            },
+          ),
+        );
+
+        final repo = ApiRecruiterRepository(dio: dio);
+        const params = PostJobParams(
+          title: 'Backend Engineer',
+          location: 'Đà Nẵng',
+          description: 'Mô tả',
+          experienceLevel: 'Mid',
+        );
+        final createdId = await repo.postJob(params);
+        await repo.updateJob(createdId, params);
+
+        expect(paths, isNot(contains(contains('/api/profiles/me'))));
+        expect(postBody['companyId'], 'comp-from-mine');
+        expect(putBody['companyId'], 'comp-from-mine');
+      },
+    );
   });
 }

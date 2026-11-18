@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import '../models/application_model.dart';
 
 /// Abstract contract for Application repository (APP-01, MOB-01-04, MOB-01-06)
@@ -17,4 +19,7 @@ abstract class IApplicationRepository {
 
   /// Check if user has already applied for a job to prevent duplicates (APP-01-02)
   Future<bool> hasApplied(String jobId);
+
+  /// Download submitted CV bytes via authenticated gateway path or HTTPS URL.
+  Future<Uint8List> downloadCvBytes(String cvUrl);
 }

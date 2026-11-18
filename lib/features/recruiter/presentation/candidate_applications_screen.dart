@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../../../core/error/error_mapper.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../applications/data/repositories/api_application_repository.dart';
 import '../data/repositories/api_recruiter_repository.dart';
 import '../domain/models/recruiter_models.dart';
 import '../domain/repositories/recruiter_repository.dart';
@@ -288,6 +289,42 @@ class _CandidateApplicationsScreenState
     CandidateApplication cand,
   ) async {
     final rawUrl = cand.cvUrl?.trim() ?? '';
+    if (ApiApplicationRepository.isGatewayCvPath(rawUrl)) {
+      try {
+        final bytes = await _repository.downloadCvBytes(rawUrl);
+        if (!mounted) return;
+        await showDialog<void>(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            title: const Text('Đã tải CV ứng viên'),
+            content: Text(
+              'Tệp: ${cand.cvName}\n'
+              'Dung lượng: ${(bytes.length / 1024).toStringAsFixed(1)} KB',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                child: const Text('Đóng'),
+              ),
+            ],
+          ),
+        );
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              e is ApplicationRepositoryException
+                  ? e.message
+                  : 'Không thể tải tệp CV: ${cand.cvName}',
+            ),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+      return;
+    }
+
     final uri = Uri.tryParse(rawUrl);
     final hasSafeUrl =
         uri != null &&
@@ -298,7 +335,7 @@ class _CandidateApplicationsScreenState
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Tệp đính kèm: ${cand.cvName} (chưa có liên kết tải HTTPS)',
+            'Tệp đính kèm: ${cand.cvName} (chưa có liên kết tải hợp lệ)',
           ),
           behavior: SnackBarBehavior.floating,
         ),
@@ -581,7 +618,9 @@ class _CandidateApplicationsScreenState
                                     borderRadius: BorderRadius.circular(6),
                                   ),
                                   child: Text(
-                                    'Điểm phù hợp AI: ${cand.matchScore}%',
+                                    cand.isScorePending
+                                        ? 'Đang chấm điểm AI...'
+                                        : 'Điểm phù hợp AI: ${cand.matchScore}%',
                                     style: const TextStyle(
                                       fontSize: 11,
                                       fontWeight: FontWeight.bold,

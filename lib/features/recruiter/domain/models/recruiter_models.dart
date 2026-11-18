@@ -34,7 +34,8 @@ class CandidateApplication {
   final String? cvUrl;
   final String appliedDate;
   final List<String> skills;
-  final int matchScore;
+  final int? matchScore;
+  final String? scoreStatus;
 
   const CandidateApplication({
     required this.id,
@@ -48,7 +49,8 @@ class CandidateApplication {
     this.cvUrl,
     required this.appliedDate,
     this.skills = const [],
-    this.matchScore = 0,
+    this.matchScore,
+    this.scoreStatus,
   });
 
   CandidateApplication copyWith({
@@ -64,6 +66,7 @@ class CandidateApplication {
     String? appliedDate,
     List<String>? skills,
     int? matchScore,
+    String? scoreStatus,
   }) {
     return CandidateApplication(
       id: id ?? this.id,
@@ -78,6 +81,7 @@ class CandidateApplication {
       appliedDate: appliedDate ?? this.appliedDate,
       skills: skills ?? this.skills,
       matchScore: matchScore ?? this.matchScore,
+      scoreStatus: scoreStatus ?? this.scoreStatus,
     );
   }
 
@@ -108,15 +112,15 @@ class CandidateApplication {
       status == 'Chờ xem' || status.toLowerCase() == 'pending';
   bool get isShortlisted =>
       status == 'Phù hợp' || status.toLowerCase() == 'shortlisted';
+  bool get isScorePending =>
+      matchScore == null || scoreStatus?.toLowerCase() == 'pending';
 
   factory CandidateApplication.fromJson(Map<String, dynamic> json) {
+    final cvUrl = json['cvUrl']?.toString();
     return CandidateApplication(
       id: json['id']?.toString() ?? '',
-      jobId: json['jobId']?.toString() ?? json['job_id']?.toString() ?? '',
-      applicantId:
-          json['applicantId']?.toString() ??
-          json['applicant_id']?.toString() ??
-          '',
+      jobId: json['jobId']?.toString() ?? '',
+      applicantId: json['applicantId']?.toString() ?? '',
       name:
           json['name']?.toString() ??
           json['applicantName']?.toString() ??
@@ -129,9 +133,10 @@ class CandidateApplication {
       status: normalizeCandidateStatus(json['status']?.toString()),
       cvName:
           json['cvName']?.toString() ??
-          json['cv_url']?.toString().split('/').last ??
+          json['cvFileName']?.toString() ??
+          cvUrl?.split('/').last ??
           'CV.pdf',
-      cvUrl: json['cvUrl']?.toString() ?? json['cv_url']?.toString(),
+      cvUrl: cvUrl,
       appliedDate:
           json['appliedDate']?.toString() ??
           json['createdAt']?.toString().split('T').first ??
@@ -141,13 +146,12 @@ class CandidateApplication {
               ?.map((e) => e.toString())
               .toList() ??
           const [],
-      matchScore: _parseScore(
-        json['score'] ?? json['matchScore'] ?? json['match_score'],
-      ),
+      matchScore: _parseScore(json['score'] ?? json['matchScore']),
+      scoreStatus: json['scoreStatus']?.toString(),
     );
   }
 
-  static int _parseScore(Object? raw) {
+  static int? _parseScore(Object? raw) {
     if (raw is num) {
       if (raw > 0 && raw <= 1.0) {
         return (raw * 100).round();
@@ -162,7 +166,7 @@ class CandidateApplication {
             : parsed.round().clamp(0, 100);
       }
     }
-    return 0;
+    return null;
   }
 
   Map<String, dynamic> toJson() {
@@ -179,6 +183,7 @@ class CandidateApplication {
       'appliedDate': appliedDate,
       'skills': skills,
       'matchScore': matchScore,
+      if (scoreStatus != null) 'scoreStatus': scoreStatus,
     };
   }
 }
@@ -297,13 +302,9 @@ class RecruiterJob {
       status.toLowerCase() == 'đã đóng';
 
   factory RecruiterJob.fromJson(Map<String, dynamic> json) {
-    final minVal = (json['salaryMin'] as num? ?? json['salary_min'] as num?)
-        ?.toDouble();
-    final maxVal = (json['salaryMax'] as num? ?? json['salary_max'] as num?)
-        ?.toDouble();
-    final currency =
-        (json['salaryCurrency'] ?? json['salary_currency'])?.toString() ??
-        'VND';
+    final minVal = (json['salaryMin'] as num?)?.toDouble();
+    final maxVal = (json['salaryMax'] as num?)?.toDouble();
+    final currency = json['salaryCurrency']?.toString() ?? 'VND';
     final rawSalary = json['salary']?.toString();
     final resolvedSalary = (rawSalary != null && rawSalary.trim().isNotEmpty)
         ? rawSalary
@@ -320,29 +321,24 @@ class RecruiterJob {
       applicationsCount:
           (json['applications'] as num?)?.toInt() ??
           (json['applicationsCount'] as num?)?.toInt() ??
-          (json['applications_count'] as num?)?.toInt() ??
           (json['applicationCount'] as num?)?.toInt() ??
           0,
       viewsCount:
           (json['views'] as num?)?.toInt() ??
           (json['viewCount'] as num?)?.toInt() ??
-          (json['view_count'] as num?)?.toInt() ??
           0,
       location: json['location']?.toString() ?? '',
       salary: resolvedSalary,
       postedDate:
           json['postedDate']?.toString() ??
           json['createdAt']?.toString().split('T').first ??
-          json['created_at']?.toString().split('T').first ??
           '',
       description: json['description']?.toString(),
       requirements: json['requirements']?.toString(),
       benefits: json['benefits']?.toString(),
-      employmentType: (json['employmentType'] ?? json['employment_type'])
-          ?.toString(),
-      experienceLevel: (json['experienceLevel'] ?? json['experience_level'])
-          ?.toString(),
-      categoryId: (json['categoryId'] ?? json['category_id'])?.toString(),
+      employmentType: json['employmentType']?.toString(),
+      experienceLevel: json['experienceLevel']?.toString(),
+      categoryId: json['categoryId']?.toString(),
       salaryMin: minVal,
       salaryMax: maxVal,
       salaryCurrency: currency,
