@@ -82,12 +82,48 @@ class AppRouter {
   static final GlobalKey<NavigatorState> _rootNavigatorKey =
       GlobalKey<NavigatorState>();
 
+  /// Normalizes incoming `job://` custom-scheme deep links to internal routes.
+  @visibleForTesting
+  static String? normalizeDeepLinkUri(Uri uri) {
+    if (uri.scheme.toLowerCase() != 'job') return null;
+    final host = uri.host.toLowerCase().trim();
+    final segments = uri.pathSegments
+        .where((s) => s.isNotEmpty && s != '..')
+        .map(Uri.encodeComponent)
+        .toList();
+    final suffix = segments.isEmpty ? '' : '/${segments.join('/')}';
+    final query = uri.hasQuery ? '?${uri.query}' : '';
+
+    switch (host) {
+      case 'verify-email':
+        return '${AppRoutes.verifyEmail}$query';
+      case 'reset-password':
+        return '${AppRoutes.resetPassword}$query';
+      case 'job':
+      case 'jobs':
+        return '${AppRoutes.jobs}$suffix$query';
+      case 'application':
+      case 'applications':
+        return '${AppRoutes.applications}$suffix$query';
+      case 'search':
+        return '${AppRoutes.search}$query';
+      case 'home':
+        return AppRoutes.home;
+      default:
+        return null;
+    }
+  }
+
   static final GoRouter router = GoRouter(
     navigatorKey: _rootNavigatorKey,
     initialLocation: AppRoutes.splash,
     debugLogDiagnostics: kDebugMode,
     refreshListenable: AuthSession.instance,
     redirect: (context, state) {
+      if (state.uri.scheme.toLowerCase() == 'job') {
+        return normalizeDeepLinkUri(state.uri) ?? AppRoutes.home;
+      }
+
       final isAuthenticated = AuthSession.instance.isAuthenticated;
       final resolvedRole = AuthSession.instance.resolvedRole;
       final currentPath = state.matchedLocation;

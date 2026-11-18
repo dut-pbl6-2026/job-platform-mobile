@@ -1169,7 +1169,7 @@ class _JobFilterBottomSheetState extends State<JobFilterBottomSheet> {
             ),
             Switch.adaptive(
               value: _includeNegotiable,
-              activeColor: AppColors.primary,
+              activeTrackColor: AppColors.primary,
               onChanged: (val) {
                 setState(() {
                   _includeNegotiable = val;

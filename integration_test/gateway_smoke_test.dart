@@ -35,11 +35,13 @@ const bool _requireLiveStack = bool.fromEnvironment('REQUIRE_LIVE_STACK');
 const String _e2eVerifiedEmail = String.fromEnvironment('E2E_EMAIL');
 const String _e2eVerifiedPassword = String.fromEnvironment('E2E_PASSWORD');
 
-/// Backend job ids are UUIDs; mock fallback ids are `job-1`, `job-2`, ...
+/// Backend job ids are UUIDs (`job-svc`) or 64-char SHA-256 hex ids (`crawler`);
+/// mock fallback ids are `job-1`, `job-2`, ...
 final RegExp _uuid = RegExp(
   r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-'
   r'[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
 );
+final RegExp _sha256Hex = RegExp(r'^[0-9a-fA-F]{64}$');
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -88,11 +90,11 @@ void main() {
 
     final job = jobs.items.first;
     expect(
-      _uuid.hasMatch(job.id),
+      _uuid.hasMatch(job.id) || _sha256Hex.hasMatch(job.id),
       isTrue,
       reason:
-          'Got id "${job.id}", which is not a backend UUID. Search response did '
-          'not originate from the live backend.',
+          'Got id "${job.id}", which is neither a backend UUID nor a crawler '
+          'SHA-256 id. Search response did not originate from the live backend.',
     );
 
     // 2. Verify registration returns 202 without issuing premature tokens
@@ -144,18 +146,31 @@ void main() {
       reason: 'User id "${me?.id}" is not a backend UUID.',
     );
 
+    final uuidJobs = jobs.items.where((j) => _uuid.hasMatch(j.id));
+    final applyTarget = uuidJobs.isNotEmpty ? uuidJobs.first : null;
+    if (applyTarget == null) {
+      final msg =
+          'Search returned ${jobs.items.length} crawled job(s) and no job-svc '
+          'UUID job to exercise POST /api/applications.';
+      if (_requireLiveStack) {
+        fail(msg);
+      }
+      markTestSkipped(msg);
+      return;
+    }
+
     final applications = ApiApplicationRepository(jobRepository: jobRepository);
     final application = await applications.applyJob(
       ApplyJobParams(
-        jobId: job.id,
-        jobTitle: job.title,
-        companyName: job.companyName,
+        jobId: applyTarget.id,
+        jobTitle: applyTarget.title,
+        companyName: applyTarget.companyName,
         coverLetter: 'Mobile E2E automated application',
         cvFileName: 'e2e-cv.pdf',
         cvBytes: _minimalPdfBytes,
       ),
     );
-    expect(application.jobId, job.id);
+    expect(application.jobId, applyTarget.id);
     expect(
       _uuid.hasMatch(application.id),
       isTrue,

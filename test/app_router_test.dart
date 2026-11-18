@@ -208,6 +208,59 @@ void main() {
         AppRoutes.home,
       );
     });
+
+    test(
+      'normalizeDeepLinkUri maps job:// links and rejects unknown hosts',
+      () {
+        expect(
+          AppRouter.normalizeDeepLinkUri(
+            Uri.parse('job://verify-email?token=abc-123'),
+          ),
+          '/verify-email?token=abc-123',
+        );
+        expect(
+          AppRouter.normalizeDeepLinkUri(
+            Uri.parse('job://reset-password?token=xyz'),
+          ),
+          '/reset-password?token=xyz',
+        );
+        expect(
+          AppRouter.normalizeDeepLinkUri(Uri.parse('job://jobs/job-42')),
+          '/jobs/job-42',
+        );
+        expect(
+          AppRouter.normalizeDeepLinkUri(
+            Uri.parse('job://applications/app-99'),
+          ),
+          '/applications/app-99',
+        );
+        expect(
+          AppRouter.normalizeDeepLinkUri(Uri.parse('job://search?q=flutter')),
+          '/search?q=flutter',
+        );
+        expect(
+          AppRouter.normalizeDeepLinkUri(Uri.parse('job://home')),
+          AppRoutes.home,
+        );
+        expect(
+          AppRouter.normalizeDeepLinkUri(
+            Uri.parse('https://evil.example/jobs'),
+          ),
+          isNull,
+        );
+        expect(
+          AppRouter.normalizeDeepLinkUri(Uri.parse('job://unknown/path')),
+          isNull,
+        );
+        expect(
+          AppRouter.router.configuration.topRedirect(
+            TestBuildContext(),
+            TestGoRouterState('job://jobs/job-42'),
+          ),
+          '/jobs/job-42',
+        );
+      },
+    );
   });
 }
 
