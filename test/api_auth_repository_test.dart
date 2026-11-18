@@ -413,4 +413,58 @@ void main() {
       },
     );
   });
+
+  group('camelCase Auth DTO contract (AUTH-01)', () {
+    test(
+      'UserModel.fromJson reads camelCase companyId and ignores company_id',
+      () {
+        final user = UserModel.fromJson({
+          'id': 'usr-1',
+          'fullName': 'Recruiter One',
+          'email': 'recruiter@test.com',
+          'role': 'Recruiter',
+          'companyId': 'comp-123',
+          'company_id': 'comp-snake-ignored',
+        });
+        expect(user.companyId, 'comp-123');
+
+        final legacyOnly = UserModel.fromJson({
+          'id': 'usr-2',
+          'fullName': 'Recruiter Two',
+          'email': 'recruiter2@test.com',
+          'role': 'Recruiter',
+          'company_id': 'comp-snake-only',
+        });
+        expect(legacyOnly.companyId, isNull);
+      },
+    );
+
+    test('login sends rememberMe camelCase flag in request payload', () async {
+      final adapter = _CannedAdapter(200, {
+        'accessToken': 'tok-1',
+        'refreshToken': 'ref-1',
+        'user': {
+          'id': 'usr-1',
+          'email': 'candidate@test.com',
+          'fullName': 'Candidate',
+          'role': 'User',
+        },
+      });
+      final repo = ApiAuthRepository(dio: _dioWith(adapter));
+
+      final auth = await repo.login(
+        email: 'candidate@test.com',
+        password: 'Password123',
+        rememberMe: true,
+      );
+
+      expect(auth.token, 'tok-1');
+      expect(adapter.requests, hasLength(1));
+      expect(adapter.requests.first.data, {
+        'email': 'candidate@test.com',
+        'password': 'Password123',
+        'rememberMe': true,
+      });
+    });
+  });
 }
