@@ -7,7 +7,9 @@ import 'package:job_platform_mobile/core/theme/app_theme.dart';
 import 'package:job_platform_mobile/features/auth/domain/models/auth_result.dart';
 import 'package:job_platform_mobile/features/auth/domain/models/user_model.dart';
 import 'package:job_platform_mobile/features/profile/data/repositories/mock_profile_repository.dart';
+import 'package:job_platform_mobile/features/profile/domain/models/profile_model.dart';
 import 'package:job_platform_mobile/features/profile/presentation/profile_detail_screen.dart';
+import 'package:job_platform_mobile/features/profile/presentation/widgets/edit_profile_dialog.dart';
 
 void main() {
   late MockProfileRepository mockRepo;
@@ -169,6 +171,53 @@ void main() {
 
       // Verify it navigated to applications screen branch
       expect(find.text('Ứng tuyển Screen'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'EditProfileDialog clears optional fields and dateOfBirth to null on save',
+    (tester) async {
+      tester.view.physicalSize = const Size(800, 1600);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      ProfileModel? savedProfile;
+      final initialProfile = ProfileModel(
+        id: 'p-1',
+        userId: 'u-1',
+        fullName: 'Nguyễn Văn An',
+        headline: 'Old Headline',
+        phone: '0905123456',
+        address: 'Đà Nẵng',
+        dateOfBirth: DateTime(1998, 5, 20),
+        createdAt: DateTime(2026),
+        updatedAt: DateTime(2026),
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.lightTheme,
+          home: Scaffold(
+            body: EditProfileDialog(
+              profile: initialProfile,
+              onSave: (p) => savedProfile = p,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Clear headline (2nd field) and clear dateOfBirth
+      await tester.enterText(find.byType(TextFormField).at(1), '');
+      await tester.tap(find.byKey(const Key('clear_dob_button')));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Lưu thay đổi'));
+      await tester.pumpAndSettle();
+
+      expect(savedProfile, isNotNull);
+      expect(savedProfile!.headline, isNull);
+      expect(savedProfile!.dateOfBirth, isNull);
     },
   );
 }

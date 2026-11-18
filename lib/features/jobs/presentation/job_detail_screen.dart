@@ -122,7 +122,19 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
       return;
     }
 
-    // 3. If unauthenticated: prompt login
+    // 3. Crawled external jobs are read-only summaries (no job-svc GUID).
+    if (_job!.isExternalCrawledJob) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Tin tổng hợp ngoài hệ thống hiện chưa hỗ trợ nộp hồ sơ trực tiếp.',
+          ),
+        ),
+      );
+      return;
+    }
+
+    // 4. If unauthenticated: prompt login
     if (!isAuthenticated) {
       showDialog(
         context: context,

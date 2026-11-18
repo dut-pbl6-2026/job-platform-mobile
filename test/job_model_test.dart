@@ -86,33 +86,46 @@ void main() {
     });
 
     test(
-      'JobModel.fromJson parses search-svc snake_case fields and salaryCurrency (D1 / BUG-09)',
+      'JobModel.fromJson parses search-svc camelCase currency and ignores snake_case fields',
       () {
-        final snakeJson = {
-          'id': 'search-job-99',
-          'title': 'Golang Microservices Engineer',
-          'company_name': 'Global Tech Ltd.',
-          'logo_url': 'https://cdn.example.com/logo.png',
-          'location': 'TP. Hồ Chí Minh',
+        final searchUsd = _searchItemJson()..['currency'] = 'USD';
+        final parsedCamel = JobModel.fromJson(searchUsd);
+        expect(parsedCamel.salaryCurrency, 'USD');
+        expect(parsedCamel.isExternalCrawledJob, isFalse);
+
+        final snakeOnly = {
+          'id': 'job-snake-only',
+          'title': 'Snake Job',
+          'company_name': 'Snake Corp',
+          'logo_url': 'https://cdn.example.com/snake.png',
+          'location': 'Hà Nội',
           'salary_min': 2000,
           'salary_max': 3500,
           'salary_currency': 'USD',
-          'category_name': 'Công nghệ thông tin',
+          'category_name': 'IT',
           'employment_type': 'Contract',
           'experience_level': 'Senior',
           'created_at': '2026-11-10T08:00:00Z',
-          'verified': false,
+          'company_verified': false,
         };
 
-        final parsed = JobModel.fromJson(snakeJson);
-        expect(parsed.companyName, 'Global Tech Ltd.');
-        expect(parsed.companyLogo, 'https://cdn.example.com/logo.png');
-        expect(parsed.salaryMin, 2000);
-        expect(parsed.salaryMax, 3500);
-        expect(parsed.salaryCurrency, 'USD');
-        expect(parsed.jobType, JobType.contract);
-        expect(parsed.experienceLevel, ExperienceLevel.senior);
-        expect(parsed.isCompanyVerified, isFalse);
+        final ignored = JobModel.fromJson(snakeOnly);
+        expect(ignored.companyName, isEmpty);
+        expect(ignored.companyLogo, isNull);
+        expect(ignored.salaryMin, isNull);
+        expect(ignored.salaryMax, isNull);
+        expect(ignored.salaryCurrency, 'VND');
+        expect(ignored.jobType, JobType.other);
+        expect(ignored.experienceLevel, ExperienceLevel.other);
+        expect(ignored.category, 'Khác');
+        expect(ignored.isCompanyVerified, isTrue);
+
+        final crawledJob = JobModel.fromJson({
+          ..._searchItemJson(),
+          'id':
+              'a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90',
+        });
+        expect(crawledJob.isExternalCrawledJob, isTrue);
       },
     );
 
@@ -332,7 +345,6 @@ Map<String, dynamic> _searchItemJson() => {
   'employmentType': 'PartTime',
   'experienceLevel': 'Senior',
   'status': 'Active',
-  'recruiterId': 'recruiter-1',
   'createdAt': '2026-11-01T08:30:00.1234567Z',
   'updatedAt': '2026-11-02T08:30:00Z',
   'expiresAt': '2026-12-31T00:00:00Z',

@@ -150,54 +150,50 @@ class JobModel {
     this.applicationCount = 0,
   });
 
+  /// Crawled jobs indexed by `job-platform-crawler` use a 64-char SHA-256 hex ID.
+  static final RegExp _sha256HexPattern = RegExp(r'^[0-9a-fA-F]{64}$');
+
+  /// Whether this job originated from an external crawler feed rather than `job-svc`.
+  bool get isExternalCrawledJob => _sha256HexPattern.hasMatch(id.trim());
+
   /// Parses a job from the search API (`/api/search/jobs` items) or the job
-  /// detail API (`/api/jobs/{id}`). Both use camelCase keys: `employmentType`,
-  /// `createdAt` and `categoryName`. Legacy keys (`jobType`, `postedAt`,
-  /// `category`) are still read as a fallback so entries already stored in the
-  /// Hive cache (written by [toJson]) keep their values.
+  /// detail API (`/api/jobs/{id}`). Both use canonical camelCase keys:
+  /// `employmentType`, `createdAt`, `categoryName`, and `salaryCurrency`/`currency`.
+  /// Legacy keys (`jobType`, `postedAt`, `category`) are still read for
+  /// local Hive cache entries written by [toJson].
   factory JobModel.fromJson(Map<String, dynamic> json) {
     final nestedCompany = json['company'] is Map
         ? Map<String, dynamic>.from(json['company'] as Map)
         : null;
     final explicitVerified =
         json['isCompanyVerified'] as bool? ??
-        json['company_verified'] as bool? ??
         json['verified'] as bool? ??
         nestedCompany?['verified'] as bool?;
 
     return JobModel(
       id: json['id']?.toString() ?? '',
       title: json['title']?.toString() ?? '',
-      // Supports camelCase (`job-svc`), snake_case (`search-svc` D1), and nested `company`.
       companyName:
           _readString(json, 'companyName') ??
-          _readString(json, 'company_name') ??
           _readNestedName(json, 'company') ??
           '',
       companyLogo:
           _readString(json, 'companyLogo') ??
-          _readString(json, 'company_logo') ??
           _readString(json, 'logoUrl') ??
-          _readString(json, 'logo_url') ??
           (nestedCompany != null
-              ? (_readString(nestedCompany, 'logoUrl') ??
-                    _readString(nestedCompany, 'logo_url'))
+              ? _readString(nestedCompany, 'logoUrl')
               : null),
       location: json['location']?.toString() ?? '',
-      salaryMin: json['salaryMin'] as num? ?? json['salary_min'] as num?,
-      salaryMax: json['salaryMax'] as num? ?? json['salary_max'] as num?,
+      salaryMin: json['salaryMin'] as num?,
+      salaryMax: json['salaryMax'] as num?,
       salaryCurrency:
           _readString(json, 'salaryCurrency') ??
-          _readString(json, 'salary_currency') ??
+          _readString(json, 'currency') ??
           'VND',
-      isSalaryNegotiable:
-          json['isSalaryNegotiable'] as bool? ??
-          json['is_salary_negotiable'] as bool? ??
-          false,
+      isSalaryNegotiable: json['isSalaryNegotiable'] as bool? ?? false,
       isCompanyVerified: explicitVerified ?? true,
       category:
           _readString(json, 'categoryName') ??
-          _readString(json, 'category_name') ??
           _readNestedName(json, 'category') ??
           _readString(json, 'category') ??
           'Khác',
@@ -205,15 +201,11 @@ class JobModel {
       // (not a silent default).
       jobType: JobType.fromString(
         _readString(json, 'employmentType') ??
-            _readString(json, 'employment_type') ??
             _readString(json, 'jobType') ??
-            _readString(json, 'job_type') ??
             '',
       ),
       experienceLevel: ExperienceLevel.fromString(
-        _readString(json, 'experienceLevel') ??
-            _readString(json, 'experience_level') ??
-            '',
+        _readString(json, 'experienceLevel') ?? '',
       ),
       skills:
           (json['skills'] as List<dynamic>?)
@@ -225,18 +217,13 @@ class JobModel {
       benefits: json['benefits']?.toString() ?? '',
       postedAt:
           _readDate(json, 'createdAt') ??
-          _readDate(json, 'created_at') ??
           _readDate(json, 'postedAt') ??
-          _readDate(json, 'posted_at') ??
           DateTime.now(),
-      expiresAt: _readDate(json, 'expiresAt') ?? _readDate(json, 'expires_at'),
-      isSaved: json['isSaved'] as bool? ?? json['is_saved'] as bool? ?? false,
-      viewCount:
-          (json['viewCount'] as num? ?? json['view_count'] as num?)?.toInt() ??
-          0,
+      expiresAt: _readDate(json, 'expiresAt'),
+      isSaved: json['isSaved'] as bool? ?? false,
+      viewCount: (json['viewCount'] as num?)?.toInt() ?? 0,
       applicationCount:
           (json['applicationCount'] as num? ??
-                  json['application_count'] as num? ??
                   json['applicationsCount'] as num?)
               ?.toInt() ??
           0,
@@ -280,13 +267,16 @@ class JobModel {
       'isSalaryNegotiable': isSalaryNegotiable,
       'isCompanyVerified': isCompanyVerified,
       'category': category,
+      'categoryName': category,
       'jobType': jobType.value,
+      'employmentType': jobType.value,
       'experienceLevel': experienceLevel.value,
       'skills': skills,
       'description': description,
       'requirements': requirements,
       'benefits': benefits,
       'postedAt': postedAt.toIso8601String(),
+      'createdAt': postedAt.toIso8601String(),
       'expiresAt': expiresAt?.toIso8601String(),
       'isSaved': isSaved,
       'viewCount': viewCount,

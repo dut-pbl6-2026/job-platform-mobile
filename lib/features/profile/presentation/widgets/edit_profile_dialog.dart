@@ -75,24 +75,27 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
 
   void _handleSave() {
     if (_formKey.currentState?.validate() ?? false) {
-      final updated = widget.profile.copyWith(
+      final headline = _headlineController.text.trim();
+      final phone = _phoneController.text.trim();
+      final address = _addressController.text.trim();
+      final avatarUrl = _avatarUrlController.text.trim();
+      final summary = _summaryController.text.trim();
+
+      final updated = ProfileModel(
+        id: widget.profile.id,
+        userId: widget.profile.userId,
         fullName: _nameController.text.trim(),
-        headline: _headlineController.text.trim().isNotEmpty
-            ? _headlineController.text.trim()
-            : null,
-        phone: _phoneController.text.trim().isNotEmpty
-            ? _phoneController.text.trim()
-            : null,
-        address: _addressController.text.trim().isNotEmpty
-            ? _addressController.text.trim()
-            : null,
-        avatarUrl: _avatarUrlController.text.trim().isNotEmpty
-            ? _avatarUrlController.text.trim()
-            : null,
+        phone: phone.isNotEmpty ? phone : null,
+        address: address.isNotEmpty ? address : null,
+        headline: headline.isNotEmpty ? headline : null,
+        summary: summary.isNotEmpty ? summary : null,
+        avatarUrl: avatarUrl.isNotEmpty ? avatarUrl : null,
         dateOfBirth: _dateOfBirth,
-        summary: _summaryController.text.trim().isNotEmpty
-            ? _summaryController.text.trim()
-            : null,
+        skills: widget.profile.skills,
+        experiences: widget.profile.experiences,
+        educations: widget.profile.educations,
+        createdAt: widget.profile.createdAt,
+        updatedAt: DateTime.now(),
       );
 
       widget.onSave(updated);
@@ -206,17 +209,34 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
                                   color: AppColors.textSecondary,
                                 ),
                                 const SizedBox(width: 8),
-                                Text(
-                                  _dateOfBirth != null
-                                      ? FormatUtils.formatDate(_dateOfBirth!)
-                                      : 'Chọn ngày sinh (dd/MM/yyyy)',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: _dateOfBirth != null
-                                        ? AppColors.textPrimary
-                                        : AppColors.textHint,
+                                Expanded(
+                                  child: Text(
+                                    _dateOfBirth != null
+                                        ? FormatUtils.formatDate(_dateOfBirth!)
+                                        : 'Chọn ngày sinh (dd/MM/yyyy)',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: _dateOfBirth != null
+                                          ? AppColors.textPrimary
+                                          : AppColors.textHint,
+                                    ),
                                   ),
                                 ),
+                                if (_dateOfBirth != null)
+                                  IconButton(
+                                    key: const Key('clear_dob_button'),
+                                    icon: const Icon(
+                                      Icons.close_rounded,
+                                      size: 18,
+                                      color: AppColors.textSecondary,
+                                    ),
+                                    padding: EdgeInsets.zero,
+                                    constraints: const BoxConstraints(),
+                                    tooltip: 'Xóa ngày sinh',
+                                    onPressed: () {
+                                      setState(() => _dateOfBirth = null);
+                                    },
+                                  ),
                               ],
                             ),
                           ),

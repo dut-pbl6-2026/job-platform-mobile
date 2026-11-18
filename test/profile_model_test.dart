@@ -127,5 +127,39 @@ void main() {
 
       expect(fullProfile.completionPercentage, 100);
     });
+
+    test('Profile models enforce camelCase and ignore snake_case fields', () {
+      final skill = SkillModel.fromJson({
+        'id': 's-1',
+        'name': 'Dart',
+        'years_of_experience': 5,
+      });
+      expect(skill.yearsOfExperience, 1);
+
+      final exp = WorkExperienceModel.fromJson({
+        'id': 'e-1',
+        'company': 'Acme',
+        'title': 'Dev',
+        'start_date': '2020-01-01T00:00:00Z',
+        'end_date': '2022-01-01T00:00:00Z',
+        'is_current': true,
+      });
+      expect(exp.endDate, isNull);
+      expect(exp.isCurrent, isFalse);
+
+      final profile = ProfileModel.fromJson({
+        'id': 'p-1',
+        'user_id': 'u-snake',
+        'full_name': 'Snake Name',
+        'avatar_url': 'https://example.com/snake.png',
+        'date_of_birth': '1999-05-05',
+        'work_experiences': const <dynamic>[],
+        'education_history': const <dynamic>[],
+      });
+      expect(profile.userId, isEmpty);
+      expect(profile.fullName, isEmpty);
+      expect(profile.avatarUrl, isNull);
+      expect(profile.dateOfBirth, isNull);
+    });
   });
 }

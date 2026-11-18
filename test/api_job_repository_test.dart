@@ -226,6 +226,7 @@ void main() {
         expect(query['location'], 'Hà Nội');
         expect(query['category'], 'IT');
         expect(query['skills'], 'Dart,Flutter');
+        expect(query['skillOp'], 'or');
         expect(query['minSalary'], '10000000');
         expect(query['maxSalary'], '20000000');
         expect(query['sortBy'], 'salary_desc');
@@ -262,6 +263,58 @@ void main() {
           expect(query.containsKey('sortBy'), isFalse, reason: sort);
         }
       });
+
+      test(
+        'getJobById returns cached crawled sha256 job without calling /api/jobs/{id}',
+        () async {
+          const crawledId =
+              '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+          final requestedPaths = <String>[];
+          final dio = Dio(BaseOptions(baseUrl: 'http://unused.invalid'));
+          dio.interceptors.add(
+            InterceptorsWrapper(
+              onRequest: (options, handler) {
+                requestedPaths.add(options.path);
+                if (options.path == '/api/search/jobs') {
+                  handler.resolve(
+                    Response(
+                      requestOptions: options,
+                      statusCode: 200,
+                      data: {
+                        'items': [
+                          {
+                            'id': crawledId,
+                            'title': 'Crawled Flutter Job',
+                            'companyName': 'External Co',
+                            'location': 'Hà Nội',
+                            'currency': 'USD',
+                          },
+                        ],
+                        'total': 1,
+                        'page': 0,
+                        'size': 20,
+                        'totalPages': 1,
+                      },
+                    ),
+                  );
+                  return;
+                }
+                handler.reject(DioException(requestOptions: options));
+              },
+            ),
+          );
+
+          final repo = ApiJobRepository(dio: dio);
+          await repo.getJobs(const JobFilterParams(keyword: 'Flutter'));
+          final detail = await repo.getJobById(crawledId);
+
+          expect(detail, isNotNull);
+          expect(detail!.title, 'Crawled Flutter Job');
+          expect(detail.salaryCurrency, 'USD');
+          expect(detail.isExternalCrawledJob, isTrue);
+          expect(requestedPaths, ['/api/search/jobs']);
+        },
+      );
     });
   });
 }

@@ -23,6 +23,8 @@ class JobDetailBottomBar extends StatelessWidget {
     final role = AuthSession.instance.resolvedRole;
     final isRecruiter = role == UserRole.recruiter;
     final isAdmin = role == UserRole.admin;
+    final isExternalDisabled =
+        !isRecruiter && !isAdmin && job.isExternalCrawledJob;
 
     final bottomPadding = MediaQuery.of(context).padding.bottom;
 
@@ -68,7 +70,7 @@ class JobDetailBottomBar extends StatelessWidget {
           // 3. Dynamic Role-Based Primary Action CTA (Figma #55:3973)
           Expanded(
             child: ElevatedButton(
-              onPressed: onPrimaryAction,
+              onPressed: isExternalDisabled ? null : onPrimaryAction,
               style: ElevatedButton.styleFrom(
                 backgroundColor: isRecruiter
                     ? AppColors.secondary
@@ -89,6 +91,8 @@ class JobDetailBottomBar extends StatelessWidget {
                         ? Icons.people_outline_rounded
                         : isAdmin
                         ? Icons.admin_panel_settings_outlined
+                        : isExternalDisabled
+                        ? Icons.public_rounded
                         : Icons.send_rounded,
                     size: 18,
                     color: Colors.white,
@@ -99,6 +103,8 @@ class JobDetailBottomBar extends StatelessWidget {
                         ? 'Xem ứng viên (${job.applicationCount})'
                         : isAdmin
                         ? 'Kiểm duyệt tin'
+                        : isExternalDisabled
+                        ? 'Tin tổng hợp ngoài hệ thống'
                         : 'Ứng tuyển ngay',
                     style: const TextStyle(
                       fontSize: 14.5,
