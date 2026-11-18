@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../features/auth/domain/models/auth_result.dart';
 import '../../features/auth/domain/models/user_model.dart';
+import '../services/hive_cache_service.dart';
 
 /// Session manager with secure persistence (SEC-09) and role resolution (AUTH-01-03).
 /// Resolves authenticated role from verified backend-issued JWT token claims
@@ -18,6 +20,9 @@ class AuthSession extends ChangeNotifier {
 
   final FlutterSecureStorage _secure = const FlutterSecureStorage(
     aOptions: AndroidOptions(encryptedSharedPreferences: true),
+    iOptions: IOSOptions(
+      accessibility: KeychainAccessibility.first_unlock_this_device,
+    ),
   );
 
   UserModel? _currentUser;
@@ -105,8 +110,19 @@ class AuthSession extends ChangeNotifier {
     try {
       _token = await _secure.read(key: _kTokenKey);
       _refreshToken = await _secure.read(key: _kRefreshKey);
+      var userJson = await _secure.read(key: _kUserKey);
       final prefs = await SharedPreferences.getInstance();
-      final userJson = prefs.getString(_kUserKey);
+      if (userJson == null) {
+        final legacyUserJson = prefs.getString(_kUserKey);
+        if (legacyUserJson != null) {
+          userJson = legacyUserJson;
+          await _secure.write(key: _kUserKey, value: legacyUserJson);
+          await prefs.remove(_kUserKey);
+        }
+      } else if (prefs.containsKey(_kUserKey)) {
+        await prefs.remove(_kUserKey);
+      }
+
       if (userJson != null && _token != null) {
         final map = jsonDecode(userJson) as Map<String, dynamic>;
         _currentUser = UserModel.fromJson(map);
@@ -116,7 +132,9 @@ class AuthSession extends ChangeNotifier {
         _refreshToken = null;
       }
     } catch (e) {
-      debugPrint('AuthSession load failed: $e');
+      if (kDebugMode) {
+        debugPrint('AuthSession load failed: $e');
+      }
     } finally {
       _loaded = true;
       notifyListeners();
@@ -131,10 +149,32 @@ class AuthSession extends ChangeNotifier {
     try {
       await _secure.write(key: _kTokenKey, value: authResult.token);
       await _secure.write(key: _kRefreshKey, value: authResult.refreshToken);
+      await _secure.write(
+        key: _kUserKey,
+        value: jsonEncode(authResult.user.toJson()),
+      );
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_kUserKey, jsonEncode(authResult.user.toJson()));
+      if (prefs.containsKey(_kUserKey)) {
+        await prefs.remove(_kUserKey);
+      }
     } catch (e) {
-      debugPrint('AuthSession persist failed: $e');
+      if (kDebugMode) {
+        debugPrint('AuthSession persist failed: $e');
+      }
+    }
+  }
+
+  /// Updates cached user profile (e.g. after `GET /api/auth/me`) without rotating tokens.
+  Future<void> updateUser(UserModel user) async {
+    if (_token == null) return;
+    _currentUser = user;
+    notifyListeners();
+    try {
+      await _secure.write(key: _kUserKey, value: jsonEncode(user.toJson()));
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('AuthSession user update failed: $e');
+      }
     }
   }
 
@@ -146,10 +186,14 @@ class AuthSession extends ChangeNotifier {
     try {
       await _secure.delete(key: _kTokenKey);
       await _secure.delete(key: _kRefreshKey);
+      await _secure.delete(key: _kUserKey);
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(_kUserKey);
+      unawaited(HiveCacheService.instance.clearAllCache());
     } catch (e) {
-      debugPrint('AuthSession clear failed: $e');
+      if (kDebugMode) {
+        debugPrint('AuthSession clear failed: $e');
+      }
     }
   }
 }

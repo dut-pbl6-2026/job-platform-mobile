@@ -23,6 +23,7 @@ class AccountMenuSheet extends StatelessWidget {
   }) {
     return showModalBottomSheet<void>(
       context: context,
+      isScrollControlled: true,
       showDragHandle: true,
       builder: (_) => AccountMenuSheet(onSignOut: onSignOut),
     );
@@ -40,46 +41,68 @@ class AccountMenuSheet extends StatelessWidget {
     }
 
     return SafeArea(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _AccountHeader(user: user, role: role),
-          const Divider(height: 1, color: AppColors.divider),
-          ListTile(
-            key: const Key('account_menu_profile'),
-            leading: const Icon(Icons.person_outline_rounded),
-            title: const Text(AccountMenuStrings.profile),
-            onTap: () => open(AppRoutes.profile),
-          ),
-          if (role == UserRole.user)
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _AccountHeader(user: user, role: role),
+            const Divider(height: 1, color: AppColors.divider),
             ListTile(
-              key: const Key('account_menu_applications'),
-              leading: const Icon(Icons.history_edu_outlined),
-              title: const Text(AccountMenuStrings.applications),
-              onTap: () => open(AppRoutes.applications),
+              key: const Key('account_menu_profile'),
+              leading: const Icon(Icons.person_outline_rounded),
+              title: const Text(AccountMenuStrings.profile),
+              onTap: () => open(AppRoutes.profile),
             ),
-          if (role == UserRole.recruiter)
+            if (role == UserRole.user) ...[
+              ListTile(
+                key: const Key('account_menu_applications'),
+                leading: const Icon(Icons.history_edu_outlined),
+                title: const Text(AccountMenuStrings.applications),
+                onTap: () => open(AppRoutes.applications),
+              ),
+              ListTile(
+                key: const Key('account_menu_join_request'),
+                leading: const Icon(Icons.domain_add_outlined),
+                title: const Text(AccountMenuStrings.joinRequest),
+                onTap: () => open(AppRoutes.myJoinRequest),
+              ),
+            ],
+            if (role == UserRole.recruiter) ...[
+              ListTile(
+                key: const Key('account_menu_recruiter_dashboard'),
+                leading: const Icon(Icons.dashboard_outlined),
+                title: const Text(AccountMenuStrings.recruiterDashboard),
+                onTap: () => open(AppRoutes.recruiterDashboard),
+              ),
+              ListTile(
+                key: const Key('account_menu_recruiter_jobs'),
+                leading: const Icon(Icons.work_outline_rounded),
+                title: const Text(AccountMenuStrings.recruiterJobs),
+                onTap: () => open(AppRoutes.recruiterJobs),
+              ),
+              ListTile(
+                key: const Key('account_menu_company'),
+                leading: const Icon(Icons.apartment_outlined),
+                title: const Text(AccountMenuStrings.company),
+                onTap: () => open(AppRoutes.companyProfile),
+              ),
+            ],
+            const Divider(height: 1, color: AppColors.divider),
             ListTile(
-              key: const Key('account_menu_company'),
-              leading: const Icon(Icons.apartment_outlined),
-              title: const Text(AccountMenuStrings.company),
-              onTap: () => open(AppRoutes.companyProfile),
+              key: const Key('account_menu_sign_out'),
+              leading: const Icon(Icons.logout_rounded, color: AppColors.error),
+              title: const Text(
+                AccountMenuStrings.signOut,
+                style: TextStyle(color: AppColors.error),
+              ),
+              onTap: () {
+                Navigator.of(context).pop();
+                onSignOut();
+              },
             ),
-          const Divider(height: 1, color: AppColors.divider),
-          ListTile(
-            key: const Key('account_menu_sign_out'),
-            leading: const Icon(Icons.logout_rounded, color: AppColors.error),
-            title: const Text(
-              AccountMenuStrings.signOut,
-              style: TextStyle(color: AppColors.error),
-            ),
-            onTap: () {
-              Navigator.of(context).pop();
-              onSignOut();
-            },
-          ),
-          const SizedBox(height: 8),
-        ],
+            const SizedBox(height: 8),
+          ],
+        ),
       ),
     );
   }

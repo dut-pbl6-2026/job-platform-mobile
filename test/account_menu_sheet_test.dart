@@ -72,6 +72,21 @@ void main() {
               const Scaffold(body: Text('Applications Destination')),
         ),
         GoRoute(
+          path: '/my-join-request',
+          builder: (context, state) =>
+              const Scaffold(body: Text('Join Request Destination')),
+        ),
+        GoRoute(
+          path: '/recruiter/dashboard',
+          builder: (context, state) =>
+              const Scaffold(body: Text('Recruiter Dashboard Destination')),
+        ),
+        GoRoute(
+          path: '/recruiter/jobs',
+          builder: (context, state) =>
+              const Scaffold(body: Text('Recruiter Jobs Destination')),
+        ),
+        GoRoute(
           path: '/recruiter/company',
           builder: (context, state) =>
               const Scaffold(body: Text('Company Destination')),
@@ -96,20 +111,35 @@ void main() {
     expect(find.text('an@example.com'), findsOneWidget);
     expect(find.byKey(const Key('account_menu_profile')), findsOneWidget);
     expect(find.byKey(const Key('account_menu_applications')), findsOneWidget);
+    expect(find.byKey(const Key('account_menu_join_request')), findsOneWidget);
     expect(find.byKey(const Key('account_menu_company')), findsNothing);
+    expect(
+      find.byKey(const Key('account_menu_recruiter_dashboard')),
+      findsNothing,
+    );
     expect(find.byKey(const Key('account_menu_sign_out')), findsOneWidget);
   });
 
-  testWidgets('recruiter sees Profile and Company but not Applications', (
-    tester,
-  ) async {
-    await loginAs(UserRole.recruiter);
-    await pumpHost(tester, onSignOut: () {});
+  testWidgets(
+    'recruiter sees Profile, Dashboard, Jobs and Company but not Applications',
+    (tester) async {
+      await loginAs(UserRole.recruiter);
+      await pumpHost(tester, onSignOut: () {});
 
-    expect(find.byKey(const Key('account_menu_profile')), findsOneWidget);
-    expect(find.byKey(const Key('account_menu_company')), findsOneWidget);
-    expect(find.byKey(const Key('account_menu_applications')), findsNothing);
-  });
+      expect(find.byKey(const Key('account_menu_profile')), findsOneWidget);
+      expect(
+        find.byKey(const Key('account_menu_recruiter_dashboard')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const Key('account_menu_recruiter_jobs')),
+        findsOneWidget,
+      );
+      expect(find.byKey(const Key('account_menu_company')), findsOneWidget);
+      expect(find.byKey(const Key('account_menu_applications')), findsNothing);
+      expect(find.byKey(const Key('account_menu_join_request')), findsNothing);
+    },
+  );
 
   testWidgets('admin only sees Profile and Sign out (no Admin screen yet)', (
     tester,

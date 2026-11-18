@@ -9,6 +9,9 @@ abstract final class AccountMenuStrings {
   static const title = 'Tài khoản';
   static const profile = 'Hồ sơ cá nhân';
   static const applications = 'Việc làm đã ứng tuyển';
+  static const joinRequest = 'Yêu cầu gia nhập công ty';
+  static const recruiterDashboard = 'Tổng quan tuyển dụng';
+  static const recruiterJobs = 'Quản lý tin tuyển dụng';
   static const company = 'Công ty của tôi';
   static const signOut = 'Đăng xuất';
   static const signOutTitle = 'Đăng xuất tài khoản';
