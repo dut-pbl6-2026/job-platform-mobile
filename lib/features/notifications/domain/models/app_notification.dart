@@ -8,35 +8,20 @@ enum NotificationType {
   system;
 
   static NotificationType fromString(String? value) {
-    switch (value?.toLowerCase().trim()) {
-      case 'application_status':
+    final normalized = value?.toLowerCase().replaceAll('_', '').trim();
+    switch (normalized) {
       case 'applicationstatus':
       case 'application':
         return NotificationType.applicationStatus;
-      case 'new_job_match':
       case 'newjobmatch':
       case 'job':
-      case 'job_recommendation':
+      case 'jobrecommendation':
         return NotificationType.newJobMatch;
-      case 'interview_invite':
       case 'interviewinvite':
       case 'interview':
         return NotificationType.interviewInvite;
       default:
         return NotificationType.system;
-    }
-  }
-
-  String toSnakeCase() {
-    switch (this) {
-      case NotificationType.applicationStatus:
-        return 'application_status';
-      case NotificationType.newJobMatch:
-        return 'new_job_match';
-      case NotificationType.interviewInvite:
-        return 'interview_invite';
-      case NotificationType.system:
-        return 'system';
     }
   }
 }
@@ -63,11 +48,11 @@ class AppNotification {
   });
 
   /// Helper to extract associated jobId from payload data
-  String? get jobId => data['job_id']?.toString() ?? data['jobId']?.toString();
+  String? get jobId => data['jobId']?.toString();
 
   /// Helper to extract associated applicationId from payload data
   String? get applicationId =>
-      data['application_id']?.toString() ?? data['applicationId']?.toString();
+      data['applicationId']?.toString() ?? data['appId']?.toString();
 
   /// Target route if provided by notification payload
   String? get route => data['route']?.toString();
@@ -82,20 +67,17 @@ class AppNotification {
     }
 
     return AppNotification(
-      id: (json['id'] ?? json['notification_id'] ?? '').toString(),
+      id: (json['id'] ?? json['notificationId'] ?? '').toString(),
       title: (json['title'] ?? '').toString(),
       body: (json['body'] ?? json['message'] ?? '').toString(),
       type: NotificationType.fromString(
         json['type']?.toString() ?? parsedData['type']?.toString(),
       ),
       data: parsedData,
-      isRead: json['is_read'] == true || json['isRead'] == true,
-      createdAt: json['created_at'] != null
-          ? DateTime.tryParse(json['created_at'].toString()) ?? DateTime.now()
-          : (json['createdAt'] != null
-                ? DateTime.tryParse(json['createdAt'].toString()) ??
-                      DateTime.now()
-                : DateTime.now()),
+      isRead: json['isRead'] == true,
+      createdAt: json['createdAt'] != null
+          ? DateTime.tryParse(json['createdAt'].toString()) ?? DateTime.now()
+          : DateTime.now(),
     );
   }
 
@@ -104,10 +86,10 @@ class AppNotification {
       'id': id,
       'title': title,
       'body': body,
-      'type': type.toSnakeCase(),
+      'type': type.name,
       'data': data,
-      'is_read': isRead,
-      'created_at': createdAt.toIso8601String(),
+      'isRead': isRead,
+      'createdAt': createdAt.toIso8601String(),
     };
   }
 

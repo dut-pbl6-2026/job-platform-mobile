@@ -59,8 +59,8 @@ class MockNotificationRepository implements INotificationRepository {
           'Nhà tuyển dụng VinAI Research đã duyệt hồ sơ ứng tuyển vị trí Senior Flutter Engineer của bạn.',
       type: NotificationType.applicationStatus,
       data: {
-        'application_id': 'app-001',
-        'job_id': 'job-001',
+        'applicationId': 'app-001',
+        'jobId': 'job-001',
         'route': '/applications/app-001',
       },
       isRead: false,
@@ -72,7 +72,7 @@ class MockNotificationRepository implements INotificationRepository {
       body:
           'Vị trí Mobile Tech Lead (Flutter/Dart) tại FPT Software phù hợp 95% với kỹ năng hồ sơ của bạn.',
       type: NotificationType.newJobMatch,
-      data: {'job_id': 'job-002', 'route': '/jobs/job-002'},
+      data: {'jobId': 'job-002', 'route': '/jobs/job-002'},
       isRead: false,
       createdAt: DateTime.now().subtract(const Duration(hours: 2)),
     ),
@@ -83,8 +83,8 @@ class MockNotificationRepository implements INotificationRepository {
           'VNG Corporation gửi lời mời phỏng vấn trực tuyến vòng 1 vào lúc 09:30 ngày 25/09/2026.',
       type: NotificationType.interviewInvite,
       data: {
-        'application_id': 'app-002',
-        'job_id': 'job-003',
+        'applicationId': 'app-002',
+        'jobId': 'job-003',
         'route': '/applications/app-002',
       },
       isRead: true,

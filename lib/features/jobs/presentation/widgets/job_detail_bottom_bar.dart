@@ -20,9 +20,9 @@ class JobDetailBottomBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final user = AuthSession.instance.currentUser;
-    final isRecruiter = user?.role == UserRole.recruiter;
-    final isAdmin = user?.role == UserRole.admin;
+    final role = AuthSession.instance.resolvedRole;
+    final isRecruiter = role == UserRole.recruiter;
+    final isAdmin = role == UserRole.admin;
 
     final bottomPadding = MediaQuery.of(context).padding.bottom;
 

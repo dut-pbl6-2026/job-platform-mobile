@@ -44,16 +44,18 @@ void main() {
       expect(company.isUsable, isTrue);
     });
 
-    test('accepts snake_case aliases and fails usability without name', () {
+    test('enforces camelCase keys and fails usability without name', () {
       final company = CompanyProfile.fromJson({
         'id': 'company-2',
         'name': ' ',
-        'logo_url': 'https://example.test/logo.png',
+        'tax_code': '999999',
+        'logo_url': 'https://example.test/snake.png',
         'is_company_admin': 'true',
       });
 
-      expect(company.logoUrl, 'https://example.test/logo.png');
-      expect(company.isCompanyAdmin, isTrue);
+      expect(company.taxCode, isNull);
+      expect(company.logoUrl, isNull);
+      expect(company.isCompanyAdmin, isFalse);
       expect(company.isUsable, isFalse);
     });
 

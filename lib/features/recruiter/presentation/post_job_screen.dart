@@ -11,11 +11,13 @@ import '../domain/repositories/recruiter_repository.dart';
 class PostJobScreen extends StatefulWidget {
   final IRecruiterRepository? repository;
   final bool isPrototypeMode;
+  final RecruiterJob? initialJob;
 
   const PostJobScreen({
     super.key,
     this.repository,
-    this.isPrototypeMode = true,
+    this.isPrototypeMode = false,
+    this.initialJob,
   });
 
   @override
@@ -37,12 +39,69 @@ class _PostJobScreenState extends State<PostJobScreen> {
   String _employmentType = 'Toàn thời gian';
   // No default: the backend has no "Junior" level, so the user must pick one.
   String? _experienceLevel;
+  List<JobCategoryItem> _categories = const [];
+  JobCategoryItem? _selectedCategory;
   bool _isSubmitting = false;
+
+  bool get _isEditMode => widget.initialJob != null;
 
   @override
   void initState() {
     super.initState();
     _repository = widget.repository ?? ApiRecruiterRepository();
+    final job = widget.initialJob;
+    if (job != null) {
+      _titleController.text = job.title;
+      _locationController.text = job.location;
+      _salaryController.text = job.salary;
+      _descController.text = job.description ?? '';
+      _industryController.text = job.requirements ?? '';
+      _benefitsController.text = job.benefits ?? '';
+      _employmentType = _normalizeEmploymentUi(job.employmentType);
+      _experienceLevel = _normalizeExperienceUi(job.experienceLevel);
+    }
+    _loadCategories();
+  }
+
+  static String _normalizeEmploymentUi(String? raw) {
+    switch (raw?.trim().toLowerCase()) {
+      case 'parttime':
+      case 'part-time':
+      case 'bán thời gian':
+        return 'Bán thời gian';
+      case 'contract':
+      case 'hợp đồng':
+        return 'Hợp đồng';
+      case 'internship':
+      case 'thực tập':
+        return 'Thực tập';
+      default:
+        return 'Toàn thời gian';
+    }
+  }
+
+  static String? _normalizeExperienceUi(String? raw) {
+    for (final level in const ['Entry', 'Mid', 'Senior', 'Lead']) {
+      if (raw?.trim().toLowerCase() == level.toLowerCase()) return level;
+    }
+    return null;
+  }
+
+  Future<void> _loadCategories() async {
+    final cats = await _repository.getCategories();
+    if (!mounted) return;
+    setState(() {
+      _categories = cats;
+      final initialCategoryId = widget.initialJob?.categoryId;
+      if (initialCategoryId != null && initialCategoryId.isNotEmpty) {
+        for (final cat in cats) {
+          if (cat.id == initialCategoryId) {
+            _selectedCategory = cat;
+            break;
+          }
+        }
+      }
+    });
   }
 
   @override
@@ -62,9 +121,13 @@ class _PostJobScreenState extends State<PostJobScreen> {
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Xác nhận đăng tin'),
+        title: Text(
+          _isEditMode ? 'Xác nhận cập nhật tin' : 'Xác nhận đăng tin',
+        ),
         content: Text(
-          'Tin tuyển dụng "${_titleController.text}" sẽ được xuất bản ngay sau khi xác nhận.',
+          _isEditMode
+              ? 'Cập nhật tin tuyển dụng "${_titleController.text}" ngay bây giờ?'
+              : 'Tin tuyển dụng "${_titleController.text}" sẽ được xuất bản ngay sau khi xác nhận.',
         ),
         actions: [
           TextButton(
@@ -76,7 +139,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
               Navigator.pop(dialogContext); // Close dialog
               await _submitJob();
             },
-            child: const Text('Xuất bản'),
+            child: Text(_isEditMode ? 'Lưu thay đổi' : 'Xuất bản'),
           ),
         ],
       ),
@@ -87,15 +150,21 @@ class _PostJobScreenState extends State<PostJobScreen> {
     setState(() => _isSubmitting = true);
 
     try {
+      final salaryText = _salaryController.text.trim();
+      final parsedSalary = PostJobParams.parseSalaryInput(salaryText);
       final params = PostJobParams(
         title: _titleController.text.trim(),
         companyId:
             AuthSession.instance.currentUser?.companyId ??
             AuthSession.instance.companyId,
+        categoryId: _selectedCategory?.id ?? widget.initialJob?.categoryId,
         location: _locationController.text.trim(),
         employmentType: _employmentType,
         experienceLevel: _experienceLevel,
-        salaryText: _salaryController.text.trim(),
+        salaryText: salaryText,
+        salaryMin: parsedSalary.min,
+        salaryMax: parsedSalary.max,
+        salaryCurrency: parsedSalary.currency,
         description: _descController.text.trim(),
         requirements: _industryController.text.trim().isNotEmpty
             ? _industryController.text.trim()
@@ -105,22 +174,34 @@ class _PostJobScreenState extends State<PostJobScreen> {
             : null,
       );
 
-      await _repository.postJob(params);
+      if (_isEditMode) {
+        await _repository.updateJob(widget.initialJob!.id, params);
+      } else {
+        await _repository.postJob(params);
+      }
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Tin tuyển dụng đã được đăng thành công!'),
+        SnackBar(
+          content: Text(
+            _isEditMode
+                ? 'Đã cập nhật tin tuyển dụng thành công!'
+                : 'Tin tuyển dụng đã được đăng thành công!',
+          ),
           backgroundColor: AppColors.success,
           behavior: SnackBarBehavior.floating,
         ),
       );
-      Navigator.of(context).maybePop();
+      Navigator.of(context).maybePop(true);
     } catch (e) {
       if (!mounted) return;
+      final rawMsg = e.toString().replaceFirst('Exception: ', '').trim();
+      final safeMsg = rawMsg.isNotEmpty && !rawMsg.contains('DioException')
+          ? rawMsg
+          : 'Không thể gửi tin tuyển dụng lúc này. Vui lòng thử lại.';
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Lỗi gửi tin tuyển dụng: $e'),
+          content: Text(safeMsg),
           backgroundColor: AppColors.error,
           behavior: SnackBarBehavior.floating,
         ),
@@ -203,12 +284,49 @@ class _PostJobScreenState extends State<PostJobScreen> {
                 _buildField(
                   label: 'Công ty & Địa điểm làm việc',
                   controller: _locationController,
-                  hint: 'Ví dụ: Badoo Inc. · Đà Nẵng · Hybrid',
+                  hint: 'Ví dụ: Đà Nẵng · Hybrid',
                   validator: (v) => v?.trim().isEmpty == true
                       ? 'Vui lòng nhập địa điểm'
                       : null,
                 ),
                 const SizedBox(height: 14),
+
+                if (_categories.isNotEmpty) ...[
+                  const Text(
+                    'Ngành nghề tuyển dụng',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  DropdownButtonFormField<JobCategoryItem>(
+                    key: const Key('post_job_category_dropdown'),
+                    // ignore: deprecated_member_use
+                    value: _selectedCategory,
+                    decoration: InputDecoration(
+                      hintText: 'Chọn danh mục ngành nghề',
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 12,
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    items: _categories
+                        .map(
+                          (cat) => DropdownMenuItem<JobCategoryItem>(
+                            value: cat,
+                            child: Text(cat.name),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (val) => setState(() => _selectedCategory = val),
+                  ),
+                  const SizedBox(height: 14),
+                ],
 
                 Row(
                   children: [
@@ -226,7 +344,9 @@ class _PostJobScreenState extends State<PostJobScreen> {
                           ),
                           const SizedBox(height: 6),
                           DropdownButtonFormField<String>(
+                            // ignore: deprecated_member_use
                             value: _employmentType,
+                            isExpanded: true,
                             decoration: InputDecoration(
                               contentPadding: const EdgeInsets.symmetric(
                                 horizontal: 14,
@@ -244,6 +364,10 @@ class _PostJobScreenState extends State<PostJobScreen> {
                               DropdownMenuItem(
                                 value: 'Bán thời gian',
                                 child: Text('Bán thời gian'),
+                              ),
+                              DropdownMenuItem(
+                                value: 'Hợp đồng',
+                                child: Text('Hợp đồng'),
                               ),
                               DropdownMenuItem(
                                 value: 'Thực tập',
@@ -272,7 +396,9 @@ class _PostJobScreenState extends State<PostJobScreen> {
                           ),
                           const SizedBox(height: 6),
                           DropdownButtonFormField<String>(
+                            // ignore: deprecated_member_use
                             value: _experienceLevel,
+                            isExpanded: true,
                             decoration: InputDecoration(
                               contentPadding: const EdgeInsets.symmetric(
                                 horizontal: 14,
@@ -287,19 +413,19 @@ class _PostJobScreenState extends State<PostJobScreen> {
                             items: const [
                               DropdownMenuItem(
                                 value: 'Entry',
-                                child: Text('Entry'),
+                                child: Text('Mới ra trường (Entry)'),
                               ),
                               DropdownMenuItem(
                                 value: 'Mid',
-                                child: Text('Mid'),
+                                child: Text('Trung cấp (Mid)'),
                               ),
                               DropdownMenuItem(
                                 value: 'Senior',
-                                child: Text('Senior'),
+                                child: Text('Cao cấp (Senior)'),
                               ),
                               DropdownMenuItem(
                                 value: 'Lead',
-                                child: Text('Lead'),
+                                child: Text('Trưởng nhóm (Lead)'),
                               ),
                             ],
                             onChanged: (v) => setState(
@@ -316,20 +442,36 @@ class _PostJobScreenState extends State<PostJobScreen> {
                 _buildField(
                   label: 'Mức lương & Tiền tệ',
                   controller: _salaryController,
-                  hint: 'Ví dụ: 15.000.000 – 25.000.000 ₫',
-                  validator: (v) => v?.trim().isEmpty == true
-                      ? 'Vui lòng nhập mức lương'
-                      : null,
+                  hint: 'Ví dụ: 15.000.000 – 25.000.000 ₫ hoặc Thỏa thuận',
+                  validator: (v) {
+                    final trimmed = v?.trim() ?? '';
+                    if (trimmed.isEmpty) {
+                      return 'Vui lòng nhập mức lương';
+                    }
+                    final parsed = PostJobParams.parseSalaryInput(trimmed);
+                    if (parsed.isInvalidRange) {
+                      return 'Mức lương tối đa phải lớn hơn hoặc bằng mức lương tối thiểu';
+                    }
+                    return null;
+                  },
                 ),
                 const SizedBox(height: 14),
 
                 _buildField(
-                  label: 'Mô tả công việc & Yêu cầu',
+                  label: 'Mô tả công việc',
                   controller: _descController,
-                  hint: 'Mô tả chi tiết trách nhiệm và kỹ năng cần có',
+                  hint: 'Mô tả chi tiết trách nhiệm công việc hằng ngày',
                   maxLines: 4,
                   validator: (v) =>
                       v?.trim().isEmpty == true ? 'Vui lòng nhập mô tả' : null,
+                ),
+                const SizedBox(height: 14),
+
+                _buildField(
+                  label: 'Yêu cầu ứng viên',
+                  controller: _industryController,
+                  hint: 'Kỹ năng chuyên môn, công cụ, kinh nghiệm yêu cầu...',
+                  maxLines: 3,
                 ),
                 const SizedBox(height: 14),
 
