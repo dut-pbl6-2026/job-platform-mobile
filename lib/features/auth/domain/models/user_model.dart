@@ -60,7 +60,7 @@ class UserModel {
       name: json['fullName'] as String? ?? json['name'] as String? ?? '',
       email: json['email'] as String? ?? '',
       role: UserRole.tryParse(json['role'] as String?),
-      companyId: json['companyId'] as String? ?? json['company_id'] as String?,
+      companyId: json['companyId'] as String?,
       avatarUrl: json['avatarUrl'] as String?,
       createdAt: json['createdAt'] != null
           ? DateTime.parse(json['createdAt'] as String)

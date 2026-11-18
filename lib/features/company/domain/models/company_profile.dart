@@ -71,15 +71,15 @@ class CompanyProfile {
     return CompanyProfile(
       id: _string(json['id']),
       name: _string(json['name']),
-      taxCode: _optional(json['taxCode'] ?? json['tax_code']),
+      taxCode: _optional(json['taxCode']),
       verified: _bool(json['verified']),
-      logoUrl: _optional(json['logoUrl'] ?? json['logo_url']),
+      logoUrl: _optional(json['logoUrl']),
       website: _optional(json['website']),
       description: _optional(json['description']),
       address: _optional(json['address']),
       industry: _optional(json['industry']),
       size: _optional(json['size']),
-      isCompanyAdmin: _bool(json['isCompanyAdmin'] ?? json['is_company_admin']),
+      isCompanyAdmin: _bool(json['isCompanyAdmin']),
     );
   }
 

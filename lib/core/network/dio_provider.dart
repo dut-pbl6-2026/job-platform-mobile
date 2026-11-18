@@ -83,19 +83,24 @@ class DioProvider {
       ),
     );
 
-    // 2. Queued Auth & Token Refresh Interceptor
+    // 2. Concurrency-safe Auth & Token Refresh Interceptor (AUTH-01-04, SEC-09).
+    //    Uses InterceptorsWrapper + shared [_refreshFuture] instead of QueuedInterceptorsWrapper
+    //    so retrying via [d.fetch] never deadlocks Dio's _errorQueue when a retried request fails.
     d.interceptors.add(
-      QueuedInterceptorsWrapper(
-        onRequest: (options, handler) {
-          // Skip auth header for anonymous endpoints
+      InterceptorsWrapper(
+        onRequest: (options, handler) async {
           final path = options.path;
-          final isAnonymous =
-              path.contains('/api/auth/login') ||
-              path.contains('/api/auth/register') ||
-              path.contains('/api/auth/forgot-password') ||
-              path.contains('/api/auth/reset-password') ||
-              path.contains('/api/auth/refresh');
+          final isAnonymous = _isAnonymousPath(path);
           if (!isAnonymous) {
+            final pendingRefresh = _refreshFuture;
+            if (pendingRefresh != null &&
+                options.extra[_kRetriedAfterRefreshKey] != true) {
+              try {
+                await pendingRefresh;
+              } catch (_) {
+                // Individual requests handle auth failure on response if refresh failed.
+              }
+            }
             final token = AuthSession.instance.token;
             if (token != null) {
               options.headers['Authorization'] = 'Bearer $token';
@@ -105,55 +110,23 @@ class DioProvider {
         },
         onError: (DioException err, ErrorInterceptorHandler handler) async {
           final status = err.response?.statusCode;
-          final isRefreshCall = err.requestOptions.path.contains(
-            '/api/auth/refresh',
-          );
+          final path = err.requestOptions.path;
+          final alreadyRetried =
+              err.requestOptions.extra[_kRetriedAfterRefreshKey] == true;
 
-          // Only handle 401 for non-refresh calls when we have a refresh token
-          if (status != 401 || isRefreshCall) {
+          // Only handle first-time 401 for non-anonymous endpoints when a refresh token exists
+          if (status != 401 || _isAnonymousPath(path) || alreadyRetried) {
             return handler.next(err);
           }
           final refreshToken = AuthSession.instance.refreshToken;
-          if (refreshToken == null) {
+          if (refreshToken == null || refreshToken.isEmpty) {
             return handler.next(err);
           }
 
-          // If refresh already in progress, wait for it then retry with new token
-          if (_isRefreshing) {
-            try {
-              await _refreshCompleter?.future;
-              final newToken = AuthSession.instance.token;
-              if (newToken != null) {
-                err.requestOptions.headers['Authorization'] =
-                    'Bearer $newToken';
-                final retry = await d.fetch(err.requestOptions);
-                return handler.resolve(retry);
-              }
-            } on DioException catch (retryErr) {
-              return handler.next(retryErr);
-            } catch (_) {
-              return handler.next(err);
-            }
-            return handler.next(err);
-          }
-
-          _isRefreshing = true;
-          _refreshCompleter = Completer<void>();
-          // Waiters receive the error through the future; with none, it must not be reported as unhandled.
-          _refreshCompleter!.future.catchError((Object _) {});
           late final AuthResult auth;
           try {
-            final res = await _postRefresh(refreshToken);
-            final data = res.data is Map<String, dynamic>
-                ? res.data as Map<String, dynamic>
-                : Map<String, dynamic>.from(res.data as Map);
-            auth = AuthResult.fromJson(data);
-            await AuthSession.instance.setSession(auth);
-            _refreshCompleter?.complete();
+            auth = await (_refreshFuture ??= _performRefresh(refreshToken));
           } catch (e) {
-            if (!(_refreshCompleter?.isCompleted ?? true)) {
-              _refreshCompleter?.completeError(e);
-            }
             // Only a rejected refresh token (401/403) ends the session. A 429, a 5xx or a network
             // error keeps the tokens. The refresh error is passed on instead of the original 401,
             // so the caller does not treat it as a logout.
@@ -162,15 +135,20 @@ class DioProvider {
               return handler.next(err);
             }
             return handler.next(e is DioException ? e : err);
-          } finally {
-            _isRefreshing = false;
-            _refreshCompleter = null;
           }
 
-          // Retry original request with newly refreshed token
+          // Finalized FormData streams cannot be re-sent safely; now that tokens are fresh,
+          // surface the error cleanly so the caller can prompt a clean re-submit.
+          final requestData = err.requestOptions.data;
+          if (requestData is FormData && requestData.isFinalized) {
+            return handler.next(err);
+          }
+
+          // Retry original request once with newly refreshed token
           try {
             err.requestOptions.headers['Authorization'] =
                 'Bearer ${auth.token}';
+            err.requestOptions.extra[_kRetriedAfterRefreshKey] = true;
             final retry = await d.fetch(err.requestOptions);
             return handler.resolve(retry);
           } on DioException catch (retryErr) {
@@ -185,8 +163,42 @@ class DioProvider {
     return d;
   }
 
-  bool _isRefreshing = false;
-  Completer<void>? _refreshCompleter;
+  static const _kRetriedAfterRefreshKey = '_retried_after_refresh';
+
+  Future<AuthResult>? _refreshFuture;
+
+  static bool _isAnonymousPath(String path) =>
+      path.contains('/api/auth/login') ||
+      path.contains('/api/auth/register') ||
+      path.contains('/api/auth/forgot-password') ||
+      path.contains('/api/auth/reset-password') ||
+      path.contains('/api/auth/verify-email') ||
+      path.contains('/api/auth/resend-verification') ||
+      path.contains('/api/auth/refresh');
+
+  Future<AuthResult> _performRefresh(String refreshToken) async {
+    try {
+      final res = await _postRefresh(refreshToken);
+      final data = res.data is Map<String, dynamic>
+          ? res.data as Map<String, dynamic>
+          : Map<String, dynamic>.from(res.data as Map);
+      final currentUser = AuthSession.instance.currentUser;
+      final parsed = AuthResult.fromJson(data, fallbackUser: currentUser);
+      final effectiveRefresh = parsed.refreshToken.isNotEmpty
+          ? parsed.refreshToken
+          : refreshToken;
+      final auth = AuthResult(
+        token: parsed.token,
+        refreshToken: effectiveRefresh,
+        user: parsed.user,
+        expiresAt: parsed.expiresAt,
+      );
+      await AuthSession.instance.setSession(auth);
+      return auth;
+    } finally {
+      _refreshFuture = null;
+    }
+  }
 
   static const _maxRefreshAttempts = 3;
   static const _maxRefreshBackoff = Duration(seconds: 5);

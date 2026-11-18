@@ -105,8 +105,9 @@ class AppRouter {
         return AppRoutes.login;
       }
 
-      // 2. Authenticated users on login/register/forgot/reset:
-      // If role is valid, redirect to home. If role is unknown or missing, fail closed (stay on login/deny access).
+      // 2. Authenticated users on login/register/company-sign-up:
+      // If role is valid, redirect to home. If role is unknown or missing, fail closed
+      // without creating a redirect loop when already on /login.
       if (isAuthenticated &&
           (currentPath == AppRoutes.login ||
               currentPath == AppRoutes.register ||
@@ -114,8 +115,7 @@ class AppRouter {
         if (resolvedRole != null) {
           return AppRoutes.home;
         } else {
-          // Unknown or missing role: fail closed!
-          return AppRoutes.login;
+          return currentPath == AppRoutes.login ? null : AppRoutes.login;
         }
       }
 

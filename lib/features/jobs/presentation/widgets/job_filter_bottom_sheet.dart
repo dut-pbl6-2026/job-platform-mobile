@@ -192,35 +192,6 @@ class _JobFilterBottomSheetState extends State<JobFilterBottomSheet> {
     return count;
   }
 
-  int _calculateMatchingJobsCount() {
-    final activeCount = _calculateActiveCount();
-    if (activeCount == 0) return 48;
-    int base = 42;
-    if (_selectedCategoryName != null &&
-        _selectedCategoryName != 'Tất cả ngành nghề') {
-      base -= 6;
-    }
-    if (_selectedLocation != null || _selectedInternationalRegion != null) {
-      base = (base - 8).clamp(4, 100);
-    }
-    final salarySpan = (_salaryRange.end - _salaryRange.start).round();
-    if (salarySpan < 20) {
-      base -= 10;
-    } else if (salarySpan < 50) {
-      base -= 5;
-    }
-    if (_salaryRange.start >= 60 && _expRange.end <= 1) return 0;
-    if (!_includeNegotiable) base -= 4;
-
-    final expSpan = (_expRange.end - _expRange.start).round();
-    if (expSpan <= 2) base -= 6;
-
-    if (_selectedSkills.length > 3) {
-      base = (base - 6).clamp(2, 100);
-    }
-    return base.clamp(2, 48);
-  }
-
   void _handleReset() {
     setState(() {
       _selectedLocation = null;
@@ -316,7 +287,6 @@ class _JobFilterBottomSheetState extends State<JobFilterBottomSheet> {
   Widget build(BuildContext context) {
     final mediaQuery = MediaQuery.of(context);
     final activeCount = _calculateActiveCount();
-    final matchingCount = _calculateMatchingJobsCount();
 
     return Container(
       constraints: BoxConstraints(maxHeight: mediaQuery.size.height * 0.92),
@@ -518,44 +488,36 @@ class _JobFilterBottomSheetState extends State<JobFilterBottomSheet> {
               children: [
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: matchingCount > 0 ? _handleApply : null,
+                    onPressed: _handleApply,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary,
-                      disabledBackgroundColor: const Color(0xFFE2E8F0),
                       foregroundColor: Colors.white,
-                      disabledForegroundColor: const Color(0xFF94A3B8),
                       minimumSize: const Size(double.infinity, 48),
                       elevation: 0,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14),
                       ),
                     ),
-                    child: matchingCount > 0
-                        ? Row(
-                            mainAxisSize: MainAxisSize.min,
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Flexible(
-                                child: Text(
-                                  'Xem $matchingCount việc làm phù hợp',
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              const Icon(Icons.arrow_forward_rounded, size: 18),
-                            ],
-                          )
-                        : const Text(
-                            'Không có việc làm phù hợp (Hãy bớt tiêu chí)',
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            activeCount > 0
+                                ? 'Xem việc làm phù hợp ($activeCount bộ lọc)'
+                                : 'Xem việc làm phù hợp',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
                             ),
+                            overflow: TextOverflow.ellipsis,
                           ),
+                        ),
+                        const SizedBox(width: 8),
+                        const Icon(Icons.arrow_forward_rounded, size: 18),
+                      ],
+                    ),
                   ),
                 ),
               ],

@@ -222,5 +222,96 @@ void main() {
       expect(AuthSession.instance.token, isNull);
       expect(AuthSession.instance.refreshToken, isNull);
     });
+
+    test(
+      'refresh without user preserves currentUser and non-200 retry does not deadlock (BUG-02)',
+      () async {
+        final refresh = _FakeAdapter(
+          (_) => _json(200, {
+            'accessToken': 'new-access',
+            'refreshToken': 'new-refresh',
+          }),
+        );
+        provider.refreshDio.httpClientAdapter = refresh;
+        provider.dio.httpClientAdapter = _FakeAdapter((options) {
+          if (options.headers['Authorization'] == 'Bearer new-access') {
+            return _json(409, {'detail': 'Already applied'});
+          }
+          return _json(401, {'message': 'expired'});
+        });
+
+        await expectLater(
+          provider.dio
+              .post('/api/applications', data: {'jobId': 'job-1'})
+              .timeout(const Duration(seconds: 2)),
+          throwsA(
+            isA<DioException>().having(
+              (e) => e.response?.statusCode,
+              'status',
+              409,
+            ),
+          ),
+        );
+
+        expect(refresh.count, 1);
+        expect(AuthSession.instance.isAuthenticated, isTrue);
+        expect(AuthSession.instance.currentUser?.id, 'usr-1');
+        expect(AuthSession.instance.currentUser?.email, 'candidate@test.com');
+        expect(AuthSession.instance.resolvedRole, UserRole.user);
+      },
+    );
+
+    test(
+      'concurrent 401 requests share a single /api/auth/refresh call',
+      () async {
+        var refreshCalls = 0;
+        final refresh = _FakeAdapter((_) {
+          refreshCalls += 1;
+          return _json(200, {
+            'accessToken': 'new-access',
+            'refreshToken': 'new-refresh',
+          });
+        });
+        provider.refreshDio.httpClientAdapter = refresh;
+        provider.dio.httpClientAdapter = _FakeAdapter(_apiRespond);
+
+        final results = await Future.wait([
+          provider.dio.get<Map<String, dynamic>>('/api/jobs'),
+          provider.dio.get<Map<String, dynamic>>('/api/profiles/me'),
+          provider.dio.get<Map<String, dynamic>>('/api/applications/me'),
+        ]);
+
+        expect(results.every((r) => r.statusCode == 200), isTrue);
+        expect(refreshCalls, 1);
+      },
+    );
+
+    test(
+      '401 on anonymous /api/auth/login never triggers token refresh',
+      () async {
+        final refresh = _FakeAdapter(
+          (_) => _json(200, {
+            'accessToken': 'new-access',
+            'refreshToken': 'new-refresh',
+          }),
+        );
+        provider.refreshDio.httpClientAdapter = refresh;
+        provider.dio.httpClientAdapter = _FakeAdapter(
+          (_) => _json(401, {'detail': 'Invalid credentials'}),
+        );
+
+        await expectLater(
+          provider.dio.post('/api/auth/login', data: {'email': 'a@b.c'}),
+          throwsA(
+            isA<DioException>().having(
+              (e) => e.response?.statusCode,
+              'status',
+              401,
+            ),
+          ),
+        );
+        expect(refresh.count, 0);
+      },
+    );
   });
 }

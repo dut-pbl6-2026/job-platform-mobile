@@ -10,35 +10,72 @@ void main() {
       expect(repo, isNotNull);
     });
 
-    test('Falls back gracefully to mock when Gateway is offline', () async {
-      final dio = Dio();
-      dio.interceptors.add(
-        InterceptorsWrapper(
-          onRequest: (options, handler) {
-            handler.reject(
-              DioException(
-                requestOptions: options,
-                error: 'Connection refused',
-                type: DioExceptionType.connectionError,
-              ),
-            );
-          },
-        ),
-      );
-      final repo = ApiApplicationRepository(dio: dio);
+    test(
+      'Falls back gracefully to mock only when enableMockFallback is true',
+      () async {
+        final dio = Dio();
+        dio.interceptors.add(
+          InterceptorsWrapper(
+            onRequest: (options, handler) {
+              handler.reject(
+                DioException(
+                  requestOptions: options,
+                  error: 'Connection refused',
+                  type: DioExceptionType.connectionError,
+                ),
+              );
+            },
+          ),
+        );
+        final repo = ApiApplicationRepository(
+          dio: dio,
+          enableMockFallback: true,
+        );
 
-      final list = await repo.getMyApplications();
-      expect(list.isNotEmpty, isTrue);
+        final list = await repo.getMyApplications();
+        expect(list.isNotEmpty, isTrue);
 
-      final detail = await repo.getApplicationById(list.first.id);
-      expect(detail, isNotNull);
+        final detail = await repo.getApplicationById(list.first.id);
+        expect(detail, isNotNull);
 
-      final hasApp = await repo.hasApplied('job-1');
-      expect(hasApp, isTrue);
+        final hasApp = await repo.hasApplied('job-1');
+        expect(hasApp, isTrue);
 
-      final nonExistentApp = await repo.hasApplied('job-unknown-999');
-      expect(nonExistentApp, isFalse);
-    });
+        final nonExistentApp = await repo.hasApplied('job-unknown-999');
+        expect(nonExistentApp, isFalse);
+      },
+    );
+
+    test(
+      'Does NOT fabricate mock data by default when Gateway is offline (BUG-04)',
+      () async {
+        final dio = Dio();
+        dio.interceptors.add(
+          InterceptorsWrapper(
+            onRequest: (options, handler) {
+              handler.reject(
+                DioException(
+                  requestOptions: options,
+                  error: 'Connection refused',
+                  type: DioExceptionType.connectionError,
+                ),
+              );
+            },
+          ),
+        );
+        final repo = ApiApplicationRepository(dio: dio);
+
+        await expectLater(
+          repo.getMyApplications(),
+          throwsA(isA<ApplicationRepositoryException>()),
+        );
+        await expectLater(
+          repo.getApplicationById('app-1'),
+          throwsA(isA<ApplicationRepositoryException>()),
+        );
+        expect(await repo.hasApplied('job-1'), isFalse);
+      },
+    );
 
     group('applyJob failure paths', () {
       final params = ApplyJobParams(
@@ -78,38 +115,44 @@ void main() {
         );
       });
 
-      test('server error surfaces the server message', () async {
-        final dio = Dio();
-        dio.interceptors.add(
-          InterceptorsWrapper(
-            onRequest: (options, handler) {
-              handler.reject(
-                DioException(
-                  requestOptions: options,
-                  type: DioExceptionType.badResponse,
-                  response: Response(
+      test(
+        'server 500 error throws sanitized user-facing copy without leaking internal detail (SEC-05)',
+        () async {
+          final dio = Dio();
+          dio.interceptors.add(
+            InterceptorsWrapper(
+              onRequest: (options, handler) {
+                handler.reject(
+                  DioException(
                     requestOptions: options,
-                    statusCode: 500,
-                    data: {'detail': 'CV storage unavailable'},
+                    type: DioExceptionType.badResponse,
+                    response: Response(
+                      requestOptions: options,
+                      statusCode: 500,
+                      data: {'detail': 'CV storage unavailable'},
+                    ),
                   ),
-                ),
-              );
-            },
-          ),
-        );
-        final repo = ApiApplicationRepository(dio: dio);
-
-        await expectLater(
-          repo.applyJob(params),
-          throwsA(
-            isA<Exception>().having(
-              (e) => e.toString(),
-              'message',
-              contains('CV storage unavailable'),
+                );
+              },
             ),
-          ),
-        );
-      });
+          );
+          final repo = ApiApplicationRepository(dio: dio);
+
+          await expectLater(
+            repo.applyJob(params),
+            throwsA(
+              isA<ApplicationRepositoryException>().having(
+                (e) => e.toString(),
+                'message',
+                allOf(
+                  contains('tạm thời gián đoạn'),
+                  isNot(contains('CV storage unavailable')),
+                ),
+              ),
+            ),
+          );
+        },
+      );
 
       test('duplicate application (409) throws a user-facing error', () async {
         final dio = Dio();
@@ -168,5 +211,56 @@ void main() {
 
       expect(() => repo.getMyApplications(), throwsA(isA<Exception>()));
     });
+
+    test(
+      'applyJob sends §8 multipart fields and adapts 201 Created response',
+      () async {
+        final dio = Dio();
+        FormData? capturedForm;
+        dio.interceptors.add(
+          InterceptorsWrapper(
+            onRequest: (options, handler) {
+              capturedForm = options.data as FormData;
+              handler.resolve(
+                Response(
+                  requestOptions: options,
+                  statusCode: 201,
+                  data: {
+                    'id': 'app-201',
+                    'job_id': 'job-uuid-1',
+                    'applicant_id': 'usr-uuid-1',
+                    'status': 'pending',
+                    'cv_url': '/api/applications/cv/cv.pdf',
+                  },
+                ),
+              );
+            },
+          ),
+        );
+        final repo = ApiApplicationRepository(dio: dio);
+        final result = await repo.applyJob(
+          const ApplyJobParams(
+            jobId: 'job-uuid-1',
+            jobTitle: 'Mobile Engineer',
+            companyName: 'VNG',
+            coverLetter: 'Hello',
+            cvFileName: 'cv.pdf',
+            cvBytes: [1, 2, 3],
+          ),
+        );
+
+        expect(capturedForm, isNotNull);
+        expect(Map.fromEntries(capturedForm!.fields), {
+          'job_id': 'job-uuid-1',
+          'cover_letter': 'Hello',
+        });
+        expect(capturedForm!.files.map((e) => e.key), contains('cv_file'));
+        expect(result.id, 'app-201');
+        expect(result.jobId, 'job-uuid-1');
+        expect(result.jobTitle, 'Mobile Engineer');
+        expect(result.companyName, 'VNG');
+        expect(result.cvUrl, '/api/applications/cv/cv.pdf');
+      },
+    );
   });
 }

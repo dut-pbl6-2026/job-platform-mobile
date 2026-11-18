@@ -74,8 +74,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _fetchRecommendations({bool refresh = false}) async {
-    final user = AuthSession.instance.currentUser;
-    if (user?.role == UserRole.recruiter) {
+    final role = AuthSession.instance.resolvedRole;
+    if (role == UserRole.recruiter || role == UserRole.admin) {
       if (mounted) {
         setState(() {
           _isLoadingRecommendations = false;
@@ -245,8 +245,8 @@ class _HomeScreenState extends State<HomeScreen> {
         break;
       case 'Từ xa':
         _filterParams = _filterParams.copyWith(
-          workplaceType: 'remote',
-          clearWorkplaceType: false,
+          keyword: 'Remote',
+          clearKeyword: false,
           page: 0,
         );
         break;
@@ -268,7 +268,9 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final user = AuthSession.instance.currentUser;
-    final isRecruiter = user?.role == UserRole.recruiter;
+    final role = AuthSession.instance.resolvedRole;
+    final isRecruiter = role == UserRole.recruiter;
+    final isAdmin = role == UserRole.admin;
     return Scaffold(
       backgroundColor: AppColors.surface,
       body: SafeArea(
@@ -293,8 +295,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   const SizedBox(height: 9),
                   _buildFilterPills(),
                   const SizedBox(height: 10),
-                  _buildQuickShortcuts(user?.role),
+                  _buildQuickShortcuts(role),
                   if (!isRecruiter &&
+                      !isAdmin &&
                       !_isFilterActive &&
                       (_isLoadingRecommendations ||
                           _recommendationsError != null ||
@@ -496,6 +499,13 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildQuickShortcuts(UserRole? role) {
     final shortcuts = <Widget>[];
     if (role == UserRole.recruiter) {
+      shortcuts.add(
+        _shortcut(
+          Icons.dashboard_outlined,
+          'Tổng quan',
+          () => context.push(AppRoutes.recruiterDashboard),
+        ),
+      );
       shortcuts.add(
         _shortcut(
           Icons.post_add_rounded,

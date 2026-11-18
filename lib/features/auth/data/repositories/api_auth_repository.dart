@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:job_platform_mobile/core/error/error_mapper.dart';
 import 'package:job_platform_mobile/core/error/failures.dart';
 import 'package:job_platform_mobile/core/network/dio_provider.dart';
+import 'package:job_platform_mobile/core/services/push_notification_service.dart';
 import 'package:job_platform_mobile/core/session/auth_session.dart';
 import 'package:job_platform_mobile/core/utils/password_validator.dart';
 import 'package:job_platform_mobile/features/auth/domain/models/auth_result.dart';
@@ -192,6 +193,9 @@ class ApiAuthRepository implements IAuthRepository {
   @override
   Future<void> logout() async {
     try {
+      await PushNotificationService.instance.unregisterTokenOnLogout();
+    } catch (_) {}
+    try {
       final rt = AuthSession.instance.refreshToken;
       if (rt != null) {
         await _dio.post('/api/auth/logout', data: {'refreshToken': rt});
@@ -201,17 +205,19 @@ class ApiAuthRepository implements IAuthRepository {
   }
 
   /// Checks a session restored from secure storage against the server.
-  /// Clears it when the server rejects the token; keeps it when the server
-  /// cannot be reached, so the user is not logged out while offline.
+  /// Clears it when the server rejects or deactivates the account; updates
+  /// cached user profile on success; keeps it when offline.
   Future<void> validateRestoredSession() async {
     if (!AuthSession.instance.isAuthenticated) return;
     try {
       final user = await getCurrentUser();
       if (user == null) {
         await AuthSession.instance.clearSession();
+      } else {
+        await AuthSession.instance.updateUser(user);
       }
     } on AuthFailure {
-      // Server reachable but failing: keep the local session.
+      // Server reachable with transient 5xx: keep the local session.
     }
   }
 
@@ -229,9 +235,13 @@ class ApiAuthRepository implements IAuthRepository {
                 ? data['user'] as Map<String, dynamic>
                 : Map<String, dynamic>.from(data['user'] as Map))
           : data;
+      if (userMap['isActive'] == false || data['isActive'] == false) {
+        return null;
+      }
       return UserModel.fromJson(userMap);
     } on DioException catch (e) {
-      if (e.response?.statusCode == 401) {
+      final code = e.response?.statusCode;
+      if (code == 401 || code == 403) {
         return null;
       }
       if (e.response == null) {

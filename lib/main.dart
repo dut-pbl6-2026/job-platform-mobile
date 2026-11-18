@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app.dart';
 import 'core/network/api_config.dart';
+import 'core/services/hive_cache_service.dart';
 import 'core/services/push_notification_service.dart';
 
 void main() async {
@@ -44,13 +45,24 @@ void main() async {
     );
   }
 
+  // Initialize encrypted offline Hive cache before mounting UI (OFFLINE-01, SEC-08)
+  try {
+    await HiveCacheService.instance.init();
+  } catch (e) {
+    if (kDebugMode) {
+      debugPrint('Hive cache initialization error: $e');
+    }
+  }
+
   // Mount App widget tree immediately so UI renders without white screen delay
   runApp(const ProviderScope(child: App()));
 
   // Initialize Push Notification Service asynchronously in background (PUSH-01)
   unawaited(
-    PushNotificationService.instance.initialize().catchError((e) {
-      debugPrint('Push notification service initialization error: $e');
+    PushNotificationService.instance.initialize().catchError((Object e) {
+      if (kDebugMode) {
+        debugPrint('Push notification service initialization error: $e');
+      }
     }),
   );
 }

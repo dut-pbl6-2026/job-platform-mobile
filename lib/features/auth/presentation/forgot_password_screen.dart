@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/error/error_mapper.dart';
+import '../../../core/router/app_router.dart';
 import '../../../core/theme/app_theme.dart';
 import '../data/repositories/api_auth_repository.dart';
 import '../domain/repositories/auth_repository.dart';
@@ -22,6 +23,12 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   void initState() {
     super.initState();
     _repo = widget.authRepository ?? ApiAuthRepository();
+  }
+
+  @override
+  void dispose() {
+    _email.dispose();
+    super.dispose();
   }
 
   String? _validate(String? v) {
@@ -96,6 +103,11 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                       ? const CircularProgressIndicator(color: Colors.white)
                       : const Text('Gửi liên kết'),
                 ),
+              ),
+              const SizedBox(height: 12),
+              TextButton(
+                onPressed: () => context.push(AppRoutes.resetPassword),
+                child: const Text('Đã có mã khôi phục? Đặt lại mật khẩu ngay'),
               ),
             ],
           ),

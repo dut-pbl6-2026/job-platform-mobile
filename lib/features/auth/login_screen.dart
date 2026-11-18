@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/error/error_mapper.dart';
 import '../../core/router/app_router.dart';
+import '../../core/services/push_notification_service.dart';
 import '../../core/theme/app_theme.dart';
 import 'data/repositories/api_auth_repository.dart';
 import 'domain/repositories/auth_repository.dart';
@@ -74,15 +77,10 @@ class _LoginScreenState extends State<LoginScreen> {
     return null;
   }
 
-  /// Validate password per SRS AUTH-01-01:
-  /// Minimum 8 characters, at least 1 uppercase letter and 1 digit.
+  /// Validate password presence on login (strength rules apply only on registration/reset).
   String? _validatePassword(String? value) {
     if (value == null || value.isEmpty) {
       return 'Vui lòng nhập mật khẩu';
-    }
-    final passwordRegex = RegExp(r'^(?=.*[A-Z])(?=.*\d).{8,}$');
-    if (!passwordRegex.hasMatch(value)) {
-      return 'Mật khẩu tối thiểu 8 ký tự, gồm ít nhất 1 chữ hoa và 1 chữ số';
     }
     return null;
   }
@@ -99,6 +97,7 @@ class _LoginScreenState extends State<LoginScreen> {
         password: _passwordController.text,
         rememberMe: _rememberMe,
       );
+      unawaited(PushNotificationService.instance.syncTokenWithBackend());
 
       if (mounted) {
         setState(() => _isLoading = false);
