@@ -6,12 +6,14 @@ import '../../domain/models/profile_model.dart';
 class ExperienceSection extends StatelessWidget {
   final List<WorkExperienceModel> experiences;
   final VoidCallback onAddExperience;
+  final ValueChanged<WorkExperienceModel>? onEditExperience;
   final ValueChanged<String> onDeleteExperience;
 
   const ExperienceSection({
     super.key,
     required this.experiences,
     required this.onAddExperience,
+    this.onEditExperience,
     required this.onDeleteExperience,
   });
 
@@ -97,6 +99,16 @@ class ExperienceSection extends StatelessWidget {
                                   ),
                                 ),
                               ),
+                              if (onEditExperience != null)
+                                IconButton(
+                                  icon: const Icon(
+                                    Icons.mode_edit_outline_rounded,
+                                    size: 18,
+                                    color: AppColors.primary,
+                                  ),
+                                  tooltip: 'Chỉnh sửa kinh nghiệm',
+                                  onPressed: () => onEditExperience!(exp),
+                                ),
                               IconButton(
                                 icon: const Icon(
                                   Icons.delete_outline_rounded,

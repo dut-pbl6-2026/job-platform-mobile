@@ -25,6 +25,10 @@ void main() {
         FormatUtils.formatSalaryRange(max: 30000000),
         'Tới 30.000.000 VNĐ',
       );
+      expect(
+        FormatUtils.formatSalaryRange(min: 1500, max: 2500, currency: 'USD'),
+        '1.500 - 2.500 USD',
+      );
     });
 
     test('timeAgo returns friendly Vietnamese text', () {
@@ -80,6 +84,50 @@ void main() {
       expect(reconstructed.experienceLevel, ExperienceLevel.senior);
       expect(reconstructed.skills, ['Flutter', 'Dart']);
     });
+
+    test(
+      'JobModel.fromJson parses search-svc camelCase currency and ignores snake_case fields',
+      () {
+        final searchUsd = _searchItemJson()..['currency'] = 'USD';
+        final parsedCamel = JobModel.fromJson(searchUsd);
+        expect(parsedCamel.salaryCurrency, 'USD');
+        expect(parsedCamel.isExternalCrawledJob, isFalse);
+
+        final snakeOnly = {
+          'id': 'job-snake-only',
+          'title': 'Snake Job',
+          'company_name': 'Snake Corp',
+          'logo_url': 'https://cdn.example.com/snake.png',
+          'location': 'Hà Nội',
+          'salary_min': 2000,
+          'salary_max': 3500,
+          'salary_currency': 'USD',
+          'category_name': 'IT',
+          'employment_type': 'Contract',
+          'experience_level': 'Senior',
+          'created_at': '2026-11-10T08:00:00Z',
+          'company_verified': false,
+        };
+
+        final ignored = JobModel.fromJson(snakeOnly);
+        expect(ignored.companyName, isEmpty);
+        expect(ignored.companyLogo, isNull);
+        expect(ignored.salaryMin, isNull);
+        expect(ignored.salaryMax, isNull);
+        expect(ignored.salaryCurrency, 'VND');
+        expect(ignored.jobType, JobType.other);
+        expect(ignored.experienceLevel, ExperienceLevel.other);
+        expect(ignored.category, 'Khác');
+        expect(ignored.isCompanyVerified, isTrue);
+
+        final crawledJob = JobModel.fromJson({
+          ..._searchItemJson(),
+          'id':
+              'a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90',
+        });
+        expect(crawledJob.isExternalCrawledJob, isTrue);
+      },
+    );
 
     test('fromJson maps the camelCase search item shape', () {
       final job = JobModel.fromJson(_searchItemJson());
@@ -297,7 +345,6 @@ Map<String, dynamic> _searchItemJson() => {
   'employmentType': 'PartTime',
   'experienceLevel': 'Senior',
   'status': 'Active',
-  'recruiterId': 'recruiter-1',
   'createdAt': '2026-11-01T08:30:00.1234567Z',
   'updatedAt': '2026-11-02T08:30:00Z',
   'expiresAt': '2026-12-31T00:00:00Z',

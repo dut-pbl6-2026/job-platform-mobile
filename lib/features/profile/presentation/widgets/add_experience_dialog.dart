@@ -5,8 +5,13 @@ import '../../domain/models/profile_model.dart';
 /// Modal dialog for adding work experience (PROFILE-01-03)
 class AddExperienceDialog extends StatefulWidget {
   final ValueChanged<WorkExperienceModel> onAdd;
+  final WorkExperienceModel? initialExperience;
 
-  const AddExperienceDialog({super.key, required this.onAdd});
+  const AddExperienceDialog({
+    super.key,
+    required this.onAdd,
+    this.initialExperience,
+  });
 
   @override
   State<AddExperienceDialog> createState() => _AddExperienceDialogState();
@@ -21,6 +26,21 @@ class _AddExperienceDialogState extends State<AddExperienceDialog> {
   DateTime _startDate = DateTime.now().subtract(const Duration(days: 365));
   DateTime? _endDate;
   bool _isCurrent = true;
+  String? _dateError;
+
+  @override
+  void initState() {
+    super.initState();
+    final exp = widget.initialExperience;
+    if (exp != null) {
+      _companyController.text = exp.company;
+      _titleController.text = exp.title;
+      _descriptionController.text = exp.description ?? '';
+      _startDate = exp.startDate;
+      _endDate = exp.endDate;
+      _isCurrent = exp.isCurrent;
+    }
+  }
 
   @override
   void dispose() {
@@ -31,21 +51,32 @@ class _AddExperienceDialogState extends State<AddExperienceDialog> {
   }
 
   void _handleSave() {
-    if (_formKey.currentState?.validate() ?? false) {
-      final experience = WorkExperienceModel(
-        id: '',
-        company: _companyController.text.trim(),
-        title: _titleController.text.trim(),
-        startDate: _startDate,
-        endDate: _isCurrent ? null : _endDate,
-        isCurrent: _isCurrent,
-        description: _descriptionController.text.trim().isNotEmpty
-            ? _descriptionController.text.trim()
-            : null,
-      );
-      widget.onAdd(experience);
-      Navigator.of(context).pop();
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+    if (!_isCurrent) {
+      final resolvedEnd = _endDate ?? DateTime(DateTime.now().year, 12);
+      if (resolvedEnd.year < _startDate.year) {
+        setState(() {
+          _dateError = 'Năm kết thúc phải lớn hơn hoặc bằng năm bắt đầu';
+        });
+        return;
+      }
+      _endDate = resolvedEnd;
     }
+    setState(() => _dateError = null);
+
+    final experience = WorkExperienceModel(
+      id: widget.initialExperience?.id ?? '',
+      company: _companyController.text.trim(),
+      title: _titleController.text.trim(),
+      startDate: _startDate,
+      endDate: _isCurrent ? null : _endDate,
+      isCurrent: _isCurrent,
+      description: _descriptionController.text.trim().isNotEmpty
+          ? _descriptionController.text.trim()
+          : null,
+    );
+    widget.onAdd(experience);
+    Navigator.of(context).pop();
   }
 
   @override
@@ -84,6 +115,7 @@ class _AddExperienceDialogState extends State<AddExperienceDialog> {
                     ],
                   ),
                   const Divider(height: 1),
+
                   const SizedBox(height: 14),
 
                   // Company
@@ -141,11 +173,17 @@ class _AddExperienceDialogState extends State<AddExperienceDialog> {
                       ),
                     ),
                     value: _isCurrent,
+                    // ignore: deprecated_member_use
                     activeColor: AppColors.primary,
                     onChanged: (val) {
                       setState(() {
                         _isCurrent = val;
-                        if (val) _endDate = null;
+                        _dateError = null;
+                        if (val) {
+                          _endDate = null;
+                        } else {
+                          _endDate ??= DateTime(DateTime.now().year, 12);
+                        }
                       });
                     },
                   ),
@@ -168,6 +206,7 @@ class _AddExperienceDialogState extends State<AddExperienceDialog> {
                             ),
                             const SizedBox(height: 4),
                             DropdownButtonFormField<int>(
+                              // ignore: deprecated_member_use
                               value: _startDate.year,
                               decoration: InputDecoration(
                                 isDense: true,
@@ -211,6 +250,7 @@ class _AddExperienceDialogState extends State<AddExperienceDialog> {
                               ),
                               const SizedBox(height: 4),
                               DropdownButtonFormField<int>(
+                                // ignore: deprecated_member_use
                                 value: _endDate?.year ?? DateTime.now().year,
                                 decoration: InputDecoration(
                                   isDense: true,
@@ -237,6 +277,17 @@ class _AddExperienceDialogState extends State<AddExperienceDialog> {
                       ],
                     ],
                   ),
+
+                  if (_dateError != null) ...[
+                    const SizedBox(height: 6),
+                    Text(
+                      _dateError!,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.error,
+                      ),
+                    ),
+                  ],
 
                   const SizedBox(height: 14),
 

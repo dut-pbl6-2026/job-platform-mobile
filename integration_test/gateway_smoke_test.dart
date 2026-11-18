@@ -31,11 +31,17 @@ import 'package:job_platform_mobile/features/jobs/domain/models/job_filter_param
 /// Set with `--dart-define=REQUIRE_LIVE_STACK=true` in smoke/CI runs.
 const bool _requireLiveStack = bool.fromEnvironment('REQUIRE_LIVE_STACK');
 
-/// Backend job ids are UUIDs; mock fallback ids are `job-1`, `job-2`, ...
+/// Optional pre-verified credentials for authenticated smoke steps (`E2E_EMAIL`, `E2E_PASSWORD`).
+const String _e2eVerifiedEmail = String.fromEnvironment('E2E_EMAIL');
+const String _e2eVerifiedPassword = String.fromEnvironment('E2E_PASSWORD');
+
+/// Backend job ids are UUIDs (`job-svc`) or 64-char SHA-256 hex ids (`crawler`);
+/// mock fallback ids are `job-1`, `job-2`, ...
 final RegExp _uuid = RegExp(
   r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-'
   r'[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
 );
+final RegExp _sha256Hex = RegExp(r'^[0-9a-fA-F]{64}$');
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -71,6 +77,27 @@ void main() {
       return;
     }
 
+    // 1. Always verify public job search through the YARP Gateway first (even before login)
+    final jobRepository = ApiJobRepository();
+    final jobs = await jobRepository.getJobs(const JobFilterParams());
+    expect(
+      jobs.items,
+      isNotEmpty,
+      reason:
+          'No jobs returned. Either the search service is unreachable, or the '
+          'database has not been seeded. Seed a job before running this smoke test.',
+    );
+
+    final job = jobs.items.first;
+    expect(
+      _uuid.hasMatch(job.id) || _sha256Hex.hasMatch(job.id),
+      isTrue,
+      reason:
+          'Got id "${job.id}", which is neither a backend UUID nor a crawler '
+          'SHA-256 id. Search response did not originate from the live backend.',
+    );
+
+    // 2. Verify registration returns 202 without issuing premature tokens
     final auth = ApiAuthRepository();
     final stamp = DateTime.now().millisecondsSinceEpoch;
     final email = 'e2e-mobile-$stamp@example.com';
@@ -86,60 +113,64 @@ void main() {
       isFalse,
       reason: 'register must not sign the user in or store tokens',
     );
-    // The new account is unverified and this smoke test cannot read the
-    // verification email, so the authenticated steps below cannot run.
+
+    // 3. Sign in with pre-verified E2E credentials if provided to exercise full authenticated flow
+    if (_e2eVerifiedEmail.isNotEmpty && _e2eVerifiedPassword.isNotEmpty) {
+      await auth.login(
+        email: _e2eVerifiedEmail,
+        password: _e2eVerifiedPassword,
+      );
+    }
+
     if (!AuthSession.instance.isAuthenticated) {
+      if (_requireLiveStack) {
+        fail(
+          'REQUIRE_LIVE_STACK=true requires --dart-define=E2E_EMAIL=... and '
+          '--dart-define=E2E_PASSWORD=... for a verified candidate account to '
+          'complete authenticated apply/logout smoke steps.',
+        );
+      }
       markTestSkipped(
-        'Authenticated steps need a verified account; email verification '
-        'is not available to this smoke test.',
+        'Public gateway health, search & register passed. Pass E2E_EMAIL and '
+        'E2E_PASSWORD via --dart-define to run authenticated apply/logout steps.',
       );
       return;
     }
 
     final me = await auth.getCurrentUser();
-    expect(me?.email, email);
+    expect(me?.email, _e2eVerifiedEmail);
     final userId = me?.id;
     expect(
       userId != null && _uuid.hasMatch(userId),
       isTrue,
-      reason:
-          'User id "${me?.id}" is not a backend UUID. ApiAuthRepository likely '
-          'fell back to MockAuthRepository (id usr_<timestamp>).',
+      reason: 'User id "${me?.id}" is not a backend UUID.',
     );
 
-    final jobRepository = ApiJobRepository();
-    final jobs = await jobRepository.getJobs(const JobFilterParams());
-    expect(
-      jobs.items,
-      isNotEmpty,
-      reason:
-          'No jobs returned. Either the search service is unreachable and '
-          'ApiJobRepository silently fell back to mock data, or the database '
-          'has not been seeded. Seed a job before running this smoke test.',
-    );
-
-    final job = jobs.items.first;
-    expect(
-      _uuid.hasMatch(job.id),
-      isTrue,
-      reason:
-          'Got id "${job.id}", which is not a backend UUID. The search service '
-          'is likely down and ApiJobRepository returned mock data instead of a '
-          'live result (search fallback).',
-    );
+    final uuidJobs = jobs.items.where((j) => _uuid.hasMatch(j.id));
+    final applyTarget = uuidJobs.isNotEmpty ? uuidJobs.first : null;
+    if (applyTarget == null) {
+      final msg =
+          'Search returned ${jobs.items.length} crawled job(s) and no job-svc '
+          'UUID job to exercise POST /api/applications.';
+      if (_requireLiveStack) {
+        fail(msg);
+      }
+      markTestSkipped(msg);
+      return;
+    }
 
     final applications = ApiApplicationRepository(jobRepository: jobRepository);
     final application = await applications.applyJob(
       ApplyJobParams(
-        jobId: job.id,
-        jobTitle: job.title,
-        companyName: job.companyName,
+        jobId: applyTarget.id,
+        jobTitle: applyTarget.title,
+        companyName: applyTarget.companyName,
         coverLetter: 'Mobile E2E automated application',
         cvFileName: 'e2e-cv.pdf',
         cvBytes: _minimalPdfBytes,
       ),
     );
-    expect(application.jobId, job.id);
+    expect(application.jobId, applyTarget.id);
     expect(
       _uuid.hasMatch(application.id),
       isTrue,

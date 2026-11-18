@@ -19,9 +19,12 @@ import 'mock_job_repository.dart';
 /// (`--dart-define=ENABLE_MOCKS=true`) *and* the failure is a transport failure
 /// or a 5xx. A 4xx never yields fabricated jobs.
 class ApiJobRepository implements IJobRepository {
+  static final RegExp _sha256HexPattern = RegExp(r'^[0-9a-fA-F]{64}$');
+
   final Dio _dio;
   final MockJobRepository _fallbackMockRepository = MockJobRepository();
   final bool _enableMocks;
+  final Map<String, JobModel> _searchResultCache = {};
 
   ApiJobRepository({Dio? dio, String? gatewayBaseUrl, bool? enableMockFallback})
     : _dio =
@@ -68,6 +71,7 @@ class ApiJobRepository implements IJobRepository {
       }
       if (params.skills.isNotEmpty) {
         queryParams['skills'] = params.skills.join(',');
+        queryParams['skillOp'] = 'or';
       }
       // search-svc has no parameter for specialization, workplaceType, country,
       // region, salaryRange, currency or includeNegotiable, so those filters are
@@ -81,8 +85,13 @@ class ApiJobRepository implements IJobRepository {
       // search-svc accepts created_at_desc/asc and salary_desc/asc. Mobile's
       // 'newest' and 'relevance' have no exact match, so they are omitted and
       // search-svc applies its default ordering.
-      if (params.sortBy == 'salary_desc') {
-        queryParams['sortBy'] = 'salary_desc';
+      if (const {
+        'created_at_desc',
+        'created_at_asc',
+        'salary_desc',
+        'salary_asc',
+      }.contains(params.sortBy)) {
+        queryParams['sortBy'] = params.sortBy;
       }
 
       final response = await _dio.get(
@@ -122,9 +131,19 @@ class ApiJobRepository implements IJobRepository {
               .toList() ??
           [];
 
-      // Cache jobs in Hive for offline browsing (OFFLINE-01)
+      // Cache jobs in memory and Hive for offline browsing and crawled detail lookup.
+      for (final job in items) {
+        if (job.id.trim().isNotEmpty) {
+          _searchResultCache[job.id] = job;
+        }
+      }
       if (items.isNotEmpty) {
         await HiveCacheService.instance.saveJobs(items);
+        for (final job in items) {
+          if (job.id.trim().isNotEmpty) {
+            await HiveCacheService.instance.saveJobDetail(job);
+          }
+        }
       }
 
       return PaginatedJobs(
@@ -203,10 +222,20 @@ class ApiJobRepository implements IJobRepository {
 
   @override
   Future<JobModel?> getJobById(String id) async {
+    final trimmedId = id.trim();
+    if (_sha256HexPattern.hasMatch(trimmedId)) {
+      final fromMemory = _searchResultCache[trimmedId];
+      if (fromMemory != null) return fromMemory;
+      final fromHive = await HiveCacheService.instance.getCachedJobDetail(
+        trimmedId,
+      );
+      if (fromHive != null) return fromHive;
+      return null;
+    }
     var useMock = false;
     try {
       final response = await _dio.get(
-        '/api/jobs/$id',
+        '/api/jobs/$trimmedId',
         options: Options(
           sendTimeout: const Duration(seconds: 5),
           receiveTimeout: const Duration(seconds: 5),

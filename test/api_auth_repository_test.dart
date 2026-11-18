@@ -280,6 +280,63 @@ void main() {
 
       expect(AuthSession.instance.isAuthenticated, isFalse);
     });
+
+    test(
+      'deactivated account (isActive: false) clears restored session',
+      () async {
+        await seedStoredSession();
+        await AuthSession.instance.load();
+
+        final repo = ApiAuthRepository(
+          dio: _dioWith(
+            _CannedAdapter(200, {
+              'id': 'usr-1',
+              'email': 'candidate@test.com',
+              'fullName': 'Candidate',
+              'role': 'User',
+              'isActive': false,
+            }),
+          ),
+        );
+        await repo.validateRestoredSession();
+
+        expect(AuthSession.instance.isAuthenticated, isFalse);
+      },
+    );
+
+    test(
+      'validateRestoredSession syncs updated server user profile and migrates SharedPreferences',
+      () async {
+        await seedStoredSession();
+        await AuthSession.instance.load();
+
+        final prefs = await SharedPreferences.getInstance();
+        expect(prefs.getString('auth_user'), isNull);
+        expect(
+          await const FlutterSecureStorage().containsKey(key: 'auth_user'),
+          isTrue,
+        );
+
+        final repo = ApiAuthRepository(
+          dio: _dioWith(
+            _CannedAdapter(200, {
+              'id': 'usr-1',
+              'email': 'candidate@test.com',
+              'fullName': 'Promoted Recruiter',
+              'role': 'Recruiter',
+              'companyId': 'comp-99',
+              'isActive': true,
+            }),
+          ),
+        );
+        await repo.validateRestoredSession();
+
+        expect(AuthSession.instance.isAuthenticated, isTrue);
+        expect(AuthSession.instance.currentUser?.name, 'Promoted Recruiter');
+        expect(AuthSession.instance.currentUser?.role, UserRole.recruiter);
+        expect(AuthSession.instance.companyId, 'comp-99');
+      },
+    );
   });
 
   group('Register response contract (auth-svc PR #44)', () {
@@ -355,5 +412,59 @@ void main() {
         expect(AuthSession.instance.isAuthenticated, isFalse);
       },
     );
+  });
+
+  group('camelCase Auth DTO contract (AUTH-01)', () {
+    test(
+      'UserModel.fromJson reads camelCase companyId and ignores company_id',
+      () {
+        final user = UserModel.fromJson({
+          'id': 'usr-1',
+          'fullName': 'Recruiter One',
+          'email': 'recruiter@test.com',
+          'role': 'Recruiter',
+          'companyId': 'comp-123',
+          'company_id': 'comp-snake-ignored',
+        });
+        expect(user.companyId, 'comp-123');
+
+        final legacyOnly = UserModel.fromJson({
+          'id': 'usr-2',
+          'fullName': 'Recruiter Two',
+          'email': 'recruiter2@test.com',
+          'role': 'Recruiter',
+          'company_id': 'comp-snake-only',
+        });
+        expect(legacyOnly.companyId, isNull);
+      },
+    );
+
+    test('login sends rememberMe camelCase flag in request payload', () async {
+      final adapter = _CannedAdapter(200, {
+        'accessToken': 'tok-1',
+        'refreshToken': 'ref-1',
+        'user': {
+          'id': 'usr-1',
+          'email': 'candidate@test.com',
+          'fullName': 'Candidate',
+          'role': 'User',
+        },
+      });
+      final repo = ApiAuthRepository(dio: _dioWith(adapter));
+
+      final auth = await repo.login(
+        email: 'candidate@test.com',
+        password: 'Password123',
+        rememberMe: true,
+      );
+
+      expect(auth.token, 'tok-1');
+      expect(adapter.requests, hasLength(1));
+      expect(adapter.requests.first.data, {
+        'email': 'candidate@test.com',
+        'password': 'Password123',
+        'rememberMe': true,
+      });
+    });
   });
 }

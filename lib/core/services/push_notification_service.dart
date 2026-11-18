@@ -7,6 +7,8 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 import '../../firebase_options.dart';
 import '../router/app_router.dart';
+import '../session/auth_session.dart';
+import '../../features/auth/domain/models/user_model.dart';
 import '../../features/notifications/data/repositories/api_notification_repository.dart';
 import '../../features/notifications/domain/models/app_notification.dart';
 import '../../features/notifications/domain/repositories/notification_repository.dart';
@@ -22,9 +24,13 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
       );
     }
   } catch (e) {
-    debugPrint('Background message Firebase init fallback: $e');
+    if (kDebugMode) {
+      debugPrint('Background message Firebase init fallback: $e');
+    }
   }
-  debugPrint('FCM background message received: ${message.messageId}');
+  if (kDebugMode) {
+    debugPrint('FCM background message received: ${message.messageId}');
+  }
 }
 
 /// Core service managing Firebase Cloud Messaging (FCM) push notifications (PUSH-01)
@@ -42,6 +48,22 @@ class PushNotificationService {
 
   bool _isInitialized = false;
   bool get isInitialized => _isInitialized;
+  String? _pendingRoute;
+
+  static const List<String> _allowedRoutePrefixes = [
+    '/home',
+    '/jobs',
+    '/search',
+    '/applications',
+    '/profile',
+    '/my-join-request',
+    '/recruiter/dashboard',
+    '/recruiter/jobs',
+    '/recruiter/candidates',
+    '/recruiter/company',
+    '/recruiter/invite-codes',
+    '/recruiter/join-requests',
+  ];
 
   final StreamController<AppNotification> _notificationStreamController =
       StreamController<AppNotification>.broadcast();
@@ -73,9 +95,12 @@ class PushNotificationService {
             defaultTargetPlatform == TargetPlatform.iOS);
 
     if (!isMobile && messagingOverride == null) {
-      debugPrint(
-        'Push notifications are supported on Mobile platforms (Android/iOS). Skipping on ${kIsWeb ? 'web' : defaultTargetPlatform.name}.',
-      );
+      if (kDebugMode) {
+        debugPrint(
+          'Push notifications are supported on Mobile platforms (Android/iOS). '
+          'Skipping on ${kIsWeb ? 'web' : defaultTargetPlatform.name}.',
+        );
+      }
       return;
     }
 
@@ -104,9 +129,11 @@ class PushNotificationService {
         provisional: false,
         sound: true,
       );
-      debugPrint(
-        'FCM notification authorization status: ${settings?.authorizationStatus}',
-      );
+      if (kDebugMode) {
+        debugPrint(
+          'FCM notification authorization status: ${settings?.authorizationStatus}',
+        );
+      }
 
       // 4. Setup Local Notifications for Foreground Presentation
       await _setupLocalNotifications();
@@ -118,11 +145,15 @@ class PushNotificationService {
       await _setupToken();
 
       _isInitialized = true;
-      debugPrint('PushNotificationService initialized successfully.');
+      if (kDebugMode) {
+        debugPrint('PushNotificationService initialized successfully.');
+      }
     } catch (e) {
-      debugPrint(
-        'PushNotificationService initialization error (gracefully handled): $e',
-      );
+      if (kDebugMode) {
+        debugPrint(
+          'PushNotificationService initialization error (gracefully handled): $e',
+        );
+      }
       _isInitialized = false;
     }
   }
@@ -171,7 +202,9 @@ class PushNotificationService {
   void _setupMessageListeners() {
     // A. Foreground messages
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      debugPrint('FCM foreground message received: ${message.messageId}');
+      if (kDebugMode) {
+        debugPrint('FCM foreground message received: ${message.messageId}');
+      }
       final notification = message.notification;
       final data = message.data;
 
@@ -196,16 +229,20 @@ class PushNotificationService {
 
     // B. App opened from background state via notification tap
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      debugPrint('App opened via FCM notification: ${message.data}');
+      if (kDebugMode) {
+        debugPrint('App opened via FCM notification: ${message.messageId}');
+      }
       handleNotificationNavigation(message.data);
     });
 
     // C. App opened from terminated state via notification tap
     _messaging?.getInitialMessage().then((RemoteMessage? message) {
       if (message != null) {
-        debugPrint(
-          'App launched from terminated state via FCM: ${message.data}',
-        );
+        if (kDebugMode) {
+          debugPrint(
+            'App launched from terminated state via FCM: ${message.messageId}',
+          );
+        }
         handleNotificationNavigation(message.data);
       }
     });
@@ -215,7 +252,10 @@ class PushNotificationService {
     RemoteNotification notification,
     Map<String, dynamic> data,
   ) async {
-    final route = data['route'] ?? _resolveRoute(data);
+    final route = resolveNotificationRoute(
+      data,
+      role: AuthSession.instance.resolvedRole,
+    );
     final androidDetails = AndroidNotificationDetails(
       _channel.id,
       _channel.name,
@@ -247,24 +287,30 @@ class PushNotificationService {
     try {
       _fcmToken = await _messaging?.getToken();
       if (_fcmToken != null) {
-        debugPrint('FCM Token obtained: $_fcmToken');
+        if (kDebugMode) {
+          debugPrint('FCM token obtained (len=${_fcmToken!.length}).');
+        }
         await syncTokenWithBackend();
       }
 
-      // Listen for token updates
+      // Listen for token updates (never log raw token in release — SEC-03)
       _messaging?.onTokenRefresh.listen((String newToken) async {
-        debugPrint('FCM Token refreshed: $newToken');
+        if (kDebugMode) {
+          debugPrint('FCM token refreshed (len=${newToken.length}).');
+        }
         _fcmToken = newToken;
         await syncTokenWithBackend();
       });
     } catch (e) {
-      debugPrint('Failed to retrieve FCM token: $e');
+      if (kDebugMode) {
+        debugPrint('Failed to retrieve FCM token: $e');
+      }
     }
   }
 
-  /// Syncs current FCM token to API Gateway
+  /// Syncs current FCM token to API Gateway when authenticated (PUSH-01-02)
   Future<void> syncTokenWithBackend() async {
-    if (_fcmToken == null) return;
+    if (_fcmToken == null || !AuthSession.instance.isAuthenticated) return;
     final platform = kIsWeb
         ? 'web'
         : (defaultTargetPlatform == TargetPlatform.android
@@ -279,7 +325,9 @@ class PushNotificationService {
         platform: platform,
       );
     } catch (e) {
-      debugPrint('Failed to sync FCM token with API Gateway: $e');
+      if (kDebugMode) {
+        debugPrint('Failed to sync FCM token with API Gateway: $e');
+      }
     }
   }
 
@@ -289,35 +337,124 @@ class PushNotificationService {
       try {
         await _repository.unregisterDeviceToken(_fcmToken!);
       } catch (e) {
-        debugPrint('Failed to unregister FCM token: $e');
+        if (kDebugMode) {
+          debugPrint('Failed to unregister FCM token: $e');
+        }
       }
     }
   }
 
-  /// Resolves route path from notification payload data
-  String _resolveRoute(Map<String, dynamic> data) {
-    if (data['route'] != null && data['route'].toString().isNotEmpty) {
-      return data['route'].toString();
+  /// Consumes any cold-start notification route queued before session load finished.
+  String? consumePendingRoute() {
+    final route = _pendingRoute;
+    _pendingRoute = null;
+    return route;
+  }
+
+  /// Resolves and sanitizes route path from notification payload data (PUSH-01-06, SEC-05).
+  @visibleForTesting
+  static String resolveNotificationRoute(
+    Map<String, dynamic> data, {
+    UserRole? role,
+  }) {
+    final rawRoute = (data['route'] ?? data['deepLink'] ?? data['link'])
+        ?.toString()
+        .trim();
+
+    if (rawRoute != null && rawRoute.isNotEmpty) {
+      final fromScheme = _parseCustomSchemeRoute(rawRoute, role: role);
+      if (fromScheme != null) return fromScheme;
+
+      if (_isSafeInternalRoute(rawRoute)) {
+        if (role == UserRole.recruiter &&
+            rawRoute.startsWith('/applications')) {
+          return AppRoutes.recruiterCandidates;
+        }
+        return rawRoute;
+      }
     }
-    final jobId = data['job_id'] ?? data['jobId'];
-    if (jobId != null) {
+
+    final jobId = _sanitizeSegment(data['jobId']);
+    final applicationId = _sanitizeSegment(
+      data['applicationId'] ?? data['appId'],
+    );
+
+    if (role == UserRole.recruiter) {
+      if (applicationId != null ||
+          data['type'] == 'newApplication' ||
+          data['type'] == 'NewApplication') {
+        return jobId != null
+            ? '${AppRoutes.recruiterCandidates}?jobId=$jobId'
+            : AppRoutes.recruiterCandidates;
+      }
+    }
+
+    if (jobId != null && applicationId == null) {
       return '/jobs/$jobId';
     }
-    final applicationId = data['application_id'] ?? data['applicationId'];
     if (applicationId != null) {
       return '/applications/$applicationId';
     }
     return AppRoutes.home;
   }
 
+  static String? _parseCustomSchemeRoute(String raw, {UserRole? role}) {
+    final uri = Uri.tryParse(raw);
+    if (uri == null || uri.scheme.toLowerCase() != 'job') return null;
+    final host = uri.host.toLowerCase();
+    final firstSeg = uri.pathSegments.isNotEmpty
+        ? _sanitizeSegment(uri.pathSegments.first)
+        : null;
+
+    if ((host == 'job' || host == 'jobs') && firstSeg != null) {
+      return '/jobs/$firstSeg';
+    }
+    if ((host == 'application' || host == 'applications') && firstSeg != null) {
+      if (role == UserRole.recruiter) {
+        return AppRoutes.recruiterCandidates;
+      }
+      return '/applications/$firstSeg';
+    }
+    return null;
+  }
+
+  static bool _isSafeInternalRoute(String route) {
+    if (!route.startsWith('/') || route.startsWith('//')) return false;
+    final uri = Uri.tryParse(route);
+    if (uri == null || uri.hasScheme || uri.hasAuthority) return false;
+    final path = uri.path;
+    if (path.contains('..')) return false;
+    return _allowedRoutePrefixes.any(
+      (prefix) => path == prefix || path.startsWith('$prefix/'),
+    );
+  }
+
+  static String? _sanitizeSegment(Object? value) {
+    if (value == null) return null;
+    final text = value.toString().trim();
+    if (text.isEmpty || text.contains('/') || text.contains('..')) return null;
+    return Uri.encodeComponent(text);
+  }
+
   /// Navigates user to target screen based on notification payload
   void handleNotificationNavigation(Map<String, dynamic> data) {
-    final route = _resolveRoute(data);
-    debugPrint('Navigating to notification route: $route');
+    final route = resolveNotificationRoute(
+      data,
+      role: AuthSession.instance.resolvedRole,
+    );
+    if (!AuthSession.instance.isLoaded) {
+      _pendingRoute = route;
+      return;
+    }
+    if (kDebugMode) {
+      debugPrint('Navigating to notification route: $route');
+    }
     try {
       AppRouter.router.push(route);
     } catch (e) {
-      debugPrint('Navigation error from notification: $e');
+      if (kDebugMode) {
+        debugPrint('Navigation error from notification: $e');
+      }
     }
   }
 

@@ -22,6 +22,7 @@ import '../../features/jobs/presentation/job_detail_screen.dart';
 import '../../features/jobs/presentation/job_list_screen.dart';
 import '../../features/jobs/presentation/search_screen.dart';
 import '../../features/profile/presentation/profile_detail_screen.dart';
+import '../../features/recruiter/domain/models/recruiter_models.dart';
 import '../../features/recruiter/presentation/candidate_applications_screen.dart';
 import '../../features/recruiter/presentation/invite_code_screen.dart';
 import '../../features/recruiter/presentation/post_job_screen.dart';
@@ -81,12 +82,48 @@ class AppRouter {
   static final GlobalKey<NavigatorState> _rootNavigatorKey =
       GlobalKey<NavigatorState>();
 
+  /// Normalizes incoming `job://` custom-scheme deep links to internal routes.
+  @visibleForTesting
+  static String? normalizeDeepLinkUri(Uri uri) {
+    if (uri.scheme.toLowerCase() != 'job') return null;
+    final host = uri.host.toLowerCase().trim();
+    final segments = uri.pathSegments
+        .where((s) => s.isNotEmpty && s != '..')
+        .map(Uri.encodeComponent)
+        .toList();
+    final suffix = segments.isEmpty ? '' : '/${segments.join('/')}';
+    final query = uri.hasQuery ? '?${uri.query}' : '';
+
+    switch (host) {
+      case 'verify-email':
+        return '${AppRoutes.verifyEmail}$query';
+      case 'reset-password':
+        return '${AppRoutes.resetPassword}$query';
+      case 'job':
+      case 'jobs':
+        return '${AppRoutes.jobs}$suffix$query';
+      case 'application':
+      case 'applications':
+        return '${AppRoutes.applications}$suffix$query';
+      case 'search':
+        return '${AppRoutes.search}$query';
+      case 'home':
+        return AppRoutes.home;
+      default:
+        return null;
+    }
+  }
+
   static final GoRouter router = GoRouter(
     navigatorKey: _rootNavigatorKey,
     initialLocation: AppRoutes.splash,
     debugLogDiagnostics: kDebugMode,
     refreshListenable: AuthSession.instance,
     redirect: (context, state) {
+      if (state.uri.scheme.toLowerCase() == 'job') {
+        return normalizeDeepLinkUri(state.uri) ?? AppRoutes.home;
+      }
+
       final isAuthenticated = AuthSession.instance.isAuthenticated;
       final resolvedRole = AuthSession.instance.resolvedRole;
       final currentPath = state.matchedLocation;
@@ -105,8 +142,9 @@ class AppRouter {
         return AppRoutes.login;
       }
 
-      // 2. Authenticated users on login/register/forgot/reset:
-      // If role is valid, redirect to home. If role is unknown or missing, fail closed (stay on login/deny access).
+      // 2. Authenticated users on login/register/company-sign-up:
+      // If role is valid, redirect to home. If role is unknown or missing, fail closed
+      // without creating a redirect loop when already on /login.
       if (isAuthenticated &&
           (currentPath == AppRoutes.login ||
               currentPath == AppRoutes.register ||
@@ -114,8 +152,7 @@ class AppRouter {
         if (resolvedRole != null) {
           return AppRoutes.home;
         } else {
-          // Unknown or missing role: fail closed!
-          return AppRoutes.login;
+          return currentPath == AppRoutes.login ? null : AppRoutes.login;
         }
       }
 
@@ -231,7 +268,12 @@ class AppRouter {
         parentNavigatorKey: _rootNavigatorKey,
         path: AppRoutes.recruiterPostJob,
         name: 'recruiter-post-job',
-        builder: (context, state) => const PostJobScreen(),
+        builder: (context, state) {
+          final initialJob = state.extra is RecruiterJob
+              ? state.extra as RecruiterJob
+              : null;
+          return PostJobScreen(initialJob: initialJob);
+        },
       ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,

@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:typed_data';
 import '../../../../core/session/auth_session.dart';
 import '../../domain/models/application_model.dart';
 import '../../domain/repositories/application_repository.dart';
@@ -267,6 +269,11 @@ class MockApplicationRepository implements IApplicationRepository {
   @override
   Future<bool> hasApplied(String jobId) async {
     return _applications.any((app) => app.jobId == jobId);
+  }
+
+  @override
+  Future<Uint8List> downloadCvBytes(String cvUrl) async {
+    return Uint8List.fromList(utf8.encode('%PDF-1.4\nMock CV ($cvUrl)\n'));
   }
 
   /// Helper for tests to reset state

@@ -7,6 +7,7 @@ import '../../../core/theme/app_theme.dart';
 import '../data/repositories/api_recruiter_repository.dart';
 import '../domain/models/recruiter_models.dart';
 import '../domain/repositories/recruiter_repository.dart';
+import 'post_job_screen.dart';
 
 /// Recruiter Job Postings Management Screen — Faithful implementation of Figma #2178:6337
 /// ("SRS / iPhone 390 / Tin tuyển dụng của tôi")
@@ -21,9 +22,15 @@ class RecruiterJobsScreen extends StatefulWidget {
 }
 
 class _RecruiterJobsScreenState extends State<RecruiterJobsScreen> {
+  static const int _pageSize = 20;
+
   late final IRecruiterRepository _repository;
   List<RecruiterJob> _jobs = [];
   bool _isLoading = true;
+  bool _isLoadingMore = false;
+  bool _hasMore = false;
+  int _currentPage = 1;
+  String? _selectedStatus;
   String? _errorMessage;
   bool _isMockMode = false;
 
@@ -34,18 +41,31 @@ class _RecruiterJobsScreenState extends State<RecruiterJobsScreen> {
     _fetchJobs();
   }
 
-  Future<void> _fetchJobs() async {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
+  Future<void> _fetchJobs({bool resetPage = true}) async {
+    if (resetPage) {
+      setState(() {
+        _isLoading = true;
+        _errorMessage = null;
+        _currentPage = 1;
+      });
+    }
 
     try {
-      final items = await _repository.getMyJobs();
+      final items = await _repository.getMyJobs(
+        status: _selectedStatus,
+        page: _currentPage,
+        pageSize: _pageSize,
+      );
       if (mounted) {
         setState(() {
-          _jobs = items;
+          if (resetPage) {
+            _jobs = items;
+          } else {
+            _jobs = [..._jobs, ...items];
+          }
+          _hasMore = items.length >= _pageSize;
           _isLoading = false;
+          _isLoadingMore = false;
           _isMockMode = widget.isMock ?? _repository.isMock;
         });
       }
@@ -53,6 +73,7 @@ class _RecruiterJobsScreenState extends State<RecruiterJobsScreen> {
       if (mounted) {
         setState(() {
           _isLoading = false;
+          _isLoadingMore = false;
           _errorMessage = failureMessage(
             e,
             fallback: 'Không tải được tin tuyển dụng. Vui lòng thử lại.',
@@ -60,6 +81,92 @@ class _RecruiterJobsScreenState extends State<RecruiterJobsScreen> {
           _isMockMode = widget.isMock ?? _repository.isMock;
         });
       }
+    }
+  }
+
+  Future<void> _loadMore() async {
+    if (_isLoadingMore || !_hasMore) return;
+    setState(() {
+      _isLoadingMore = true;
+      _currentPage += 1;
+    });
+    await _fetchJobs(resetPage: false);
+  }
+
+  Future<void> _openCreateOrEdit({RecruiterJob? job}) async {
+    bool? changed;
+    if (GoRouter.maybeOf(context) != null) {
+      changed = await context.push<bool>(
+        AppRoutes.recruiterPostJob,
+        extra: job,
+      );
+    } else {
+      changed = await Navigator.of(context).push<bool>(
+        MaterialPageRoute(
+          builder: (_) =>
+              PostJobScreen(repository: _repository, initialJob: job),
+        ),
+      );
+    }
+    if (changed == true && mounted) {
+      await _fetchJobs(resetPage: true);
+    }
+  }
+
+  Future<void> _confirmAndDeleteJob(RecruiterJob job) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Xác nhận xóa tin tuyển dụng'),
+        content: Text(
+          'Bạn có chắc chắn muốn đóng / xóa tin "${job.title}" không?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Hủy'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.error,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Xóa tin'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    try {
+      await _repository.deleteJob(job.id);
+      if (!mounted) return;
+      setState(() {
+        _jobs = _jobs.where((j) => j.id != job.id).toList();
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Đã xóa tin tuyển dụng: ${job.title}'),
+          backgroundColor: AppColors.success,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      final raw = e.toString().replaceFirst('Exception: ', '').trim();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            raw.isNotEmpty && !raw.contains('DioException')
+                ? raw
+                : 'Không thể xóa tin tuyển dụng lúc này. Vui lòng thử lại.',
+          ),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     }
   }
 
@@ -84,7 +191,7 @@ class _RecruiterJobsScreenState extends State<RecruiterJobsScreen> {
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => context.push(AppRoutes.recruiterPostJob),
+        onPressed: () => _openCreateOrEdit(),
         backgroundColor: AppColors.primary,
         icon: const Icon(Icons.add_rounded, color: Colors.white),
         label: const Text(
@@ -226,6 +333,33 @@ class _RecruiterJobsScreenState extends State<RecruiterJobsScreen> {
                         color: AppColors.textPrimary,
                       ),
                     ),
+                    const SizedBox(height: 10),
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [
+                          for (final filter
+                              in const <({String label, String? status})>[
+                                (label: 'Tất cả', status: null),
+                                (label: 'Đang mở', status: 'Active'),
+                                (label: 'Đã đóng', status: 'Closed'),
+                              ])
+                            Padding(
+                              padding: const EdgeInsets.only(right: 8),
+                              child: ChoiceChip(
+                                label: Text(filter.label),
+                                selected: _selectedStatus == filter.status,
+                                onSelected: (_) {
+                                  setState(
+                                    () => _selectedStatus = filter.status,
+                                  );
+                                  _fetchJobs(resetPage: true);
+                                },
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
 
                     const SizedBox(height: 12),
 
@@ -340,32 +474,24 @@ class _RecruiterJobsScreenState extends State<RecruiterJobsScreen> {
                                 ),
                                 const SizedBox(width: 8),
                                 IconButton(
+                                  key: Key('edit_recruiter_job_${job.id}'),
                                   icon: const Icon(
                                     Icons.edit_outlined,
                                     size: 20,
                                     color: AppColors.primary,
                                   ),
                                   tooltip: 'Chỉnh sửa tin',
-                                  onPressed: () =>
-                                      context.push(AppRoutes.recruiterPostJob),
+                                  onPressed: () => _openCreateOrEdit(job: job),
                                 ),
                                 IconButton(
+                                  key: Key('delete_recruiter_job_${job.id}'),
                                   icon: const Icon(
                                     Icons.delete_outline_rounded,
                                     size: 20,
                                     color: AppColors.error,
                                   ),
                                   tooltip: 'Đóng / Xóa tin',
-                                  onPressed: () {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(
-                                          'Đã cập nhật trạng thái tin: ${job.title}',
-                                        ),
-                                        behavior: SnackBarBehavior.floating,
-                                      ),
-                                    );
-                                  },
+                                  onPressed: () => _confirmAndDeleteJob(job),
                                 ),
                               ],
                             ),
@@ -373,6 +499,18 @@ class _RecruiterJobsScreenState extends State<RecruiterJobsScreen> {
                         ),
                       );
                     }),
+                    if (_hasMore)
+                      Center(
+                        child: Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: _isLoadingMore
+                              ? const CircularProgressIndicator()
+                              : OutlinedButton(
+                                  onPressed: _loadMore,
+                                  child: const Text('Tải thêm tin tuyển dụng'),
+                                ),
+                        ),
+                      ),
                   ],
                 ),
               ),

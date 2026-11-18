@@ -3,6 +3,8 @@ import 'package:go_router/go_router.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/session/auth_session.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/utils/format_utils.dart';
+import '../../../core/widgets/user_avatar.dart';
 import '../../auth/domain/models/user_model.dart';
 import '../data/repositories/api_profile_repository.dart';
 import '../domain/models/profile_model.dart';
@@ -62,6 +64,16 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
     }
   }
 
+  void _showErrorSnackBar(ScaffoldMessengerState messenger, String message) {
+    messenger.showSnackBar(
+      SnackBar(
+        backgroundColor: AppColors.error,
+        content: Text(message),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
   void _openEditProfile() {
     if (_profile == null) return;
     final messenger = ScaffoldMessenger.of(context);
@@ -70,14 +82,28 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
       builder: (context) => EditProfileDialog(
         profile: _profile!,
         onSave: (updated) async {
+          final previous = _profile;
           setState(() => _profile = updated);
-          await _repository.updateProfile(updated);
-          messenger.showSnackBar(
-            const SnackBar(
-              backgroundColor: AppColors.success,
-              content: Text('Đã cập nhật thông tin hồ sơ thành công!'),
-            ),
-          );
+          try {
+            final saved = await _repository.updateProfile(updated);
+            if (mounted) {
+              setState(() => _profile = saved);
+            }
+            messenger.showSnackBar(
+              const SnackBar(
+                backgroundColor: AppColors.success,
+                content: Text('Đã cập nhật thông tin hồ sơ thành công!'),
+              ),
+            );
+          } catch (_) {
+            if (mounted) {
+              setState(() => _profile = previous);
+            }
+            _showErrorSnackBar(
+              messenger,
+              'Không thể cập nhật thông tin hồ sơ. Vui lòng thử lại.',
+            );
+          }
         },
       ),
     );
@@ -89,18 +115,25 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
       context: context,
       builder: (context) => AddSkillDialog(
         onAdd: (newSkill) async {
-          final added = await _repository.addSkill(newSkill);
-          if (mounted && _profile != null) {
-            setState(() {
-              _profile = _profile!.copyWith(
-                skills: List.from(_profile!.skills)..add(added),
+          try {
+            final added = await _repository.addSkill(newSkill);
+            if (mounted && _profile != null) {
+              setState(() {
+                _profile = _profile!.copyWith(
+                  skills: List.from(_profile!.skills)..add(added),
+                );
+              });
+              messenger.showSnackBar(
+                const SnackBar(
+                  backgroundColor: AppColors.success,
+                  content: Text('Đã thêm kỹ năng mới thành công!'),
+                ),
               );
-            });
-            messenger.showSnackBar(
-              const SnackBar(
-                backgroundColor: AppColors.success,
-                content: Text('Đã thêm kỹ năng mới thành công!'),
-              ),
+            }
+          } catch (_) {
+            _showErrorSnackBar(
+              messenger,
+              'Không thể thêm kỹ năng mới. Vui lòng thử lại.',
             );
           }
         },
@@ -108,15 +141,24 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
     );
   }
 
-  void _handleDeleteSkill(String skillId) async {
+  Future<void> _handleDeleteSkill(String skillId) async {
     if (_profile == null) return;
-    final updatedSkills = _profile!.skills
-        .where((s) => s.id != skillId)
-        .toList();
+    final messenger = ScaffoldMessenger.of(context);
+    final previousSkills = List<SkillModel>.from(_profile!.skills);
+    final updatedSkills = previousSkills.where((s) => s.id != skillId).toList();
     setState(() {
       _profile = _profile!.copyWith(skills: updatedSkills);
     });
-    await _repository.deleteSkill(skillId);
+    try {
+      await _repository.deleteSkill(skillId);
+    } catch (_) {
+      if (mounted && _profile != null) {
+        setState(() {
+          _profile = _profile!.copyWith(skills: previousSkills);
+        });
+      }
+      _showErrorSnackBar(messenger, 'Không thể xóa kỹ năng. Vui lòng thử lại.');
+    }
   }
 
   void _openAddExperience() {
@@ -125,18 +167,26 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
       context: context,
       builder: (context) => AddExperienceDialog(
         onAdd: (newExp) async {
-          final added = await _repository.addExperience(newExp);
-          if (mounted && _profile != null) {
-            setState(() {
-              _profile = _profile!.copyWith(
-                experiences: List.from(_profile!.experiences)..insert(0, added),
+          try {
+            final added = await _repository.addExperience(newExp);
+            if (mounted && _profile != null) {
+              setState(() {
+                _profile = _profile!.copyWith(
+                  experiences: List.from(_profile!.experiences)
+                    ..insert(0, added),
+                );
+              });
+              messenger.showSnackBar(
+                const SnackBar(
+                  backgroundColor: AppColors.success,
+                  content: Text('Đã thêm kinh nghiệm làm việc thành công!'),
+                ),
               );
-            });
-            messenger.showSnackBar(
-              const SnackBar(
-                backgroundColor: AppColors.success,
-                content: Text('Đã thêm kinh nghiệm làm việc thành công!'),
-              ),
+            }
+          } catch (_) {
+            _showErrorSnackBar(
+              messenger,
+              'Không thể thêm kinh nghiệm làm việc. Vui lòng thử lại.',
             );
           }
         },
@@ -144,13 +194,62 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
     );
   }
 
-  void _handleDeleteExperience(String expId) async {
+  void _openEditExperience(WorkExperienceModel existing) {
+    final messenger = ScaffoldMessenger.of(context);
+    showDialog(
+      context: context,
+      builder: (context) => AddExperienceDialog(
+        initialExperience: existing,
+        onAdd: (edited) async {
+          try {
+            final saved = await _repository.updateExperience(edited);
+            if (mounted && _profile != null) {
+              setState(() {
+                _profile = _profile!.copyWith(
+                  experiences: _profile!.experiences
+                      .map((e) => e.id == saved.id ? saved : e)
+                      .toList(),
+                );
+              });
+              messenger.showSnackBar(
+                const SnackBar(
+                  backgroundColor: AppColors.success,
+                  content: Text('Đã cập nhật kinh nghiệm làm việc!'),
+                ),
+              );
+            }
+          } catch (_) {
+            _showErrorSnackBar(
+              messenger,
+              'Không thể cập nhật kinh nghiệm làm việc. Vui lòng thử lại.',
+            );
+          }
+        },
+      ),
+    );
+  }
+
+  Future<void> _handleDeleteExperience(String expId) async {
     if (_profile == null) return;
-    final updated = _profile!.experiences.where((e) => e.id != expId).toList();
+    final messenger = ScaffoldMessenger.of(context);
+    final previous = List<WorkExperienceModel>.from(_profile!.experiences);
+    final updated = previous.where((e) => e.id != expId).toList();
     setState(() {
       _profile = _profile!.copyWith(experiences: updated);
     });
-    await _repository.deleteExperience(expId);
+    try {
+      await _repository.deleteExperience(expId);
+    } catch (_) {
+      if (mounted && _profile != null) {
+        setState(() {
+          _profile = _profile!.copyWith(experiences: previous);
+        });
+      }
+      _showErrorSnackBar(
+        messenger,
+        'Không thể xóa kinh nghiệm làm việc. Vui lòng thử lại.',
+      );
+    }
   }
 
   void _openAddEducation() {
@@ -159,18 +258,25 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
       context: context,
       builder: (context) => AddEducationDialog(
         onAdd: (newEdu) async {
-          final added = await _repository.addEducation(newEdu);
-          if (mounted && _profile != null) {
-            setState(() {
-              _profile = _profile!.copyWith(
-                educations: List.from(_profile!.educations)..insert(0, added),
+          try {
+            final added = await _repository.addEducation(newEdu);
+            if (mounted && _profile != null) {
+              setState(() {
+                _profile = _profile!.copyWith(
+                  educations: List.from(_profile!.educations)..insert(0, added),
+                );
+              });
+              messenger.showSnackBar(
+                const SnackBar(
+                  backgroundColor: AppColors.success,
+                  content: Text('Đã thêm học vấn thành công!'),
+                ),
               );
-            });
-            messenger.showSnackBar(
-              const SnackBar(
-                backgroundColor: AppColors.success,
-                content: Text('Đã thêm học vấn thành công!'),
-              ),
+            }
+          } catch (_) {
+            _showErrorSnackBar(
+              messenger,
+              'Không thể thêm thông tin học vấn. Vui lòng thử lại.',
             );
           }
         },
@@ -178,13 +284,62 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
     );
   }
 
-  void _handleDeleteEducation(String eduId) async {
+  void _openEditEducation(EducationModel existing) {
+    final messenger = ScaffoldMessenger.of(context);
+    showDialog(
+      context: context,
+      builder: (context) => AddEducationDialog(
+        initialEducation: existing,
+        onAdd: (edited) async {
+          try {
+            final saved = await _repository.updateEducation(edited);
+            if (mounted && _profile != null) {
+              setState(() {
+                _profile = _profile!.copyWith(
+                  educations: _profile!.educations
+                      .map((e) => e.id == saved.id ? saved : e)
+                      .toList(),
+                );
+              });
+              messenger.showSnackBar(
+                const SnackBar(
+                  backgroundColor: AppColors.success,
+                  content: Text('Đã cập nhật thông tin học vấn!'),
+                ),
+              );
+            }
+          } catch (_) {
+            _showErrorSnackBar(
+              messenger,
+              'Không thể cập nhật thông tin học vấn. Vui lòng thử lại.',
+            );
+          }
+        },
+      ),
+    );
+  }
+
+  Future<void> _handleDeleteEducation(String eduId) async {
     if (_profile == null) return;
-    final updated = _profile!.educations.where((e) => e.id != eduId).toList();
+    final messenger = ScaffoldMessenger.of(context);
+    final previous = List<EducationModel>.from(_profile!.educations);
+    final updated = previous.where((e) => e.id != eduId).toList();
     setState(() {
       _profile = _profile!.copyWith(educations: updated);
     });
-    await _repository.deleteEducation(eduId);
+    try {
+      await _repository.deleteEducation(eduId);
+    } catch (_) {
+      if (mounted && _profile != null) {
+        setState(() {
+          _profile = _profile!.copyWith(educations: previous);
+        });
+      }
+      _showErrorSnackBar(
+        messenger,
+        'Không thể xóa thông tin học vấn. Vui lòng thử lại.',
+      );
+    }
   }
 
   @override
@@ -284,6 +439,7 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
             ExperienceSection(
               experiences: profile.experiences,
               onAddExperience: _openAddExperience,
+              onEditExperience: _openEditExperience,
               onDeleteExperience: _handleDeleteExperience,
             ),
 
@@ -293,6 +449,7 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
             EducationSection(
               educations: profile.educations,
               onAddEducation: _openAddEducation,
+              onEditEducation: _openEditEducation,
               onDeleteEducation: _handleDeleteEducation,
             ),
 
@@ -394,20 +551,11 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
         children: [
           Row(
             children: [
-              // Avatar
-              CircleAvatar(
+              // Avatar (renders remote avatarUrl when available — STORE-01-02)
+              UserAvatar(
+                name: profile.fullName,
+                imageUrl: profile.avatarUrl,
                 radius: 34,
-                backgroundColor: AppColors.primary,
-                child: Text(
-                  profile.fullName.isNotEmpty
-                      ? profile.fullName[0].toUpperCase()
-                      : 'U',
-                  style: const TextStyle(
-                    fontSize: 26,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -450,6 +598,13 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
           ],
           if (profile.address != null) ...[
             _buildContactChip(Icons.location_on_outlined, profile.address!),
+            if (profile.dateOfBirth != null) const SizedBox(height: 6),
+          ],
+          if (profile.dateOfBirth != null) ...[
+            _buildContactChip(
+              Icons.cake_outlined,
+              'Ngày sinh: ${FormatUtils.formatDate(profile.dateOfBirth!)}',
+            ),
           ],
         ],
       ),

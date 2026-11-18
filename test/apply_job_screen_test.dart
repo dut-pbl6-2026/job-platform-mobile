@@ -130,4 +130,45 @@ void main() {
       expect(find.text('Xem lịch sử ứng tuyển'), findsOneWidget);
     },
   );
+
+  testWidgets(
+    'ApplyJobScreen rejects CV files larger than 5MB or with unsupported extension (STORE-01-01, BUG-11)',
+    (tester) async {
+      tester.view.physicalSize = const Size(800, 1600);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      final oversizedPicker = MockCvPickerService(
+        predefinedFile: const SelectedCvFile(
+          name: 'Oversized_CV.pdf',
+          path: '/mock/Oversized_CV.pdf',
+          size: 6 * 1024 * 1024, // 6 MB > 5 MB limit
+        ),
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.lightTheme,
+          home: ApplyJobScreen(
+            jobId: 'job-fresh-4',
+            jobTitle: 'Senior Flutter Developer',
+            companyName: 'FPT Software',
+            applicationRepository: mockRepo,
+            cvPickerService: oversizedPicker,
+          ),
+        ),
+      );
+
+      expect(
+        find.text('Hỗ trợ định dạng PDF, DOC, DOCX (Dung lượng tối đa 5MB)'),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.text('Chọn file CV từ thiết bị'));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('vượt quá giới hạn 5MB'), findsOneWidget);
+      expect(find.text('Oversized_CV.pdf'), findsNothing);
+    },
+  );
 }

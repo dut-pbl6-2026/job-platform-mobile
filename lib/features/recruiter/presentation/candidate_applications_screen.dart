@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../../core/error/error_mapper.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../applications/data/repositories/api_application_repository.dart';
 import '../data/repositories/api_recruiter_repository.dart';
 import '../domain/models/recruiter_models.dart';
 import '../domain/repositories/recruiter_repository.dart';
@@ -189,48 +191,53 @@ class _CandidateApplicationsScreenState
               const Divider(height: 1),
               const SizedBox(height: 14),
 
-              // CV File
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceVariant,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.border),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.picture_as_pdf_rounded,
-                      color: AppColors.error,
-                      size: 28,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            cand.cvName,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 13,
-                            ),
-                          ),
-                          const Text(
-                            'Đính kèm trong hồ sơ · Nhấn để xem',
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: AppColors.textHint,
-                            ),
-                          ),
-                        ],
+              // CV File (interactive inspection & safe HTTPS link copy — APP-01-05, SEC-05)
+              InkWell(
+                key: Key('open_candidate_cv_${cand.id}'),
+                borderRadius: BorderRadius.circular(12),
+                onTap: () => _handleInspectCv(sheetContext, cand),
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceVariant,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.picture_as_pdf_rounded,
+                        color: AppColors.error,
+                        size: 28,
                       ),
-                    ),
-                    const Icon(
-                      Icons.download_rounded,
-                      color: AppColors.primary,
-                    ),
-                  ],
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              cand.cvName,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                              ),
+                            ),
+                            const Text(
+                              'Đính kèm trong hồ sơ · Nhấn để xem liên kết tải',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: AppColors.textHint,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Icon(
+                        Icons.download_rounded,
+                        color: AppColors.primary,
+                      ),
+                    ],
+                  ),
                 ),
               ),
 
@@ -245,31 +252,116 @@ class _CandidateApplicationsScreenState
               ),
               const SizedBox(height: 10),
 
-              // Status buttons per Figma #2180:2673, #2180:2692, #2180:2711, #2178:6559
+              // Status buttons per SRS 3.5.4 (pending, reviewed, shortlisted, accepted, rejected)
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
-                children: ['Chờ xem', 'Đã xem', 'Được nhận', 'Từ chối'].map((
-                  status,
-                ) {
-                  final isCurrent = cand.status == status;
-                  return ChoiceChip(
-                    label: Text(status),
-                    selected: isCurrent,
-                    onSelected: (selected) {
-                      if (selected) {
-                        Navigator.pop(sheetContext);
-                        _updateStatus(index, status);
-                      }
-                    },
-                  );
-                }).toList(),
+                children:
+                    const [
+                      'Chờ xem',
+                      'Đã xem',
+                      'Phù hợp',
+                      'Được nhận',
+                      'Từ chối',
+                    ].map((status) {
+                      final isCurrent = cand.status == status;
+                      return ChoiceChip(
+                        label: Text(status),
+                        selected: isCurrent,
+                        onSelected: (selected) {
+                          if (selected) {
+                            Navigator.pop(sheetContext);
+                            _updateStatus(index, status);
+                          }
+                        },
+                      );
+                    }).toList(),
               ),
             ],
           ),
         );
       },
     );
+  }
+
+  Future<void> _handleInspectCv(
+    BuildContext sheetContext,
+    CandidateApplication cand,
+  ) async {
+    final rawUrl = cand.cvUrl?.trim() ?? '';
+    if (ApiApplicationRepository.isGatewayCvPath(rawUrl)) {
+      try {
+        final bytes = await _repository.downloadCvBytes(rawUrl);
+        if (!mounted) return;
+        await showDialog<void>(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            title: const Text('Đã tải CV ứng viên'),
+            content: Text(
+              'Tệp: ${cand.cvName}\n'
+              'Dung lượng: ${(bytes.length / 1024).toStringAsFixed(1)} KB',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                child: const Text('Đóng'),
+              ),
+            ],
+          ),
+        );
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              e is ApplicationRepositoryException
+                  ? e.message
+                  : 'Không thể tải tệp CV: ${cand.cvName}',
+            ),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+      return;
+    }
+
+    final uri = Uri.tryParse(rawUrl);
+    final hasSafeUrl =
+        uri != null &&
+        uri.scheme.toLowerCase() == 'https' &&
+        uri.host.isNotEmpty;
+
+    if (!hasSafeUrl) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Tệp đính kèm: ${cand.cvName} (chưa có liên kết tải hợp lệ)',
+          ),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    await Clipboard.setData(ClipboardData(text: rawUrl));
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Đã sao chép liên kết tải CV: ${cand.cvName}'),
+        backgroundColor: AppColors.success,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  String get _overviewJobTitle {
+    if (_candidates.isEmpty) return 'Tất cả vị trí';
+    final titles = _candidates
+        .map((c) => c.title.trim())
+        .where((t) => t.isNotEmpty)
+        .toSet();
+    if (titles.length == 1) return titles.first;
+    return widget.jobId != null ? _candidates.first.title : 'Tất cả vị trí';
   }
 
   @override
@@ -391,7 +483,7 @@ class _CandidateApplicationsScreenState
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'UI/UX Designer · ${_candidates.length} hồ sơ',
+                                  '$_overviewJobTitle · ${_candidates.length} hồ sơ',
                                   style: const TextStyle(
                                     fontSize: 15,
                                     fontWeight: FontWeight.bold,
@@ -400,7 +492,7 @@ class _CandidateApplicationsScreenState
                                 ),
                                 const SizedBox(height: 2),
                                 const Text(
-                                  'Chờ xem · Đã xem · Được nhận',
+                                  'Chờ xem · Đã xem · Phù hợp · Được nhận',
                                   style: TextStyle(
                                     fontSize: 12,
                                     color: AppColors.textSecondary,
@@ -434,6 +526,7 @@ class _CandidateApplicationsScreenState
 
                       final statusColor = switch (status) {
                         'Được nhận' => AppColors.success,
+                        'Phù hợp' => AppColors.secondary,
                         'Đã xem' => AppColors.primary,
                         'Từ chối' => AppColors.error,
                         _ => AppColors.warning,
@@ -525,7 +618,9 @@ class _CandidateApplicationsScreenState
                                     borderRadius: BorderRadius.circular(6),
                                   ),
                                   child: Text(
-                                    'Điểm phù hợp AI: ${cand.matchScore}%',
+                                    cand.isScorePending
+                                        ? 'Đang chấm điểm AI...'
+                                        : 'Điểm phù hợp AI: ${cand.matchScore}%',
                                     style: const TextStyle(
                                       fontSize: 11,
                                       fontWeight: FontWeight.bold,
