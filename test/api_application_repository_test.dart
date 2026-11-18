@@ -211,5 +211,56 @@ void main() {
 
       expect(() => repo.getMyApplications(), throwsA(isA<Exception>()));
     });
+
+    test(
+      'applyJob sends §8 multipart fields and adapts 201 Created response',
+      () async {
+        final dio = Dio();
+        FormData? capturedForm;
+        dio.interceptors.add(
+          InterceptorsWrapper(
+            onRequest: (options, handler) {
+              capturedForm = options.data as FormData;
+              handler.resolve(
+                Response(
+                  requestOptions: options,
+                  statusCode: 201,
+                  data: {
+                    'id': 'app-201',
+                    'job_id': 'job-uuid-1',
+                    'applicant_id': 'usr-uuid-1',
+                    'status': 'pending',
+                    'cv_url': '/api/applications/cv/cv.pdf',
+                  },
+                ),
+              );
+            },
+          ),
+        );
+        final repo = ApiApplicationRepository(dio: dio);
+        final result = await repo.applyJob(
+          const ApplyJobParams(
+            jobId: 'job-uuid-1',
+            jobTitle: 'Mobile Engineer',
+            companyName: 'VNG',
+            coverLetter: 'Hello',
+            cvFileName: 'cv.pdf',
+            cvBytes: [1, 2, 3],
+          ),
+        );
+
+        expect(capturedForm, isNotNull);
+        expect(Map.fromEntries(capturedForm!.fields), {
+          'job_id': 'job-uuid-1',
+          'cover_letter': 'Hello',
+        });
+        expect(capturedForm!.files.map((e) => e.key), contains('cv_file'));
+        expect(result.id, 'app-201');
+        expect(result.jobId, 'job-uuid-1');
+        expect(result.jobTitle, 'Mobile Engineer');
+        expect(result.companyName, 'VNG');
+        expect(result.cvUrl, '/api/applications/cv/cv.pdf');
+      },
+    );
   });
 }

@@ -183,7 +183,7 @@ class ApiNotificationRepository implements INotificationRepository {
       final response = await _dio.get('/api/notifications/unread-count');
       if (response.statusCode == 200 && response.data != null) {
         if (response.data is Map) {
-          return (response.data['count'] ?? response.data['unread_count'] ?? 0)
+          return (response.data['count'] ?? response.data['unreadCount'] ?? 0)
               as int;
         } else if (response.data is int) {
           return response.data as int;

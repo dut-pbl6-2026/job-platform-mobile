@@ -119,5 +119,52 @@ void main() {
         expect(updated.id, app.id);
       },
     );
+
+    test('fromJson ignores snake_case fields outside fromCreatedJson', () {
+      final parsed = ApplicationModel.fromJson({
+        'id': 'app-202',
+        'job_id': 'job-snake',
+        'job_title': 'Snake Title',
+        'company_name': 'Snake Corp',
+        'applicant_id': 'usr-snake',
+        'cv_url': '/api/applications/cv/snake.pdf',
+      });
+
+      expect(parsed.id, 'app-202');
+      expect(parsed.jobId, isEmpty);
+      expect(parsed.jobTitle, 'Vị trí tuyển dụng');
+      expect(parsed.companyName, 'Doanh nghiệp');
+      expect(parsed.cvUrl, isEmpty);
+    });
+
+    test(
+      'fromCreatedJson adapts POST /api/applications 201 payload with ApplyJobParams',
+      () {
+        const params = ApplyJobParams(
+          jobId: 'job-guid-1',
+          jobTitle: 'Backend Engineer',
+          companyName: 'FPT Software',
+          coverLetter: 'Excited to apply',
+          cvFileName: 'resume.pdf',
+          cvFileSize: 1024,
+        );
+        final created = ApplicationModel.fromCreatedJson({
+          'id': 'app-303',
+          'job_id': 'job-guid-1',
+          'applicant_id': 'usr-9',
+          'status': 'Pending',
+          'cv_url': '/api/applications/cv/resume.pdf',
+        }, params: params);
+
+        expect(created.id, 'app-303');
+        expect(created.jobId, 'job-guid-1');
+        expect(created.applicantId, 'usr-9');
+        expect(created.jobTitle, 'Backend Engineer');
+        expect(created.companyName, 'FPT Software');
+        expect(created.cvUrl, '/api/applications/cv/resume.pdf');
+        expect(created.cvFileName, 'resume.pdf');
+        expect(created.status, ApplicationStatus.pending);
+      },
+    );
   });
 }

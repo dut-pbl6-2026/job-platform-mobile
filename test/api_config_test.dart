@@ -88,6 +88,34 @@ void main() {
         'http://127.0.0.1:5000',
       );
     });
+
+    test(
+      'rejects internal microservice ports (5001-5006, 6000) in FLUTTER_API_URL',
+      () {
+        for (final port in [5001, 5002, 5003, 5004, 5005, 5006, 6000]) {
+          expect(
+            () => ApiConfig.resolveBaseUrl(
+              envOverride: 'http://127.0.0.1:$port',
+              isReleaseOverride: false,
+            ),
+            throwsA(
+              isA<StateError>().having(
+                (error) => error.message,
+                'message',
+                contains('internal microservice port $port'),
+              ),
+            ),
+          );
+        }
+        expect(
+          ApiConfig.resolveBaseUrl(
+            envOverride: 'http://127.0.0.1:5000',
+            isReleaseOverride: false,
+          ),
+          'http://127.0.0.1:5000',
+        );
+      },
+    );
   });
 
   group('mock fallback gate', () {

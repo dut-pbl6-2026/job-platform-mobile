@@ -3,31 +3,50 @@ import 'package:job_platform_mobile/features/notifications/domain/models/app_not
 
 void main() {
   group('AppNotification Model Tests (PUSH-01)', () {
-    test('fromJson parses application_status notification properly', () {
-      final json = {
-        'id': 'notif-123',
-        'title': 'Hồ sơ đã được xem',
-        'body': 'Nhà tuyển dụng đã xem hồ sơ của bạn',
-        'type': 'application_status',
-        'is_read': false,
+    test(
+      'fromJson parses camelCase applicationStatus notification properly',
+      () {
+        final json = {
+          'id': 'notif-123',
+          'title': 'Hồ sơ đã được xem',
+          'body': 'Nhà tuyển dụng đã xem hồ sơ của bạn',
+          'type': 'applicationStatus',
+          'isRead': true,
+          'createdAt': '2026-09-17T10:30:00Z',
+          'data': {
+            'applicationId': 'app-999',
+            'jobId': 'job-888',
+            'route': '/applications/app-999',
+          },
+        };
+
+        final notif = AppNotification.fromJson(json);
+
+        expect(notif.id, 'notif-123');
+        expect(notif.title, 'Hồ sơ đã được xem');
+        expect(notif.body, 'Nhà tuyển dụng đã xem hồ sơ của bạn');
+        expect(notif.type, NotificationType.applicationStatus);
+        expect(notif.isRead, true);
+        expect(notif.applicationId, 'app-999');
+        expect(notif.jobId, 'job-888');
+        expect(notif.route, '/applications/app-999');
+      },
+    );
+
+    test('fromJson ignores snake_case fields', () {
+      final notif = AppNotification.fromJson({
+        'notification_id': 'snake-id',
+        'title': 'T',
+        'body': 'B',
+        'is_read': true,
         'created_at': '2026-09-17T10:30:00Z',
-        'data': {
-          'application_id': 'app-999',
-          'job_id': 'job-888',
-          'route': '/applications/app-999',
-        },
-      };
+        'data': {'application_id': 'app-snake', 'job_id': 'job-snake'},
+      });
 
-      final notif = AppNotification.fromJson(json);
-
-      expect(notif.id, 'notif-123');
-      expect(notif.title, 'Hồ sơ đã được xem');
-      expect(notif.body, 'Nhà tuyển dụng đã xem hồ sơ của bạn');
-      expect(notif.type, NotificationType.applicationStatus);
-      expect(notif.isRead, false);
-      expect(notif.applicationId, 'app-999');
-      expect(notif.jobId, 'job-888');
-      expect(notif.route, '/applications/app-999');
+      expect(notif.id, isEmpty);
+      expect(notif.isRead, isFalse);
+      expect(notif.applicationId, isNull);
+      expect(notif.jobId, isNull);
     });
 
     test('fromJson parses new_job_match properly', () {
@@ -49,7 +68,7 @@ void main() {
       expect(notif.jobId, 'job-777');
     });
 
-    test('toJson serializes correctly and is reversible', () {
+    test('toJson serializes camelCase correctly and is reversible', () {
       final notif = AppNotification(
         id: 'notif-1',
         title: 'Title',
@@ -57,13 +76,15 @@ void main() {
         type: NotificationType.interviewInvite,
         isRead: false,
         createdAt: DateTime.parse('2026-09-17T08:00:00Z'),
-        data: {'application_id': 'app-1'},
+        data: {'applicationId': 'app-1'},
       );
 
       final json = notif.toJson();
       expect(json['id'], 'notif-1');
-      expect(json['type'], 'interview_invite');
-      expect(json['is_read'], false);
+      expect(json['type'], 'interviewInvite');
+      expect(json['isRead'], false);
+      expect(json.containsKey('is_read'), isFalse);
+      expect(json.containsKey('created_at'), isFalse);
 
       final restored = AppNotification.fromJson(json);
       expect(restored.id, notif.id);

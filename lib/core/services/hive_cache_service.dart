@@ -16,9 +16,11 @@ class HiveCacheService {
   static const String recentSearchesBoxName = 'recent_searches_box';
   static const String _kHiveEncryptionKey = 'hive_cache_aes_key';
 
+  static const Duration defaultCacheTtl = Duration(hours: 24);
   static const String _kCachedJobsKey = 'cached_jobs_list';
   static const String _kCachedAtKey = 'cached_at_timestamp';
   static const String _kRecentSearchesKey = 'recent_searches_history';
+  static const String _kAnonymousNamespace = 'anon';
 
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage(
     aOptions: AndroidOptions(encryptedSharedPreferences: true),
@@ -30,10 +32,22 @@ class HiveCacheService {
   bool _isInitialized = false;
   bool get isInitialized => _isInitialized;
   Future<void>? _initFuture;
+  String _activeUserNamespace = _kAnonymousNamespace;
+  String get activeUserNamespace => _activeUserNamespace;
 
   Box? _jobsBox;
   Box? _jobDetailsBox;
   Box? _recentSearchesBox;
+
+  /// Binds cached reads and writes to the active authenticated user ID (or anon).
+  void setActiveUserNamespace(String? userId) {
+    final clean = userId?.trim();
+    _activeUserNamespace = (clean == null || clean.isEmpty)
+        ? _kAnonymousNamespace
+        : clean;
+  }
+
+  String _scopedKey(String base) => '${_activeUserNamespace}_$base';
 
   /// Initialize Hive and open all local cache boxes (encrypted at rest when SecureStorage is available)
   Future<void> init({
@@ -140,28 +154,49 @@ class HiveCacheService {
   void resetState() {
     _isInitialized = false;
     _initFuture = null;
+    _activeUserNamespace = _kAnonymousNamespace;
     _jobsBox = null;
     _jobDetailsBox = null;
     _recentSearchesBox = null;
   }
 
+  bool _isExpired(int cachedAtMs, Duration ttl, DateTime now) {
+    return now.millisecondsSinceEpoch - cachedAtMs > ttl.inMilliseconds;
+  }
+
   /// Cache a list of jobs retrieved from the API Gateway
-  Future<void> saveJobs(List<JobModel> jobs) async {
+  Future<void> saveJobs(List<JobModel> jobs, {DateTime? now}) async {
     if (!_isInitialized || _jobsBox == null) return;
     try {
       final serializedList = jobs.map((job) => job.toJson()).toList();
-      await _jobsBox?.put(_kCachedJobsKey, serializedList);
-      await _jobsBox?.put(_kCachedAtKey, DateTime.now().millisecondsSinceEpoch);
+      await _jobsBox?.put(_scopedKey(_kCachedJobsKey), serializedList);
+      await _jobsBox?.put(
+        _scopedKey(_kCachedAtKey),
+        (now ?? DateTime.now()).millisecondsSinceEpoch,
+      );
     } catch (e) {
       debugPrint('[HiveCacheService] saveJobs error: $e');
     }
   }
 
-  /// Retrieve cached jobs when offline or network fails
-  Future<List<JobModel>> getCachedJobs() async {
+  /// Retrieve cached jobs when offline or network fails (enforcing [ttl]).
+  Future<List<JobModel>> getCachedJobs({
+    Duration ttl = defaultCacheTtl,
+    DateTime? now,
+  }) async {
     if (!_isInitialized || _jobsBox == null) return [];
     try {
-      final raw = _jobsBox?.get(_kCachedJobsKey);
+      final jobsKey = _scopedKey(_kCachedJobsKey);
+      final tsKey = _scopedKey(_kCachedAtKey);
+      final cachedAtMs = _jobsBox?.get(tsKey) as int?;
+      if (cachedAtMs == null ||
+          _isExpired(cachedAtMs, ttl, now ?? DateTime.now())) {
+        await _jobsBox?.delete(jobsKey);
+        await _jobsBox?.delete(tsKey);
+        return [];
+      }
+
+      final raw = _jobsBox?.get(jobsKey);
       if (raw is List) {
         return raw.map((item) {
           if (item is Map<String, dynamic>) {
@@ -180,12 +215,12 @@ class HiveCacheService {
     return [];
   }
 
-  /// Get the timestamp when jobs were last cached
-  DateTime? getLastCachedTime() {
+  /// Get the timestamp when jobs were last cached (or null if expired)
+  DateTime? getLastCachedTime({Duration ttl = defaultCacheTtl, DateTime? now}) {
     if (!_isInitialized || _jobsBox == null) return null;
     try {
-      final ms = _jobsBox?.get(_kCachedAtKey) as int?;
-      if (ms != null) {
+      final ms = _jobsBox?.get(_scopedKey(_kCachedAtKey)) as int?;
+      if (ms != null && !_isExpired(ms, ttl, now ?? DateTime.now())) {
         return DateTime.fromMillisecondsSinceEpoch(ms);
       }
     } catch (_) {}
@@ -193,27 +228,40 @@ class HiveCacheService {
   }
 
   /// Cache single job detail
-  Future<void> saveJobDetail(JobModel job) async {
+  Future<void> saveJobDetail(JobModel job, {DateTime? now}) async {
     if (!_isInitialized || _jobDetailsBox == null) return;
     try {
-      await _jobDetailsBox?.put(job.id, job.toJson());
+      await _jobDetailsBox?.put(_scopedKey('job_${job.id}'), {
+        'cachedAt': (now ?? DateTime.now()).millisecondsSinceEpoch,
+        'job': job.toJson(),
+      });
     } catch (e) {
       debugPrint('[HiveCacheService] saveJobDetail error: $e');
     }
   }
 
-  /// Retrieve single job detail from cache
-  Future<JobModel?> getCachedJobDetail(String id) async {
+  /// Retrieve single job detail from cache (enforcing [ttl]).
+  Future<JobModel?> getCachedJobDetail(
+    String id, {
+    Duration ttl = defaultCacheTtl,
+    DateTime? now,
+  }) async {
     if (!_isInitialized || _jobDetailsBox == null) return null;
     try {
-      final raw = _jobDetailsBox?.get(id);
-      if (raw is Map<String, dynamic>) {
-        return JobModel.fromJson(raw);
-      } else if (raw is Map) {
-        return JobModel.fromJson(Map<String, dynamic>.from(raw));
-      } else if (raw is String) {
-        return JobModel.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+      final key = _scopedKey('job_$id');
+      final raw = _jobDetailsBox?.get(key);
+      if (raw == null) return null;
+
+      if (raw is Map && raw['cachedAt'] is int && raw['job'] is Map) {
+        final cachedAtMs = raw['cachedAt'] as int;
+        if (_isExpired(cachedAtMs, ttl, now ?? DateTime.now())) {
+          await _jobDetailsBox?.delete(key);
+          return null;
+        }
+        return JobModel.fromJson(Map<String, dynamic>.from(raw['job'] as Map));
       }
+      // Legacy un-wrapped entries without TTL metadata are treated as stale.
+      await _jobDetailsBox?.delete(key);
     } catch (e) {
       debugPrint('[HiveCacheService] getCachedJobDetail error: $e');
     }
@@ -233,7 +281,7 @@ class HiveCacheService {
 
       // Keep only top 10 recent searches
       final trimmed = current.take(10).toList();
-      await _recentSearchesBox?.put(_kRecentSearchesKey, trimmed);
+      await _recentSearchesBox?.put(_scopedKey(_kRecentSearchesKey), trimmed);
     } catch (e) {
       debugPrint('[HiveCacheService] saveRecentSearch error: $e');
     }
@@ -243,7 +291,7 @@ class HiveCacheService {
   Future<List<String>> getRecentSearches() async {
     if (!_isInitialized || _recentSearchesBox == null) return [];
     try {
-      final raw = _recentSearchesBox?.get(_kRecentSearchesKey);
+      final raw = _recentSearchesBox?.get(_scopedKey(_kRecentSearchesKey));
       if (raw is List) {
         return List<String>.from(raw);
       }
@@ -259,7 +307,7 @@ class HiveCacheService {
     try {
       final current = await getRecentSearches();
       current.removeWhere((item) => item.toLowerCase() == query.toLowerCase());
-      await _recentSearchesBox?.put(_kRecentSearchesKey, current);
+      await _recentSearchesBox?.put(_scopedKey(_kRecentSearchesKey), current);
     } catch (e) {
       debugPrint('[HiveCacheService] removeRecentSearch error: $e');
     }
@@ -269,7 +317,7 @@ class HiveCacheService {
   Future<void> clearRecentSearches() async {
     if (!_isInitialized || _recentSearchesBox == null) return;
     try {
-      await _recentSearchesBox?.delete(_kRecentSearchesKey);
+      await _recentSearchesBox?.delete(_scopedKey(_kRecentSearchesKey));
     } catch (e) {
       debugPrint('[HiveCacheService] clearRecentSearches error: $e');
     }

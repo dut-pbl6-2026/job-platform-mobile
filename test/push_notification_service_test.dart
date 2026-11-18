@@ -28,7 +28,7 @@ void main() {
         await firebaseMessagingBackgroundHandler(
           const RemoteMessage(
             messageId: 'bg-test-msg-1',
-            data: {'job_id': 'job-001'},
+            data: {'jobId': 'job-001'},
           ),
         );
 
@@ -75,6 +75,21 @@ void main() {
         expect(
           PushNotificationService.resolveNotificationRoute({
             'route': '//evil.example/path',
+          }),
+          AppRoutes.home,
+        );
+        // camelCase keys work while snake_case keys are ignored
+        expect(
+          PushNotificationService.resolveNotificationRoute({
+            'deepLink': '/jobs/job-camel',
+          }),
+          '/jobs/job-camel',
+        );
+        expect(
+          PushNotificationService.resolveNotificationRoute({
+            'deep_link': '/jobs/job-snake',
+            'job_id': 'job-snake-2',
+            'application_id': 'app-snake-2',
           }),
           AppRoutes.home,
         );

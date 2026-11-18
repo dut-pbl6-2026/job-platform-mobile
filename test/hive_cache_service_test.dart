@@ -125,5 +125,68 @@ void main() {
       expect(cached.length, 1);
       expect(cached.first.id, 'test-job-1');
     });
+
+    test('isolates cache entries per user namespace', () async {
+      HiveCacheService.instance.setActiveUserNamespace('user-a');
+      await HiveCacheService.instance.saveJobs([testJob]);
+      await HiveCacheService.instance.saveJobDetail(testJob);
+      await HiveCacheService.instance.saveRecentSearch('Flutter');
+
+      HiveCacheService.instance.setActiveUserNamespace('user-b');
+      expect(await HiveCacheService.instance.getCachedJobs(), isEmpty);
+      expect(
+        await HiveCacheService.instance.getCachedJobDetail('test-job-1'),
+        isNull,
+      );
+      expect(await HiveCacheService.instance.getRecentSearches(), isEmpty);
+
+      HiveCacheService.instance.setActiveUserNamespace('user-a');
+      expect(await HiveCacheService.instance.getCachedJobs(), hasLength(1));
+      expect(
+        (await HiveCacheService.instance.getCachedJobDetail('test-job-1'))?.id,
+        'test-job-1',
+      );
+      expect(await HiveCacheService.instance.getRecentSearches(), ['Flutter']);
+    });
+
+    test('expires cached jobs and details after 24h TTL', () async {
+      final t0 = DateTime(2026, 11, 18, 8, 0);
+      await HiveCacheService.instance.saveJobs([testJob], now: t0);
+      await HiveCacheService.instance.saveJobDetail(testJob, now: t0);
+
+      final beforeExpiry = t0.add(const Duration(hours: 23));
+      expect(
+        await HiveCacheService.instance.getCachedJobs(now: beforeExpiry),
+        hasLength(1),
+      );
+      expect(
+        await HiveCacheService.instance.getCachedJobDetail(
+          'test-job-1',
+          now: beforeExpiry,
+        ),
+        isNotNull,
+      );
+      expect(
+        HiveCacheService.instance.getLastCachedTime(now: beforeExpiry),
+        isNotNull,
+      );
+
+      final afterExpiry = t0.add(const Duration(hours: 24, minutes: 1));
+      expect(
+        HiveCacheService.instance.getLastCachedTime(now: afterExpiry),
+        isNull,
+      );
+      expect(
+        await HiveCacheService.instance.getCachedJobs(now: afterExpiry),
+        isEmpty,
+      );
+      expect(
+        await HiveCacheService.instance.getCachedJobDetail(
+          'test-job-1',
+          now: afterExpiry,
+        ),
+        isNull,
+      );
+    });
   });
 }

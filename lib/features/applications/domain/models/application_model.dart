@@ -105,11 +105,8 @@ class ApplicationStatusHistoryItem {
       note: json['note'] as String?,
       changedAt: json['changedAt'] != null
           ? DateTime.tryParse(json['changedAt'].toString()) ?? DateTime.now()
-          : (json['changed_at'] != null
-                ? DateTime.tryParse(json['changed_at'].toString()) ??
-                      DateTime.now()
-                : DateTime.now()),
-      changedBy: json['changedBy'] as String? ?? json['changed_by'] as String?,
+          : DateTime.now(),
+      changedBy: json['changedBy'] as String?,
     );
   }
 
@@ -213,7 +210,7 @@ class ApplicationModel {
   }
 
   factory ApplicationModel.fromJson(Map<String, dynamic> json) {
-    var rawHistory = json['statusHistory'] ?? json['status_history'];
+    final rawHistory = json['statusHistory'];
     List<ApplicationStatusHistoryItem> historyList = [];
     if (rawHistory is List) {
       historyList = rawHistory
@@ -229,60 +226,82 @@ class ApplicationModel {
 
     return ApplicationModel(
       id: json['id']?.toString() ?? '',
-      jobId: json['jobId']?.toString() ?? json['job_id']?.toString() ?? '',
+      jobId: json['jobId']?.toString() ?? '',
+      jobTitle: json['jobTitle']?.toString() ?? 'Vị trí tuyển dụng',
+      companyName: json['companyName']?.toString() ?? 'Doanh nghiệp',
+      companyLogo: json['companyLogo'] as String?,
+      applicantId: json['applicantId']?.toString() ?? '',
+      applicantName: json['applicantName']?.toString() ?? '',
+      applicantEmail: json['applicantEmail']?.toString() ?? '',
+      applicantPhone: json['applicantPhone'] as String?,
+      coverLetter: json['coverLetter'] as String?,
+      cvUrl: json['cvUrl']?.toString() ?? '',
+      cvFileName: json['cvFileName']?.toString() ?? 'CV_Ung_Tuyen.pdf',
+      cvFileSize: json['cvFileSize'] as int?,
+      status: ApplicationStatus.fromString(
+        json['status']?.toString() ?? 'pending',
+      ),
+      recruiterNotes: json['recruiterNotes'] as String?,
+      score: (json['score'] as num?)?.toDouble(),
+      createdAt: json['createdAt'] != null
+          ? DateTime.tryParse(json['createdAt'].toString()) ?? DateTime.now()
+          : DateTime.now(),
+      updatedAt: json['updatedAt'] != null
+          ? DateTime.tryParse(json['updatedAt'].toString()) ?? DateTime.now()
+          : DateTime.now(),
+      statusHistory: historyList,
+    );
+  }
+
+  /// Boundary adapter for `app-svc` `POST /api/applications` `201 Created`
+  /// anonymous response (`{ id, job_id, applicant_id, status, cv_url }`), which
+  /// temporarily emits snake_case until aligned server-side.
+  factory ApplicationModel.fromCreatedJson(
+    Map<String, dynamic> json, {
+    ApplyJobParams? params,
+  }) {
+    final now = DateTime.now();
+    return ApplicationModel(
+      id: json['id']?.toString() ?? '',
+      jobId:
+          json['jobId']?.toString() ??
+          json['job_id']?.toString() ??
+          params?.jobId ??
+          '',
       jobTitle:
           json['jobTitle']?.toString() ??
-          json['job_title']?.toString() ??
+          params?.jobTitle ??
           'Vị trí tuyển dụng',
       companyName:
           json['companyName']?.toString() ??
-          json['company_name']?.toString() ??
+          params?.companyName ??
           'Doanh nghiệp',
-      companyLogo:
-          json['companyLogo'] as String? ?? json['company_logo'] as String?,
+      companyLogo: json['companyLogo'] as String? ?? params?.companyLogo,
       applicantId:
           json['applicantId']?.toString() ??
           json['applicant_id']?.toString() ??
           '',
-      applicantName:
-          json['applicantName']?.toString() ??
-          json['applicant_name']?.toString() ??
-          '',
-      applicantEmail:
-          json['applicantEmail']?.toString() ??
-          json['applicant_email']?.toString() ??
-          '',
-      applicantPhone:
-          json['applicantPhone'] as String? ??
-          json['applicant_phone'] as String?,
-      coverLetter:
-          json['coverLetter'] as String? ?? json['cover_letter'] as String?,
+      applicantName: json['applicantName']?.toString() ?? '',
+      applicantEmail: json['applicantEmail']?.toString() ?? '',
+      applicantPhone: json['applicantPhone'] as String?,
+      coverLetter: json['coverLetter'] as String? ?? params?.coverLetter,
       cvUrl: json['cvUrl']?.toString() ?? json['cv_url']?.toString() ?? '',
       cvFileName:
           json['cvFileName']?.toString() ??
-          json['cv_file_name']?.toString() ??
+          params?.cvFileName ??
           'CV_Ung_Tuyen.pdf',
-      cvFileSize: json['cvFileSize'] as int? ?? json['cv_file_size'] as int?,
+      cvFileSize: json['cvFileSize'] as int? ?? params?.cvFileSize,
       status: ApplicationStatus.fromString(
         json['status']?.toString() ?? 'pending',
       ),
-      recruiterNotes:
-          json['recruiterNotes'] as String? ??
-          json['recruiter_notes'] as String?,
+      recruiterNotes: json['recruiterNotes'] as String?,
       score: (json['score'] as num?)?.toDouble(),
       createdAt: json['createdAt'] != null
-          ? DateTime.tryParse(json['createdAt'].toString()) ?? DateTime.now()
-          : (json['created_at'] != null
-                ? DateTime.tryParse(json['created_at'].toString()) ??
-                      DateTime.now()
-                : DateTime.now()),
+          ? DateTime.tryParse(json['createdAt'].toString()) ?? now
+          : now,
       updatedAt: json['updatedAt'] != null
-          ? DateTime.tryParse(json['updatedAt'].toString()) ?? DateTime.now()
-          : (json['updated_at'] != null
-                ? DateTime.tryParse(json['updated_at'].toString()) ??
-                      DateTime.now()
-                : DateTime.now()),
-      statusHistory: historyList,
+          ? DateTime.tryParse(json['updatedAt'].toString()) ?? now
+          : now,
     );
   }
 

@@ -9,6 +9,17 @@ class ApiConfig {
   /// Environmental override passed via `--dart-define=FLUTTER_API_URL=...`
   static const String envApiUrl = String.fromEnvironment('FLUTTER_API_URL');
 
+  /// Internal microservice ports blocked on client overrides (API Gateway only).
+  static const Set<int> _forbiddenInternalPorts = {
+    5001,
+    5002,
+    5003,
+    5004,
+    5005,
+    5006,
+    6000,
+  };
+
   /// Resolves the Gateway Base URL dynamically across platforms.
   /// Priority order:
   /// 1. [envOverride] or `FLUTTER_API_URL` (passed via --dart-define)
@@ -26,8 +37,16 @@ class ApiConfig {
     final isRelease = isReleaseOverride ?? kReleaseMode;
     final env = (envOverride ?? envApiUrl).trim();
     if (env.isNotEmpty) {
+      final uri = Uri.tryParse(env);
+      if (uri != null &&
+          uri.hasPort &&
+          _forbiddenInternalPorts.contains(uri.port)) {
+        throw StateError(
+          'FLUTTER_API_URL must route through the API Gateway, not internal '
+          'microservice port ${uri.port} (received "$env").',
+        );
+      }
       if (isRelease) {
-        final uri = Uri.tryParse(env);
         if (uri == null ||
             uri.scheme.toLowerCase() != 'https' ||
             uri.host.isEmpty) {

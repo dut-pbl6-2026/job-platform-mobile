@@ -357,10 +357,9 @@ class PushNotificationService {
     Map<String, dynamic> data, {
     UserRole? role,
   }) {
-    final rawRoute =
-        (data['route'] ?? data['deepLink'] ?? data['deep_link'] ?? data['link'])
-            ?.toString()
-            .trim();
+    final rawRoute = (data['route'] ?? data['deepLink'] ?? data['link'])
+        ?.toString()
+        .trim();
 
     if (rawRoute != null && rawRoute.isNotEmpty) {
       final fromScheme = _parseCustomSchemeRoute(rawRoute, role: role);
@@ -375,13 +374,15 @@ class PushNotificationService {
       }
     }
 
-    final jobId = _sanitizeSegment(data['job_id'] ?? data['jobId']);
+    final jobId = _sanitizeSegment(data['jobId']);
     final applicationId = _sanitizeSegment(
-      data['application_id'] ?? data['applicationId'] ?? data['appId'],
+      data['applicationId'] ?? data['appId'],
     );
 
     if (role == UserRole.recruiter) {
-      if (applicationId != null || data['type'] == 'new_application') {
+      if (applicationId != null ||
+          data['type'] == 'newApplication' ||
+          data['type'] == 'NewApplication') {
         return jobId != null
             ? '${AppRoutes.recruiterCandidates}?jobId=$jobId'
             : AppRoutes.recruiterCandidates;

@@ -69,7 +69,7 @@ class ApiApplicationRepository implements IApplicationRepository {
         final data = response.data is Map<String, dynamic>
             ? response.data as Map<String, dynamic>
             : Map<String, dynamic>.from(response.data as Map);
-        return ApplicationModel.fromJson(data);
+        return ApplicationModel.fromCreatedJson(data, params: params);
       }
       throw const ApplicationRepositoryException(
         'Không thể gửi hồ sơ ứng tuyển lúc này. Vui lòng thử lại.',

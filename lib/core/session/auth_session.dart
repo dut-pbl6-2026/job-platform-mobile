@@ -126,10 +126,12 @@ class AuthSession extends ChangeNotifier {
       if (userJson != null && _token != null) {
         final map = jsonDecode(userJson) as Map<String, dynamic>;
         _currentUser = UserModel.fromJson(map);
+        HiveCacheService.instance.setActiveUserNamespace(_currentUser?.id);
       } else {
         _currentUser = null;
         _token = null;
         _refreshToken = null;
+        HiveCacheService.instance.setActiveUserNamespace(null);
       }
     } catch (e) {
       if (kDebugMode) {
@@ -145,6 +147,7 @@ class AuthSession extends ChangeNotifier {
     _currentUser = authResult.user;
     _token = authResult.token;
     _refreshToken = authResult.refreshToken;
+    HiveCacheService.instance.setActiveUserNamespace(authResult.user.id);
     notifyListeners();
     try {
       await _secure.write(key: _kTokenKey, value: authResult.token);
@@ -168,6 +171,7 @@ class AuthSession extends ChangeNotifier {
   Future<void> updateUser(UserModel user) async {
     if (_token == null) return;
     _currentUser = user;
+    HiveCacheService.instance.setActiveUserNamespace(user.id);
     notifyListeners();
     try {
       await _secure.write(key: _kUserKey, value: jsonEncode(user.toJson()));
@@ -182,6 +186,7 @@ class AuthSession extends ChangeNotifier {
     _currentUser = null;
     _token = null;
     _refreshToken = null;
+    HiveCacheService.instance.setActiveUserNamespace(null);
     notifyListeners();
     try {
       await _secure.delete(key: _kTokenKey);
